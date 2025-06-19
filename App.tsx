@@ -1,25 +1,34 @@
 import React from 'react';
-import { Text, StyleSheet, SafeAreaView } from 'react-native';
-import Colors from './src/constants/colors';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import 'react-native-gesture-handler';
 
-export default function App() {
+// Import your screens
+import SplashScreen from './src/screens/SplashScreen';
+import HomeScreen from './src/screens/HomeScreen';
+
+export type RootStackParamList = {
+  Splash: undefined;
+  Home: undefined;
+};
+
+const Stack = createStackNavigator<RootStackParamList>();
+
+function App(): React.ReactElement {
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.text}>🚀 Main App Screen</Text>
-    </SafeAreaView>
+    <NavigationContainer>
+      <Stack.Navigator 
+        initialRouteName="Splash"
+        screenOptions={{ 
+          headerShown: false,
+          gestureEnabled: true,
+        }}
+      >
+        <Stack.Screen name="Splash" component={SplashScreen} />
+        <Stack.Screen name="Home" component={HomeScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.primarybg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: Colors.neutral1000,
-  },
-});
+export default App;
