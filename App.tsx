@@ -4,7 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import 'react-native-gesture-handler';
 
 // Import your screens
-import SplashScreen from './src/screens/SplashScreen';
+import SplashScreen from './src/screens/LoadingScreen';
 import HomeScreen from './src/screens/HomeScreen';
 
 export type RootStackParamList = {

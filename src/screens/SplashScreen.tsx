@@ -97,7 +97,7 @@ export default function SplashScreen() {
           style={styles.loadingIndicator}
         />
         <Text style={styles.loadingText}>Loading your motor data...</Text>
-        <Text style={styles.versionText}>v1.0.0</Text>
+        <Text style={styles.versionText}>V1.0.0</Text>
       </View>
     </SafeAreaView>
   );
@@ -123,6 +123,9 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 70,
     fontWeight: '600',
+    textShadowColor: Colors.shadowLg,
+    textShadowOffset: { width: 4, height: 4},
+    textShadowRadius: 6,
   },
   Logo: {
     width: 200,
@@ -139,9 +142,6 @@ const styles = StyleSheet.create({
   },
   Motor: {
     marginBottom: -15,
-    textShadowColor: 'rgba(0, 0, 0, 0.1)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
   },
   Trace: {
     fontWeight: '400',
@@ -182,6 +182,6 @@ const styles = StyleSheet.create({
 
   landscapeTextContainer: {
     marginLeft: 40,
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
 });
