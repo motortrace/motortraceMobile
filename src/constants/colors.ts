@@ -19,6 +19,7 @@ const Colors = {
   neutral300: '#cbd5e1',
   neutral100: '#f1f5f9',
   neutral50: '#f8fafc',
+  neutral0: '#ffffff',
 
   // System Colors
   success: '#16a34a',
