@@ -14,7 +14,9 @@ const Colors = {
   // Neutrals
   neutral1000: '#000000',
   neutral900: '#0f172a',
+  neutral800: '#212c3f',
   neutral700: '#334155',
+  neutral600: '#4b5b70',
   neutral500: '#64748b',
   neutral300: '#cbd5e1',
   neutral200: '#e2e8f0',
