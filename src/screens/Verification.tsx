@@ -125,20 +125,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: "center",
   },
-  otpInputContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  otpInput: {
-    flex: 1,
-    height: 56,
-    borderWidth: 2,
-    borderRadius: 12,
-    fontSize: 24,
-    fontWeight: "bold",
-    color: Colors.neutral1000,
-  },
   resendContainer: {
     alignItems: "center",
     marginBottom: 24,

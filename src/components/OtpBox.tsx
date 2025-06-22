@@ -28,7 +28,10 @@ const OtpInputBox: React.FC<OtpInputBoxProps> = ({
             },
           ]}
           value={value[index]}
-          onChangeText={(val) => onChange(val, index)}
+          onChangeText={(val) => {
+            const digit = val.replace(/[^0-9]/g, "")
+            onChange(digit, index)
+          }}
           keyboardType="numeric"
           maxLength={1}
           textAlign="center"
