@@ -3,6 +3,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   type ViewStyle,
+  View,
+  Platform,
 } from 'react-native';
 import Colors from '../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -23,42 +25,61 @@ const CircularBackButton: React.FC<CircularBackButtonProps> = ({
   style,
 }) => {
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.8}
+    <View
       style={[
-        styles.backButton,
+        styles.shadowWrapper,
         {
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor,
         },
         style,
       ]}
     >
-      <Icon
-        name="chevron-back"
-        size={size * 0.55}
-        color={iconColor}
-        style={styles.icon}
-      />
-    </TouchableOpacity>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.8}
+        style={[
+          styles.backButton,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor,
+          },
+        ]}
+      >
+        <Icon
+          name="chevron-back"
+          size={size * 0.55}
+          color={iconColor}
+          style={styles.icon}
+        />
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  backButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: Colors.neutral1000,
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 4, height: 4 },
-    elevation: 10,
+  shadowWrapper: {
     position: 'absolute',
     top: 50,
     left: 15,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.neutral1000,
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  backButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   icon: {
     marginLeft: 1,
