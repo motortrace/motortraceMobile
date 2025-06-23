@@ -7,6 +7,8 @@ import Colors from "../constants/colors"
 import Icon from 'react-native-vector-icons/Ionicons';
 import Section from "../components/section"
 import Button from '../components/Button'
+import TabNavigator from '../components/TabNavigator'
+import RatingStars from '../components/RatingStars'
 
 interface GarageProfileScreenProps {
   onBack?: () => void
@@ -26,25 +28,6 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
     onToggleFavorite?.()
   }
 
-  const renderStars = (rating: number) => {
-    const stars = []
-    const fullStars = Math.floor(rating)
-
-    for (let i = 0; i < 5; i++) {
-      stars.push(
-        <Icon 
-          key={i} 
-          name="star" 
-          size={12} 
-          color={i < fullStars ? "#FFD700" : "#E5E7EB"} 
-          style={styles.starIcon}
-        />
-      )
-    }
-
-    return stars
-  }
-
   const garageServices = [
     { id: 1, icon: "key", title: "Key Change" },
     { id: 2, icon: "color-palette", title: "Paint Car" },
@@ -57,7 +40,7 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
         {/* Garage Header Card */}
         <View style={styles.profileCard}>
           <ImageBackground
-            source={{ uri: "https://images.unsplash.com/photo-1486754735734-325b5831c3ad?w=400&h=200&fit=crop" }}
+            source={require('../assets/images/Garage.jpg')}
             style={styles.profileImage}
             imageStyle={styles.profileImageStyle}
           >
@@ -67,13 +50,13 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
             {/* Header Controls */}
             <View style={styles.profileHeader}>
               <TouchableOpacity style={styles.backButton} onPress={onBack}>
-                <Icon name="chevron-back" size={24} color="#FFFFFF" />
+                <Icon name="chevron-back" size={24} color={Colors.neutral0} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.favoriteButton} onPress={handleToggleFavorite}>
                 <Icon 
                   name={isFavorite ? "heart" : "heart-outline"} 
-                  size={20} 
-                  color={isFavorite ? "#EF4444" : "#FFFFFF"} 
+                  size={24} 
+                  color={isFavorite ? Colors.danger : Colors.neutral0} 
                 />
               </TouchableOpacity>
             </View>
@@ -86,12 +69,19 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
           </ImageBackground>
         </View>
 
+        <TabNavigator
+          tabs={["About", "Services", "Packages", "Review"]}
+          onTabPress={(tab) => {
+            console.log("Selected Tab:", tab)
+          }}
+        />
+
         {/* Stats Section */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>Rating</Text>
             <View style={styles.ratingContainer}>
-              <View style={styles.starsContainer}>{renderStars(5)}</View>
+              <View style={styles.starsContainer}>{<RatingStars rating={5} />}</View>
               <Text style={styles.ratingText}>4.8 (257)</Text>
             </View>
           </View>
@@ -115,7 +105,7 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
         </Section>
 
         {/* Services Section */}
-        <Section title="Our Services" >
+        {/* <Section title="Our Services" >
           <View style={styles.uspContainer}>
             {garageServices.map((service) => (
               <View key={service.id} style={styles.uspItem}>
@@ -126,7 +116,7 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
               </View>
             ))}
           </View>
-        </Section>
+        </Section> */}
 
         {/* Location Section */}
         <Section title="Location" >
@@ -163,8 +153,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileCard: {
-    margin: 16,
+    margin: 12,
     marginTop: 30,
+    marginBottom: 3,
     borderRadius: 12,
     overflow: "hidden",
   },
@@ -198,7 +189,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(255, 255, 255, 0.4)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -206,7 +197,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(255, 255, 255, 0.4)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -237,13 +228,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    marginTop: 10,
   },
   statItem: {
     flex: 1,
     alignItems: "center",
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 16,
     color: Colors.neutral500,
     marginBottom: 4,
     fontWeight: "500",
@@ -259,7 +251,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 1,
   },
   ratingText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "600",
     color: Colors.neutral600,
   },
@@ -274,17 +266,17 @@ const styles = StyleSheet.create({
     color: Colors.neutral600,
   },
   pitchText: {
-    fontSize: 14,
+    fontSize: 16,
     color: Colors.neutral500,
     lineHeight: 20,
     backgroundColor: Colors.neutral0,
     padding: 16,
     borderRadius: 8,
     shadowColor: Colors.neutral1000,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 3, height: 4 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
   uspContainer: {
     flexDirection: "row",
@@ -293,10 +285,10 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 8,
     shadowColor: Colors.neutral1000,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 3, height: 4 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
   uspItem: {
     alignItems: "center",
@@ -322,10 +314,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     shadowColor: Colors.neutral1000,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 3, height: 4 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
   locationInfo: {
     flexDirection: "row",
@@ -342,7 +334,6 @@ const styles = StyleSheet.create({
     height: 20,
   },
   scheduleContainer: {
-    backgroundColor: Colors.neutral0,
     paddingHorizontal: 16,
     paddingVertical: 16,
     paddingBottom: 34,

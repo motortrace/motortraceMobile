@@ -4,6 +4,7 @@ const Colors = {
   primary: '#2563eb',
   primaryDark: '#1d4ed8',
   primaryLight: '#93c5fd',
+  // primarybg: '#FFFFFF',
   primarybg: '#E3F2FF',
 
   // Secondary Palette - Updated to Teal
@@ -18,6 +19,7 @@ const Colors = {
   neutral700: '#334155',
   neutral600: '#4b5b70',
   neutral500: '#64748b',
+  neutral400: '#94a3b8',
   neutral300: '#cbd5e1',
   neutral200: '#e2e8f0',
   neutral100: '#f1f5f9',
@@ -29,6 +31,7 @@ const Colors = {
   warning: '#f59e0b',
   danger: '#dc2626',
   info: '#0ea5e9',
+  Star: '#FFD700',
 
   // Special Automotive Accents
   carbon: '#1e293b',

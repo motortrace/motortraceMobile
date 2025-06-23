@@ -1,17 +1,19 @@
 import type React from "react"
 import { useState } from "react"
-import { View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, ImageBackground } from "react-native"
+import { View, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, ImageBackground } from "react-native"
 import Colors from "../constants/colors"
 import Icon from "react-native-vector-icons/Ionicons"
+import BottomNavigation from "../components/BottomNav"
 
 interface GarageLocatorScreenProps {
   onBack?: () => void
   onViewRecommended?: () => void
+  handleTabPress?: () => void
 }
 
-const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({ onBack, onViewRecommended }) => {
+const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({ onBack, onViewRecommended, handleTabPress }) => {
   const [searchQuery, setSearchQuery] = useState("")
-  const [activeTab, setActiveTab] = useState("location")
+  const [activeTab, setActiveTab] = useState(0)
 
   const garageMarkers = [
     { id: 1, top: 180, left: 120, type: "recommended" },
@@ -46,29 +48,32 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({ onBack, onVie
     {
       id: "location",
       icon: "location",
-      label: "Our Location",
-      onPress: () => setActiveTab("location"),
+      onPress: () => setActiveTab(0),
     },
     {
       id: "recommended",
       icon: "star",
-      label: "Recommended",
       onPress: () => {
-        setActiveTab("recommended")
+        setActiveTab(1)
         onViewRecommended?.()
       },
     },
     {
       id: "history",
       icon: "time",
-      label: "History",
-      onPress: () => setActiveTab("history"),
+      onPress: () => setActiveTab(2),
     },
     {
       id: "nearby",
-      icon: "search",
+      icon: "compass",
       label: "Nearby",
-      onPress: () => setActiveTab("nearby"),
+      onPress: () => setActiveTab(3),
+    },
+    {
+      id: "heart",
+      icon: "heart",
+      label: "Favourite",
+      onPress: () => setActiveTab(4),
     },
   ]
 
@@ -78,7 +83,7 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({ onBack, onVie
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Icon name="chevron-back" size={24} color={Colors.neutral0} />
+            <Icon name="chevron-back" size={30} color={Colors.neutral0} />
           </TouchableOpacity>
 
           <View style={styles.searchBarContainer}>
@@ -124,19 +129,11 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({ onBack, onVie
         </TouchableOpacity>
       </View>
 
-      {/* Enhanced Bottom Navigation */}
-      <View style={styles.bottomNavContainer}>
-        <View style={styles.bottomNav}>
-          {navItems.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.navItem} onPress={item.onPress} activeOpacity={0.7}>
-              <View style={[styles.navIconContainer, activeTab === item.id && styles.navIconContainerActive]}>
-                <Icon name={item.icon} size={30} color={activeTab === item.id ? Colors.primary : Colors.neutral600} />
-              </View>
-              <Text style={[styles.navLabel, activeTab === item.id && styles.navLabelActive]}>{item.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+      <BottomNavigation
+        navItems={navItems}
+        activeTab={activeTab}
+        onTabPress={handleTabPress}
+      />
     </SafeAreaView>
   )
 }
@@ -147,8 +144,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.neutral0,
   },
   header: {
-    marginTop: 45,
-    paddingTop: 10,
+    paddingTop: 55,
     paddingBottom: 10,
     shadowColor: Colors.shadowMd,
     shadowOffset: { width: 0, height: 4 },
@@ -156,6 +152,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     zIndex: 10,
+    backgroundColor: Colors.primary
   },
   headerContent: {
     flexDirection: "row",
@@ -185,7 +182,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.neutral50,
     borderRadius: 24,
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: Colors.neutral200,
     shadowColor: Colors.shadowSm,
@@ -304,51 +301,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     borderWidth: 1,
     borderColor: Colors.neutral100,
-  },
-  bottomNavContainer: {
-    backgroundColor: Colors.neutral0,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    shadowColor: Colors.shadowLg,
-    shadowOffset: { width: 4, height: -20 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 12,
-    borderColor: Colors.neutral300,
-    borderWidth: 5
-  },
-  bottomNav: {
-    flexDirection: "row",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  navIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 2,
-    transition: "all 0.2s ease",
-  },
-  navIconContainerActive: {
-    transform: [{ scale: 1.1 }],
-  },
-  navLabel: {
-    fontSize: 14,
-    color: Colors.neutral600,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  navLabelActive: {
-    color: Colors.primary,
-    fontWeight: "600",
   },
 })
 
