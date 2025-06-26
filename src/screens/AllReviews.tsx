@@ -5,6 +5,7 @@ import Colors from "../constants/colors"
 import RatingStars from '../components/RatingStars'
 import ReviewCard from '../components/ReviewCard'
 import Button from '../components/Button'
+import Header from '../components/Header'
 
 interface AllReviewsScreenProps {
   onBack?: () => void,
@@ -82,11 +83,18 @@ const AllReviewsScreen: React.FC<AllReviewsScreenProps> = ({ onBack, onScheduleA
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <Icon name="chevron-back" size={30} color={Colors.neutral0} />
         <Text style={styles.headerTitle}>Reviews</Text>
         <View style={styles.placeholder} />
-      </View>
+      </View> */}
+
+      <Header
+        icon="back"
+        name="John Doe"
+        image=""
+        onIconPress={() => console.log('Menu Pressed')}
+      />
 
       {/* Overall Rating Section */}
       <View style={styles.overallSection}>
@@ -159,22 +167,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.primarybg,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: 50,
-    backgroundColor: Colors.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral100,
-  },
-  headerTitle: {
-    fontSize: 25,
-    fontWeight: "600",
-    color: Colors.neutral0,
   },
   placeholder: {
     width: 40,

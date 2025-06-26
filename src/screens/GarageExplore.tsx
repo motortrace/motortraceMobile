@@ -4,7 +4,6 @@ import {
   View,
   StyleSheet,
   SafeAreaView,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   Text,
@@ -14,6 +13,8 @@ import Colors from '../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
 import BottomNavigation from '../components/BottomNav';
 import GarageCard from '../components/GarageCard';
+import Header from '../components/Header'
+import SearchBar from '../components/SearchBar';
 
 interface NearbyGaragesScreenProps {
   onBack?: () => void;
@@ -191,7 +192,7 @@ const NearbyGaragesScreen: React.FC<NearbyGaragesScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Icon name="chevron-back" size={30} color={Colors.neutral0} />
@@ -212,13 +213,26 @@ const NearbyGaragesScreen: React.FC<NearbyGaragesScreenProps> = ({
             </View>
           </View>
         </View>
-      </View>
+      </View> */}
+
+      <Header
+        icon="back"
+        name="John Doe"
+        image=""
+        onIconPress={() => console.log('Menu Pressed')}
+      />
+      <SearchBar
+        containerStyle={{
+          marginTop: 10,
+          marginBottom: -10,
+        }}
+        placeholder="Search products..."
+      />
 
       {/* Filters */}
       <View style={styles.filtersContainer}>
         {renderFilterSection('Distance', distanceFilters, selectedDistance, setSelectedDistance)}
         {renderFilterSection('Status', statusFilters, selectedStatus, setSelectedStatus)}
-        {renderFilterSection('Services', serviceFilters, selectedService, setSelectedService)}
       </View>
 
       {/* Results Header */}
@@ -262,63 +276,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.neutral50,
-  },
-  header: {
-    paddingTop: 55,
-    paddingBottom: 10,
-    shadowColor: Colors.shadowMd,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 8,
-    zIndex: 10,
-    backgroundColor: Colors.primary,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    gap: 16,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: Colors.shadowSm,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  searchBarContainer: {
-    flex: 1,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.neutral50,
-    borderRadius: 24,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: Colors.neutral200,
-    shadowColor: Colors.shadowSm,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  searchIconContainer: {
-    marginRight: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: Colors.neutral900,
-    fontWeight: '400',
   },
   filtersContainer: {
     backgroundColor: Colors.neutral0,

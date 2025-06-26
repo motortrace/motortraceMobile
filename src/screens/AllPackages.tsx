@@ -4,6 +4,8 @@ import Icon from 'react-native-vector-icons/Ionicons'
 import Colors from "../constants/colors"
 import PackageCard from "../components/PackageCard"
 import Button from '../components/Button'
+import Header from '../components/Header'
+import SearchBar from '../components/SearchBar';
 
 interface AllServicesScreenProps {
   onBack?: () => void,
@@ -35,13 +37,27 @@ const AllServicesScreen: React.FC<AllServicesScreenProps> = ({ onBack,   onSched
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <TouchableOpacity onPress={onBack}>
           <Icon name="chevron-back" size={30} color={Colors.neutral0} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Packages</Text>
         <View style={styles.placeholder} />
-      </View>
+      </View> */}
+
+      <Header
+        icon="back"
+        name="John Doe"
+        image=""
+        onIconPress={() => console.log('Menu Pressed')}
+      />
+      <SearchBar
+        containerStyle={{
+          marginTop: 10,
+          marginBottom: -10,
+        }}
+        placeholder="Search products..."
+      />
 
       {/* Services List */}
       <ScrollView style={styles.servicesContainer} showsVerticalScrollIndicator={false}>
@@ -69,22 +85,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.primarybg,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: 50,
-    backgroundColor: Colors.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral100,
-  },
-  headerTitle: {
-    fontSize: 25,
-    fontWeight: "600",
-    color: Colors.neutral0,
   },
   placeholder: {
     width: 30,
