@@ -4,6 +4,7 @@ const Colors = {
   primary: '#2563eb',
   primaryDark: '#1d4ed8',
   primaryLight: '#93c5fd',
+  primaryLighter: '#bfdbfe',
   // primarybg: '#FFFFFF',
   primarybg: '#E3F2FF',
 
@@ -32,6 +33,11 @@ const Colors = {
   danger: '#dc2626',
   info: '#0ea5e9',
   Star: '#FFD700',
+  Purple: '#6366F1',
+
+  dangerLight: '#fecaca',    // Light red background for critical items
+  warningLight: '#fef3c7',   // Light amber background for recommended items
+  infoLight: '#dcfce7', 
 
   // Special Automotive Accents
   carbon: '#1e293b',

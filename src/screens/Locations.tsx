@@ -4,6 +4,8 @@ import { View, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, ImageBackg
 import Colors from "../constants/colors"
 import Icon from "react-native-vector-icons/Ionicons"
 import BottomNavigation from "../components/BottomNav"
+import Header from '../components/Header'
+import SearchBar from '../components/SearchBar'
 
 interface GarageLocatorScreenProps {
   onBack?: () => void
@@ -80,7 +82,23 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({ onBack, onVie
   return (
     <SafeAreaView style={styles.container}>
       {/* Enhanced Header with Search */}
-      <View style={styles.header}>
+      <Header
+        icon="back"
+        name="John Doe"
+        image=""
+        onIconPress={() => console.log('Menu Pressed')}
+      />
+      <SearchBar
+        containerStyle={{
+          position: 'absolute',
+          marginTop: 100,
+          zIndex: 10,
+          padding: 10,
+          width: '100%',
+        }}
+        placeholder="Search products..."
+      />
+      {/* <View style={styles.header}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Icon name="chevron-back" size={30} color={Colors.neutral0} />
@@ -101,7 +119,7 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({ onBack, onVie
             </View>
           </View>
         </View>
-      </View>
+      </View> */}
 
       {/* Map with Enhanced Markers */}
       <View style={styles.mapContainer}>
