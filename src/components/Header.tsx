@@ -41,6 +41,16 @@ const Header: React.FC<HeaderProps> = ({ icon = 'back', style, name, image, onIc
             color={Colors.neutral0}
           />
         </TouchableOpacity>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../assets/images/Logo_white_no_bg.png')}
+            style={styles.logoImage}
+          />
+          <View style={styles.logoTextContainer}>
+            <Text style={styles.logoLineTop}>Motor</Text>
+            <Text style={styles.logoLineBottom}>Trace</Text>
+          </View>
+        </View>
 
         <View style={styles.spacer} />
 
@@ -97,6 +107,31 @@ const styles = StyleSheet.create({
     color: Colors.neutral900,
     fontSize: 20,
     fontWeight: '600',
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoImage: {
+    width: 50,
+    height: 50,
+    marginRight: 2,
+  },
+  logoTextContainer: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+  },
+  logoLineTop: {
+    color: Colors.neutral0,
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+  logoLineBottom: {
+    color: Colors.neutral0,
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 18,
   },
 });
 
