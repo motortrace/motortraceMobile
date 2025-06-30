@@ -1,5 +1,5 @@
 import React from "react"
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from "react-native"
 import Colors from "../constants/colors"
 import Link from "./Link"
 
@@ -7,11 +7,12 @@ interface VerificationRowProps {
   type: "email" | "contact"
   isVerified: boolean
   onVerify: () => void
+  style?: ViewStyle | ViewStyle[]
 }
 
-const VerificationRow: React.FC<VerificationRowProps> = ({ type, isVerified, onVerify }) => {
+const VerificationRow: React.FC<VerificationRowProps> = ({ type, isVerified, onVerify, style }) => {
   return (
-    <View style={styles.verificationRow}>
+    <View style={[styles.verificationRow, style]}>
       <View style={styles.verificationStatus}>
         <View
           style={[

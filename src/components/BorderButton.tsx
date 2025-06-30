@@ -31,7 +31,7 @@ const BorderButton: React.FC<BorderButtonProps> = ({
         {icon && (
           <Icon
             name={icon}
-            size={18}
+            size={20}
             color={Colors.primary}
             style={[styles.icon]}
           />
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: Colors.primary,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "600",
   },
 })
