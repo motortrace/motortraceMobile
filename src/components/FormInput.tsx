@@ -16,6 +16,9 @@ interface FormInputProps extends TextInputProps {
   label: string;
   iconName?: string;
   error?: string;
+  containerStyle?: object;
+  inputWrapperStyle?: object;
+  inputTextStyle?: object;
 }
 
 const FormInput: React.FC<FormInputProps> = ({
@@ -23,24 +26,27 @@ const FormInput: React.FC<FormInputProps> = ({
   iconName,
   error,
   secureTextEntry,
+  containerStyle,
+  inputWrapperStyle,
+  inputTextStyle,
   ...props
 }) => {
   const [hidePassword, setHidePassword] = useState(secureTextEntry);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       <Label label={label} />
-      <View style={styles.inputWrapper}>
+      <View style={[styles.inputWrapper, inputWrapperStyle]}>
         {iconName && (
           <Icon
             name={iconName}
-            size={20}
+            size={25}
             color={Colors.neutral500}
             style={styles.icon}
           />
         )}
         <TextInput
-          style={[styles.textInput, secureTextEntry && styles.passwordInput]}
+          style={[styles.textInput, secureTextEntry && styles.passwordInput, inputTextStyle]}
           placeholderTextColor={Colors.neutral500}
           secureTextEntry={hidePassword}
           {...props}
@@ -73,12 +79,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.neutral0,
     borderRadius: 15,
     paddingHorizontal: 16,
-    paddingVertical: 13,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: Colors.neutral300,
   },
   icon: {
     marginRight: 12,
+    color: Colors.primary,
   },
   textInput: {
     flex: 1,
