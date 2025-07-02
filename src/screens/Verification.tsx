@@ -7,18 +7,22 @@ import AnimatedButton from "../components/AnimatedButton"
 import Link from "../components/Link"
 import Back from '../components/Back'
 import OtpBox from '../components/OtpBox'
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface OTPVerificationScreenProps {
-  email?: string
+  contact?: string
   onVerificationSuccess?: () => void
   onBack?: () => void
 }
 
 const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
-  email = "user@example.com",
+  contact = "0714810928",
   onVerificationSuccess,
   onBack,
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [otp, setOtp] = useState(["", "", "", "", "", ""])
 
   const handleOtpChange = (value: string, index: number) => {
@@ -37,9 +41,9 @@ const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
         </View>
 
         {/* Title and Description */}
-        <Text style={styles.title}>Verify Your Email</Text>
+        <Text style={styles.title}>Verify Your Contact</Text>
         <Text style={styles.subtitle}>We've sent a 6-digit verification code to</Text>
-        <Text style={styles.emailText}>{email}</Text>
+        <Text style={styles.emailText}>{contact}</Text>
 
         <FormBox>
           <View style={styles.otpContainer}>
@@ -58,11 +62,11 @@ const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
           </View>
 
           {/* Verify Button */}
-          <AnimatedButton title="Verify Email" onPress={onVerificationSuccess} />
+          <AnimatedButton title="Verify Contact" onPress={ ()=> navigation.navigate('Onboarding')} />
 
           {/* Help Text */}
           <View style={styles.helpContainer}>
-            <Text style={styles.helpText}>Check your email inbox and enter the 6-digit code</Text>
+            <Text style={styles.helpText}>Check your inbox and enter the 6-digit code</Text>
           </View>
         </FormBox>
       </View>

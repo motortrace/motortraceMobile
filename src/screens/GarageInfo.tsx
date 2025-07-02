@@ -9,6 +9,9 @@ import Section from "../components/section"
 import Button from '../components/Button'
 import TabNavigator from '../components/TabNavigator'
 import RatingStars from '../components/RatingStars'
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface GarageProfileScreenProps {
   onBack?: () => void
@@ -21,6 +24,7 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
   onScheduleAppointment,
   onToggleFavorite,
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [isFavorite, setIsFavorite] = useState(false)
 
   const handleToggleFavorite = () => {
@@ -33,6 +37,13 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
     { id: 2, icon: "color-palette", title: "Paint Car" },
     { id: 3, icon: "search", title: "Car Scan" },
   ]
+
+  const tabToScreenMap = {
+    About: 'GarageInfo',
+    Services: 'GarageServices',
+    Packages: 'GaragePackage',
+    Review: 'GarageReview',
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -49,7 +60,7 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
 
             {/* Header Controls */}
             <View style={styles.profileHeader}>
-              <TouchableOpacity style={styles.backButton} onPress={onBack}>
+              <TouchableOpacity style={styles.backButton}  onPress={() => navigation.navigate('Locations')}>
                 <Icon name="chevron-back" size={24} color={Colors.neutral0} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.favoriteButton} onPress={handleToggleFavorite}>
@@ -70,9 +81,13 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
         </View>
 
         <TabNavigator
+          index = {0}
           tabs={["About", "Services", "Packages", "Review"]}
           onTabPress={(tab) => {
-            console.log("Selected Tab:", tab)
+            const screen = tabToScreenMap[tab];
+            if (screen) {
+              navigation.navigate(screen);
+            }
           }}
         />
 

@@ -14,6 +14,9 @@ import FormInput from '../components/FormInput';
 import Link from '../components/Link';
 import SocialLoginButtons from '../components/SocialLoginButtons';
 import FormBox from '../components/FormBox';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface SignUpScreenProps {
   onSignUp?: (name: string, username: string, password: string) => void;
@@ -28,6 +31,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
   onAppleLogin,
   onLoginRedirect,
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -99,7 +103,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
           />
 
           {/* Sign Up Button */}
-          <AnimatedButton title="Sign up" onPress={handleSignUp} style={{ marginBottom: 24 }} />
+          <AnimatedButton title="Sign up" onPress={()=> {navigation.navigate('LogIn')}} style={{ marginBottom: 24 }} />
 
           {/* Divider */}
           <View style={styles.dividerContainer}>
@@ -118,8 +122,8 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
         {/* Redirect to Login */}
         <View style={styles.signUpContainer}>
           <Text style={styles.signUpText}>Already have an account? </Text>
-          <TouchableOpacity onPress={onLoginRedirect}>
-            <Link link="Sign in" style={{ marginTop: 10 }} />
+          <TouchableOpacity onPress={()=> {navigation.navigate('LogIn')}}>
+            <Link link="Log In" style={{ marginTop: 10 }} />
           </TouchableOpacity>
         </View>
       </View>

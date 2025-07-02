@@ -6,6 +6,9 @@ import RatingStars from '../components/RatingStars'
 import ReviewCard from '../components/ReviewCard'
 import Button from '../components/Button'
 import Header from '../components/Header'
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface AllReviewsScreenProps {
   onBack?: () => void,
@@ -13,6 +16,7 @@ interface AllReviewsScreenProps {
 }
 
 const AllReviewsScreen: React.FC<AllReviewsScreenProps> = ({ onBack, onScheduleAppointment }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [selectedFilter, setSelectedFilter] = useState('All')
 
   // Extended review data - replace with your actual data
@@ -93,7 +97,7 @@ const AllReviewsScreen: React.FC<AllReviewsScreenProps> = ({ onBack, onScheduleA
         icon="back"
         name="John Doe"
         image=""
-        onIconPress={() => console.log('Menu Pressed')}
+        onIconPress={() => navigation.navigate('GarageServices')}
       />
 
       {/* Overall Rating Section */}

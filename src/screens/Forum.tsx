@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import PostCard from '../components/PostCard';
 import Header from '../components/Header';

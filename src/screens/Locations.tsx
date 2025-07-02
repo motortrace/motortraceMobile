@@ -1,21 +1,21 @@
 import type React from "react"
-import { useState } from "react"
-import { View, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, ImageBackground } from "react-native"
+import { View, StyleSheet, SafeAreaView, TouchableOpacity, ImageBackground } from "react-native"
 import Colors from "../constants/colors"
 import Icon from "react-native-vector-icons/Ionicons"
 import BottomNavigation from "../components/BottomNav"
 import Header from '../components/Header'
 import SearchBar from '../components/SearchBar'
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface GarageLocatorScreenProps {
-  onBack?: () => void
   onViewRecommended?: () => void
   handleTabPress?: () => void
 }
 
-const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({ onBack, onViewRecommended, handleTabPress }) => {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [activeTab, setActiveTab] = useState(0)
+const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({handleTabPress }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   const garageMarkers = [
     { id: 1, top: 180, left: 120, type: "recommended" },
@@ -39,10 +39,12 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({ onBack, onVie
     }
 
     return (
-      <View style={[styles.markerPin, { top, left, backgroundColor: getMarkerColor() }]}>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('GarageInfo')}
+        style={[styles.markerPin, { top, left, backgroundColor: getMarkerColor() }]}>
         <Icon name="build" size={16} color={Colors.neutral0} />
         <View style={[styles.markerShadow, { backgroundColor: getMarkerColor() }]} />
-      </View>
+      </TouchableOpacity>
     )
   }
 
@@ -50,32 +52,29 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({ onBack, onVie
     {
       id: "location",
       icon: "location",
-      onPress: () => setActiveTab(0),
+      onPress: () => navigation.navigate('Locations'),
     },
     {
       id: "recommended",
       icon: "star",
-      onPress: () => {
-        setActiveTab(1)
-        onViewRecommended?.()
-      },
+      onPress: () => navigation.navigate('GarageRecommendations'),
     },
     {
       id: "history",
       icon: "time",
-      onPress: () => setActiveTab(2),
+      onPress: () => navigation.navigate('GarageHistory'),
     },
     {
       id: "nearby",
       icon: "compass",
       label: "Nearby",
-      onPress: () => setActiveTab(3),
+      onPress: () => navigation.navigate('GarageExplore'),
     },
     {
       id: "heart",
       icon: "heart",
       label: "Favourite",
-      onPress: () => setActiveTab(4),
+      onPress: () => navigation.navigate('GarageFavourites'),
     },
   ]
 
@@ -86,7 +85,7 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({ onBack, onVie
         icon="back"
         name="John Doe"
         image=""
-        onIconPress={() => console.log('Menu Pressed')}
+        onIconPress={() => navigation.navigate('Home')}
       />
       <SearchBar
         containerStyle={{
@@ -126,7 +125,7 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({ onBack, onVie
         <ImageBackground source={require("../assets/images/Map.jpeg")} style={styles.mapBackground} resizeMode="cover">
           {/* Garage Markers */}
           {garageMarkers.map((marker) => (
-            <MarkerPin key={marker.id} top={marker.top} left={marker.left} type={marker.type} />
+            <MarkerPin key={marker.id} top={marker.top} left={marker.left} type={marker.type}  />
           ))}
 
           {/* Enhanced Current Location Marker */}
@@ -149,7 +148,7 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({ onBack, onVie
 
       <BottomNavigation
         navItems={navItems}
-        activeTab={activeTab}
+        activeTab={0}
         onTabPress={handleTabPress}
       />
     </SafeAreaView>

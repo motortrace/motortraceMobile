@@ -1,17 +1,15 @@
-import React, { useState } from "react"
+import React from "react"
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native"
 import Colors from "../constants/colors"
 
 interface TabNavigatorProps {
+  index: number
   tabs: string[]
   onTabPress?: (tab: string, index: number) => void
 }
 
-const TabNavigator: React.FC<TabNavigatorProps> = ({ tabs, onTabPress }) => {
-  const [activeIndex, setActiveIndex] = useState(0)
-
+const TabNavigator: React.FC<TabNavigatorProps> = ({ tabs, index: activeIndex, onTabPress }) => {
   const handleTabPress = (index: number) => {
-    setActiveIndex(index)
     onTabPress?.(tabs[index], index)
   }
 
@@ -34,11 +32,7 @@ const TabNavigator: React.FC<TabNavigatorProps> = ({ tabs, onTabPress }) => {
                 <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
                   {tab}
                 </Text>
-                {/* Underline with absolute positioning to prevent layout shifts */}
-                <View style={[
-                  styles.underline, 
-                  { opacity: isActive ? 1 : 0 }
-                ]} />
+                <View style={[styles.underline, { opacity: isActive ? 1 : 0 }]} />
               </View>
             </TouchableOpacity>
           )

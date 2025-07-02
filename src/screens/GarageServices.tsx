@@ -5,6 +5,9 @@ import Colors from "../constants/colors"
 import ServiceCard from '../components/ServiceCard'
 import TabNavigator from "../components/TabNavigator"
 import Button from '../components/Button'
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface ReviewsSectionProps {
   onViewMorePress?: () => void
@@ -19,12 +22,20 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
   onScheduleAppointment, 
   onToggleFavorite 
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [isFavorite, setIsFavorite] = useState(false)
 
   const handleToggleFavorite = () => {
     setIsFavorite(!isFavorite)
     onToggleFavorite?.()
   }
+
+  const tabToScreenMap = {
+    About: 'GarageInfo',
+    Services: 'GarageServices',
+    Packages: 'GaragePackage',
+    Review: 'GarageReview',
+  };
 
   const services = [
     {
@@ -63,8 +74,8 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 
             {/* Header Controls */}
             <View style={styles.profileHeader}>
-              <TouchableOpacity style={styles.backButton} onPress={onBack}>
-                <Icon name="chevron-back" size={24} color={Colors.neutral0} />
+              <TouchableOpacity style={styles.backButton}  onPress={() => navigation.navigate('Locations')}>
+                <Icon name="chevron-back" size={24} color={Colors.neutral0}/>
               </TouchableOpacity>
               <TouchableOpacity style={styles.favoriteButton} onPress={handleToggleFavorite}>
                 <Icon 
@@ -84,9 +95,13 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
         </View>
 
         <TabNavigator
+          index = {1}
           tabs={["About", "Services", "Packages", "Review"]}
           onTabPress={(tab) => {
-            console.log("Selected Tab:", tab)
+            const screen = tabToScreenMap[tab];
+            if (screen) {
+              navigation.navigate(screen);
+            }
           }}
         />
 
@@ -105,7 +120,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
           </View>
 
           {/* View More Button */}
-          <TouchableOpacity style={styles.viewMoreButton} onPress={onViewMorePress}>
+          <TouchableOpacity style={styles.viewMoreButton} onPress={() => navigation.navigate('AllServices')}>
             <Text style={styles.viewMoreText}>View more Services</Text>
           </TouchableOpacity>
         </View>

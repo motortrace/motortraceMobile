@@ -6,6 +6,9 @@ import FormBox from "../components/FormBox"
 import FormInput from "../components/FormInput"
 import AnimatedButton from "../components/AnimatedButton"
 import VerificationRow from "../components/Verification"
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface OnboardingScreenProps {
   onContinue?: (name: string, email: string, contact: string) => void
@@ -17,6 +20,7 @@ interface VerificationStatus {
 }
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [contact, setContact] = useState("")
@@ -163,7 +167,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
             </Text>
           </View>
 
-          <AnimatedButton title="Continue" onPress={handleContinue} />
+          <AnimatedButton title="Continue" onPress={() => navigation.navigate('Home')} />
         </FormBox>
       </View>
     </SafeAreaView>

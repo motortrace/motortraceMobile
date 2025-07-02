@@ -1,9 +1,10 @@
-"use client"
-
 import type React from "react"
 import { useState } from "react"
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native"
 import Colors from "../constants/colors"
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface DashboardScreenProps {
   userName?: string
@@ -18,11 +19,14 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState("overview")
 
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
   const quickActions = [
-    { id: 1, title: "Book Service", icon: "🔧", color: "#3B82F6" },
-    { id: 2, title: "Find Location", icon: "📍", color: "#10B981" },
-    { id: 3, title: "Emergency", icon: "🚨", color: "#EF4444" },
-    { id: 4, title: "Support", icon: "💬", color: "#F59E0B" },
+    { id: 1, title: "Book Service", icon: "🔧", color: "#3B82F6", screen: "Locations" },
+    { id: 2, title: "Find Location", icon: "📍", color: "#10B981", screen: "Locations"},
+    { id: 3, title: "Emergency", icon: "🚨", color: "#EF4444",screen: "Locations" },
+    { id: 4, title: "Support", icon: "💬", color: "#F59E0B",screen: "Locations" },
+    { id: 5, title: "Forum", icon: "💬", color: "#F59E0B",screen: "Forum" },
   ]
 
   const recentActivity = [
@@ -74,7 +78,11 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
             {quickActions.map((action) => (
-              <TouchableOpacity key={action.id} style={styles.quickActionCard}>
+              <TouchableOpacity 
+                key={action.id} 
+                style={styles.quickActionCard}
+                onPress={() => navigation.navigate(action.screen)}
+              >
                 <View style={[styles.quickActionIcon, { backgroundColor: action.color + "20" }]}>
                   <Text style={styles.quickActionEmoji}>{action.icon}</Text>
                 </View>
