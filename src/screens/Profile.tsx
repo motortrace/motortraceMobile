@@ -13,8 +13,12 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import FormBox from '../components/FormBox';
 import Header from '../components/Header';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const UserProfileScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [profileData, setProfileData] = useState({
     username: 'john_doe',
     email: 'johndoe@email.com',
@@ -89,6 +93,7 @@ const UserProfileScreen = () => {
       <Header 
         icon="back"
         name="Profile"
+        onIconPress={() => navigation.navigate('Home')}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -142,7 +147,7 @@ const UserProfileScreen = () => {
           />
 
           <TouchableOpacity 
-            onPress={() => Alert.alert('Edit Profile', 'Navigate to Edit Profile screen')}
+            onPress={() => navigation.navigate('EditProfile')}
             style={styles.editButtonContainer}
             activeOpacity={0.7}
           >

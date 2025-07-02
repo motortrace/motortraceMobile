@@ -5,6 +5,7 @@ import Colors from "../constants/colors"
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
+import Header from '../components/Header'
 
 interface DashboardScreenProps {
   userName?: string
@@ -44,22 +45,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity onPress={onMenuPress} style={styles.menuButton}>
-              <Text style={styles.menuIcon}>☰</Text>
-            </TouchableOpacity>
-            <View style={styles.userInfo}>
-              <Text style={styles.greeting}>Good Morning</Text>
-              <Text style={styles.userName}>{userName}</Text>
-            </View>
-          </View>
-          <TouchableOpacity onPress={onNotificationPress} style={styles.notificationButton}>
-            <Text style={styles.notificationIcon}>🔔</Text>
-            <View style={styles.notificationBadge} />
-          </TouchableOpacity>
-        </View>
+      <Header
+        icon="back"
+        name="John Doe"
+        image=""
+        onIconPress={() => navigation.navigate('Home')}
+      />
 
         {/* Vehicle Card */}
         <View style={styles.vehicleCard}>

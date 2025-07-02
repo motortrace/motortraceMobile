@@ -13,8 +13,12 @@ import Colors from '../constants/colors';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNav';
 import { useState } from "react";
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const Notifications = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState(3);
   const [notifications, setNotifications] = useState([
     {
@@ -52,38 +56,38 @@ const Notifications = () => {
     },
   ]);
 
-  const navItems = [
-    {
-      id: "home",
-      icon: "home-outline",
-      label: "Home",
-      onPress: () => setActiveTab(0),
-    },
-    { 
-      id: "search",
-      icon: "search-outline",
-      label: "Discover",
-      onPress: () => setActiveTab(1),
-    },
-    {
-      id: "create",
-      icon: "add-circle-outline",
-      label: "Create",
-      onPress: () => setActiveTab(2),
-    },
-    {
-      id: "notifications",
-      icon: "notifications-outline",
-      label: "Alerts",
-      onPress: () => setActiveTab(3),
-    },
-    {
-      id: "profile",
-      icon: "person-outline",
-      label: "Profile",
-      onPress: () => setActiveTab(4),
-    },
-  ];
+const navItems = [
+  {
+    id: "home",
+    icon: "home-outline",
+    label: "Home",
+    onPress: () => navigation.navigate('Forum'),
+  },
+  { 
+    id: "search",
+    icon: "search-outline",
+    label: "Discover",
+    onPress: () => navigation.navigate('SearchPosts'),
+  },
+  {
+    id: "create",
+    icon: "add-circle-outline",
+    label: "Create",
+    onPress: () => navigation.navigate('CreatePost'),
+  },
+  {
+    id: "notifications",
+    icon: "notifications-outline",
+    label: "Alerts",
+    onPress: () => navigation.navigate('NotificationForum'),
+  },
+  {
+    id: "profile",
+    icon: "person-outline",
+    label: "Profile",
+    onPress: () => navigation.navigate('ForumProfile'),
+  },
+]
 
   const markAsRead = (notificationId) => {
     setNotifications(prev => 
@@ -110,7 +114,7 @@ const Notifications = () => {
           styles.notificationItem,
           !notification.isRead && styles.unreadNotification
         ]}
-        onPress={() => markAsRead(notification.id)}
+        onPress={() => navigation.navigate('ForumNotificationDetails') }
         activeOpacity={0.7}
       >
         <View style={styles.notificationContent}>
@@ -152,7 +156,7 @@ const Notifications = () => {
         icon="back"
         name="Notifications"
         image=""
-        onIconPress={() => console.log('Back Pressed')}
+        onIconPress={() => navigation.navigate('Home')}
       />
 
       {/* Notifications Header */}

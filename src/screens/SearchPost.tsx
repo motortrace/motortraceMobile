@@ -7,18 +7,56 @@ import {
   ScrollView,
   TouchableOpacity,
   FlatList,
-  TextInput,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import PostCard from '../components/PostCard';
 import Header from '../components/Header';
 import SearchBar from '../components/SearchBar';
+import BottomNavigation from '../components/BottomNav';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const SearchDiscover = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [isSearching, setIsSearching] = useState(false);
+  const [activeTab, setActiveTab] = useState(1)
+
+  const navItems = [
+  {
+    id: "home",
+    icon: "home-outline",
+    label: "Home",
+    onPress: () => navigation.navigate('Forum'),
+  },
+  { 
+    id: "search",
+    icon: "search-outline",
+    label: "Discover",
+    onPress: () => navigation.navigate('SearchPosts'),
+  },
+  {
+    id: "create",
+    icon: "add-circle-outline",
+    label: "Create",
+    onPress: () => navigation.navigate('CreatePost'),
+  },
+  {
+    id: "notifications",
+    icon: "notifications-outline",
+    label: "Alerts",
+    onPress: () => navigation.navigate('NotificationForum'),
+  },
+  {
+    id: "profile",
+    icon: "person-outline",
+    label: "Profile",
+    onPress: () => navigation.navigate('ForumProfile'),
+  },
+]
 
   // Sample data
   const trendingTags = [
@@ -85,7 +123,7 @@ const SearchDiscover = () => {
         icon="back"
         name="Discover"
         image=""
-        onIconPress={() => console.log('Back Pressed')}
+        onIconPress={() => navigation.navigate('Home')}
       />
 
       <SearchBar 
@@ -163,6 +201,11 @@ const SearchDiscover = () => {
           </View>
         )}
       </ScrollView>
+      <BottomNavigation
+        navItems={navItems}
+        activeTab={activeTab}
+        onTabPress={() => {}}
+      />   
     </SafeAreaView>
   );
 };

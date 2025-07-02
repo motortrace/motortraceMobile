@@ -12,9 +12,12 @@ import Header from '../components/Header';
 import SearchBar from '../components/SearchBar';
 import BottomNavigation from '../components/BottomNav';
 import { useState } from "react"
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const Forum = () => {
-
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState(0)
 
   const samplePosts = [
@@ -84,31 +87,31 @@ const Forum = () => {
     id: "home",
     icon: "home-outline",
     label: "Home",
-    onPress: () => setActiveTab(0),
+    onPress: () => navigation.navigate('Forum'),
   },
   { 
     id: "search",
     icon: "search-outline",
     label: "Discover",
-    onPress: () => setActiveTab(1),
+    onPress: () => navigation.navigate('SearchPosts'),
   },
   {
     id: "create",
     icon: "add-circle-outline",
     label: "Create",
-    onPress: () => setActiveTab(2),
+    onPress: () => navigation.navigate('CreatePost'),
   },
   {
     id: "notifications",
     icon: "notifications-outline",
     label: "Alerts",
-    onPress: () => setActiveTab(3),
+    onPress: () => navigation.navigate('NotificationForum'),
   },
   {
     id: "profile",
     icon: "person-outline",
     label: "Profile",
-    onPress: () => setActiveTab(4),
+    onPress: () => navigation.navigate('ForumProfile'),
   },
 ]
 
@@ -120,7 +123,7 @@ const Forum = () => {
         icon="back"
         name="Community Forum"
         image=""
-        onIconPress={() => console.log('Menu Pressed')}
+        onIconPress={() => navigation.navigate('Home')}
       />
 
       {/* Search Bar */}

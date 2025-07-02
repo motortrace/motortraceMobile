@@ -25,8 +25,30 @@ import GarageServices from './src/screens/GarageServices'
 import GarageServiceDetails from './src/screens/GarageServiceDetails'
 
 import Forum from './src/screens/Forum'
+import SearchPosts from './src/screens/SearchPost';
+import CreatePost from './src/screens/CreatePost';
+import ForumDetail from './src/screens/ForumDetail';
+import ForumProfile from './src/screens/ForumProfile'
+import NotificationForum from './src/screens/ForumNotification'
+import ForumNotificationDetails from './src/screens/ForumNotificationDetails'
+import ForumViewProfile from './src/screens/ForumViewProfile'
 
+import Profile from './src/screens/Profile'
+import EditProfile from './src/screens/EditProfile'
 
+import MarketPlace from './src/screens/MarketPlace'
+import OrderDetails from './src/screens/OrderDetails';
+import ProductDetails from './src/screens/ProductDetails';
+import PurchaseHistory from './src/screens/PurchaseHistory';
+import RecommendedProduct from './src/screens/RecommendedProduct';
+import Carts from './src/screens/Cart'
+
+import Cars from './src/screens/Cars'
+import CarDetails from './src/screens/CarDetails';
+import EditCarDetails from './src/screens/EditCarDetails';
+import CarOnboarding from './src/screens/CarOnboarding';
+import PurchaseHistoryScreen from './src/screens/PurchaseHistory';
+import MarketplaceRecommendedScreen from './src/screens/RecommendedProduct';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -49,7 +71,30 @@ export type RootStackParamList = {
   GarageReview: undefined;
   GarageServices: undefined;
   GarageServiceDetails: undefined;
+
   Forum: undefined;
+  SearchPosts: undefined;
+  CreatePost: undefined;
+  ForumDetail: undefined;
+  ForumProfile: undefined;
+  NotificationForum: undefined;
+  ForumNotificationDetails: undefined;
+  ForumViewProfile: undefined;
+
+  Profile: undefined;
+  EditProfile: undefined;
+
+  Carts: undefined;
+  MarketPlace: undefined;
+  OrderDetails: undefined;
+  ProductDetails: undefined;
+  PurchaseHistory: undefined;
+  RecommendedProduct: undefined;
+
+  Cars: undefined;
+  CarDetails: undefined;
+  EditCarDetails: undefined;
+  CarOnboarding: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -94,7 +139,31 @@ function App(): React.ReactElement {
 
         {/* Forum */}
         <Stack.Screen name="Forum" component={Forum} />
-        
+        <Stack.Screen name="SearchPosts" component={SearchPosts} />
+        <Stack.Screen name="CreatePost" component={CreatePost} />
+        <Stack.Screen name="ForumDetail" component={ForumDetail} />
+        <Stack.Screen name="ForumProfile" component={ForumProfile} />
+        <Stack.Screen name="NotificationForum" component={NotificationForum} />
+        <Stack.Screen name="ForumNotificationDetails" component={ForumNotificationDetails} />
+        <Stack.Screen name="ForumViewProfile" component={ForumViewProfile} />
+
+        {/* Profile */}
+        <Stack.Screen name="Profile" component={Profile} />
+        <Stack.Screen name="EditProfile" component={EditProfile} />
+
+        {/* Market Place */}
+        <Stack.Screen name="Carts" component={Carts} />
+        <Stack.Screen name="MarketPlace" component={MarketPlace} />
+        <Stack.Screen name="OrderDetails" component={OrderDetails} />
+        <Stack.Screen name="ProductDetails" component={ProductDetails} />
+        <Stack.Screen name="PurchaseHistory" component={PurchaseHistory} />
+        <Stack.Screen name="RecommendedProduct" component={RecommendedProduct} />
+
+        {/* Cars */}
+        {/* <Stack.Screen name="Cars" component={Cars} /> */}
+        <Stack.Screen name="CarDetails" component={CarDetails} />
+        <Stack.Screen name="EditCarDetails" component={EditCarDetails} />
+        {/* <Stack.Screen name="CarOnboarding" component={CarOnboarding} /> */}
 
       </Stack.Navigator>
     </NavigationContainer>

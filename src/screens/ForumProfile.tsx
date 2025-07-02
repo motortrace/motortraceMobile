@@ -14,8 +14,12 @@ import PostCard from '../components/PostCard';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNav';
 import { useState } from "react";
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const Profile = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState(4);
   const [profileTab, setProfileTab] = useState('posts'); // 'posts' or 'comments'
 
@@ -129,37 +133,37 @@ const Profile = () => {
   ];
 
   const navItems = [
-    {
-      id: "home",
-      icon: "home-outline",
-      label: "Home",
-      onPress: () => setActiveTab(0),
-    },
-    { 
-      id: "search",
-      icon: "search-outline",
-      label: "Discover",
-      onPress: () => setActiveTab(1),
-    },
-    {
-      id: "create",
-      icon: "add-circle-outline",
-      label: "Create",
-      onPress: () => setActiveTab(2),
-    },
-    {
-      id: "notifications",
-      icon: "notifications-outline",
-      label: "Alerts",
-      onPress: () => setActiveTab(3),
-    },
-    {
-      id: "profile",
-      icon: "person-outline",
-      label: "Profile",
-      onPress: () => setActiveTab(4),
-    },
-  ];
+  {
+    id: "home",
+    icon: "home-outline",
+    label: "Home",
+    onPress: () => navigation.navigate('Forum'),
+  },
+  { 
+    id: "search",
+    icon: "search-outline",
+    label: "Discover",
+    onPress: () => navigation.navigate('SearchPosts'),
+  },
+  {
+    id: "create",
+    icon: "add-circle-outline",
+    label: "Create",
+    onPress: () => navigation.navigate('CreatePost'),
+  },
+  {
+    id: "notifications",
+    icon: "notifications-outline",
+    label: "Alerts",
+    onPress: () => navigation.navigate('NotificationForum'),
+  },
+  {
+    id: "profile",
+    icon: "person-outline",
+    label: "Profile",
+    onPress: () => navigation.navigate('ForumProfile'),
+  },
+]
 
   const CommentCard = ({ comment }) => {
     return (
@@ -215,7 +219,7 @@ const Profile = () => {
         icon="settings"
         name="Profile"
         image=""
-        onIconPress={() => console.log('Settings Pressed')}
+        onIconPress={() => navigation.navigate('Home')}
       />
 
       <ScrollView
