@@ -35,6 +35,12 @@ import ForumViewProfile from './src/screens/ForumViewProfile'
 
 import Profile from './src/screens/Profile'
 import EditProfile from './src/screens/EditProfile'
+import ResetPassword from './src/screens/ResetPassword';
+import PrivacySettings from './src/screens/PrivacySettings';
+import Help from './src/screens/Help'
+import PrivacyPolicy from './src/screens/PrivacyPolicy'
+import DeleteAccount from './src/screens/DeleteAccount';
+import LoginActivity from './src/screens/LoginActivity';
 
 import MarketPlace from './src/screens/MarketPlace'
 import OrderDetails from './src/screens/OrderDetails';
@@ -49,6 +55,8 @@ import EditCarDetails from './src/screens/EditCarDetails';
 import CarOnboarding from './src/screens/CarOnboarding';
 import PurchaseHistoryScreen from './src/screens/PurchaseHistory';
 import MarketplaceRecommendedScreen from './src/screens/RecommendedProduct';
+import ResetPasswordScreen from './src/screens/ResetPassword';
+import PrivacySettingsScreen from './src/screens/PrivacySettings';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -83,6 +91,12 @@ export type RootStackParamList = {
 
   Profile: undefined;
   EditProfile: undefined;
+  ResetPassword: undefined;
+  PrivacySettings: undefined;
+  Help: undefined;
+  PrivacyPolicy: undefined;
+  DeleteAccount: undefined;
+  LoginActivity: undefined;
 
   Carts: undefined;
   MarketPlace: undefined;
@@ -150,6 +164,12 @@ function App(): React.ReactElement {
         {/* Profile */}
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen name="EditProfile" component={EditProfile} />
+        <Stack.Screen name="ResetPassword" component={ResetPassword} />
+        <Stack.Screen name="PrivacySettings" component={PrivacySettings} />
+        <Stack.Screen name="Help" component={Help} />
+        <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
+        <Stack.Screen name="DeleteAccount" component={DeleteAccount} />
+        <Stack.Screen name="LoginActivity" component={LoginActivity} />
 
         {/* Market Place */}
         <Stack.Screen name="Carts" component={Carts} />

@@ -16,6 +16,7 @@ import Header from '../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
+import ProfileField from '../components/ProfileField';
 
 const UserProfileScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -50,21 +51,6 @@ const UserProfileScreen = () => {
       ]
     );
   };
-
-  const ProfileField = ({ label, value, iconName, isLast = false }) => (
-    <View style={[styles.fieldContainer, isLast && styles.lastField]}>
-      <View style={styles.fieldContent}>
-        <View style={styles.fieldHeader}>
-          <View style={styles.iconContainer}>
-            <Icon name={iconName} size={18} color={Colors.primary} />
-          </View>
-          <Text style={styles.fieldLabel}>{label}</Text>
-        </View>
-        <Text style={styles.fieldValue}>{value}</Text>
-      </View>
-      {!isLast && <View style={styles.fieldDivider} />}
-    </View>
-  );
 
   const renderProfileImage = () => {
     if (profileData.profileImage) {
@@ -163,7 +149,7 @@ const UserProfileScreen = () => {
             <Text style={styles.cardTitle}>Account Settings</Text>
           </View>
 
-          <TouchableOpacity style={styles.actionRow}>
+          <TouchableOpacity style={styles.actionRow} onPress={()=> navigation.navigate('ResetPassword')}>
             <View style={styles.actionLeft}>
               <View style={styles.actionIconContainer}>
                 <Icon name="lock-closed-outline" size={18} color={Colors.primary} />
@@ -180,7 +166,7 @@ const UserProfileScreen = () => {
 
           <TouchableOpacity 
             style={styles.actionRow}
-            onPress={() => Alert.alert('Privacy', 'Privacy settings coming soon')}
+            onPress={() => navigation.navigate('PrivacySettings')}
           >
             <View style={styles.actionLeft}>
               <View style={styles.actionIconContainer}>
@@ -198,7 +184,7 @@ const UserProfileScreen = () => {
 
           <TouchableOpacity 
             style={styles.actionRow}
-            onPress={() => Alert.alert('Help', 'Help & Support coming soon')}
+            onPress={() => navigation.navigate('Help')}
           >
             <View style={styles.actionLeft}>
               <View style={styles.actionIconContainer}>
@@ -207,6 +193,21 @@ const UserProfileScreen = () => {
               <View>
                 <Text style={styles.actionText}>Help & Support</Text>
                 <Text style={styles.actionSubtext}>Get help when you need it</Text>
+              </View>
+            </View>
+            <Icon name="chevron-forward" size={20} color={Colors.neutral400} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.actionRow}
+            onPress={() => navigation.navigate('PrivacyPolicy')}
+          >
+            <View style={styles.actionLeft}>
+              <View style={styles.actionIconContainer}>
+                <Icon name="shield-checkmark-outline" size={18} color={Colors.primary} />
+              </View>
+              <View>
+                <Text style={styles.actionText}>Privacy Policy</Text>
+                <Text style={styles.actionSubtext}>Get to know how we protect your data</Text>
               </View>
             </View>
             <Icon name="chevron-forward" size={20} color={Colors.neutral400} />
@@ -337,45 +338,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.neutral1000,
     marginLeft: 10,
-  },
-  fieldContainer: {
-    paddingVertical: 12,
-  },
-  lastField: {
-    paddingBottom: 0,
-  },
-  fieldContent: {
-    flex: 1,
-  },
-  fieldHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: `${Colors.primary}15`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.neutral600,
-  },
-  fieldValue: {
-    fontSize: 16,
-    color: Colors.neutral1000,
-    fontWeight: '400',
-    marginLeft: 44,
-  },
-  fieldDivider: {
-    height: 1,
-    backgroundColor: Colors.neutral200,
-    marginTop: 12,
   },
   actionRow: {
     flexDirection: 'row',

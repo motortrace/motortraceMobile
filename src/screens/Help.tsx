@@ -7,15 +7,18 @@ import {
   SafeAreaView,
   Alert,
   ScrollView,
-  TextInput,
   Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import FormBox from '../components/FormBox';
 import Header from '../components/Header';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const HelpSupportScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
@@ -187,6 +190,7 @@ const HelpSupportScreen = () => {
       <Header 
         icon="back"
         name="Help & Support"
+        onIconPress={() => navigation.navigate('Profile')}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

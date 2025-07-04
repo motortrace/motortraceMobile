@@ -11,8 +11,12 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import FormBox from '../components/FormBox';
 import Header from '../components/Header';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const PrivacyPolicyScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [expandedSections, setExpandedSections] = useState({});
 
   const lastUpdated = "January 15, 2025";
@@ -355,6 +359,7 @@ We encourage you to review this Privacy Policy periodically to stay informed abo
       <Header 
         icon="back"
         name="Privacy Policy"
+        onIconPress={() => navigation.navigate('Home')}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
