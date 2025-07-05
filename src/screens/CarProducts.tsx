@@ -12,44 +12,16 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons'
 import Colors from '../constants/colors'
 import Header from '../components/Header'
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
-interface UsedProduct {
-  id: string
-  icon: string
-  name: string
-  brand: string
-  partNumber: string
-  purchaseDate: string
-  installationDate: string
-  warrantyPeriod: number // in months
-  warrantyStatus: 'active' | 'expired' | 'expiring-soon'
-  cost: number
-  supplier: string
-  category: 'engine' | 'brake' | 'electrical' | 'transmission' | 'suspension' | 'other'
-  condition: 'excellent' | 'good' | 'fair' | 'poor'
-  notes?: string
-}
-
-interface UsedProductsPageProps {
-  carId: string
-  carModel: string
-  carYear: number
-  licensePlate: string
-  onNavigateBack?: () => void
-}
-
-const UsedProductsPage: React.FC<UsedProductsPageProps> = ({
-  carId,
-  carModel = "Toyota Camry",
-  carYear = 2020,
-  licensePlate = "ABC-1234",
-  onNavigateBack
-}) => {
+const CarProducts = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'engine' | 'brake' | 'electrical' | 'transmission' | 'suspension' | 'other'>('all')
 
-  // Mock data - replace with actual API call
-  const usedProducts: UsedProduct[] = [
+  const usedProducts = [
     {
       id: '1',
       icon: 'battery-charging-outline',
@@ -251,6 +223,7 @@ const UsedProductsPage: React.FC<UsedProductsPageProps> = ({
         icon='back'
         image=''
         name='Used Parts & Products'
+        onIconPress={() => navigation.navigate('CarDetails')}
       />
 
       {/* Stats Cards */}
@@ -635,4 +608,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default UsedProductsPage
+export default CarProducts

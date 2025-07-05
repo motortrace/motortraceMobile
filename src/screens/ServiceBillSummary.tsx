@@ -10,6 +10,9 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import Header from '../components/Header'
 import Button from '../components/Button'
 import Colors from '../constants/colors'
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface ServiceItem {
   name: string;
@@ -51,6 +54,7 @@ const ServiceBillSummary: React.FC<ServiceBillSummaryProps> = ({
   onViewDetailedBill,
   onContinue,
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const subtotal = services.reduce((sum, service) => sum + service.price, 0);
   const totalTax = cgst + sgst;
   const finalTotal = subtotal + totalTax - discount;
@@ -65,6 +69,7 @@ const ServiceBillSummary: React.FC<ServiceBillSummaryProps> = ({
         icon="back"
         name="Jhon"
         image=""
+        onIconPress={() => navigation.navigate('GarageHistory')}
       />
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -141,7 +146,7 @@ const ServiceBillSummary: React.FC<ServiceBillSummaryProps> = ({
           {hasMoreServices && (
             <TouchableOpacity 
               style={styles.viewDetailedButton}
-              onPress={onViewDetailedBill}
+              onPress={() => navigation.navigate('DetailedBill')}
             >
               <View style={styles.viewDetailedContent}>
                 <Icon name="receipt-outline" size={20} color={Colors.primary} />

@@ -14,6 +14,9 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import Header from '../components/Header';
 import BorderButton from '../components/BorderButton';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 // Hardcoded car data
 const hardcodedCarData = {
@@ -62,6 +65,7 @@ const hardcodedCarData = {
 
 // Main Car Details Page
 const CarDetailsPage = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [car, setCar] = useState(hardcodedCarData);
   const [showMileageModal, setShowMileageModal] = useState(false);
 
@@ -84,7 +88,7 @@ const CarDetailsPage = () => {
         icon="back"
         name="John Doe"
         image=""
-        onIconPress={() => console.log('Menu Pressed')}
+        onIconPress={() => navigation.navigate('Cars')}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -118,23 +122,23 @@ const CarDetailsPage = () => {
           />
 
           <BorderButton 
-            label='View Services'
-            icon = 'construct-outline'
-            onPress={() => {}}
-            style={{width: '48%', height: 50}}
-          />
-          
-          <BorderButton 
             label='Edit Details'
             icon = 'create-outline'
-            onPress={() => {}}
+            onPress={() => navigation.navigate('EditCarDetails')}
+            style={{width: '48%', height: 50}}
+          />
+
+          <BorderButton 
+            label='View Services'
+            icon = 'construct-outline'
+            onPress={() => navigation.navigate('CarServices')}
             style={{width: '48%', height: 50}}
           />
 
           <BorderButton 
             label='View Products'
             icon = 'cube-outline'
-            onPress={() => {}}
+            onPress={() => navigation.navigate('CarProducts')}
             style={{width: '48%', height: 50}}
           />
 

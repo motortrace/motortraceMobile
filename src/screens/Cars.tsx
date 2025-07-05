@@ -12,12 +12,12 @@ import Header from '../components/Header';
 import SearchBar from '../components/SearchBar';
 import Colors from '../constants/colors'
 import CarCard from '../components/CarCard';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
-const CarManagementScreen = ({ onBack, handleTabPress }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState(0);
-
-  // Sample car data with different statuses
+const Cars = () => {
+  const [searchQuery, setSearchQuery] = useState('')
   const cars = [
     {
       id: 1,
@@ -143,6 +143,7 @@ const CarManagementScreen = ({ onBack, handleTabPress }) => {
     if (level > 25) return Colors.warning;
     return Colors.danger;
   };
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -151,7 +152,7 @@ const CarManagementScreen = ({ onBack, handleTabPress }) => {
         icon="back"
         name="John Doe"
         image=""
-        onIconPress={() => console.log('Menu Pressed')}
+        onIconPress={() => navigation.navigate('Home')}
       />
 
       {/* Search Bar */}
@@ -321,4 +322,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CarManagementScreen;
+export default Cars;

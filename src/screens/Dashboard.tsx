@@ -2,10 +2,10 @@ import type React from "react"
 import { useState } from "react"
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native"
 import Colors from "../constants/colors"
+import Header from '../components/Header'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
-import Header from '../components/Header'
 
 interface DashboardScreenProps {
   userName?: string
@@ -25,9 +25,10 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const quickActions = [
     { id: 1, title: "Book Service", icon: "🔧", color: "#3B82F6", screen: "Locations" },
     { id: 2, title: "Find Location", icon: "📍", color: "#10B981", screen: "Locations"},
-    { id: 3, title: "Support", icon: "💬", color: "#F59E0B",screen: "Locations" },
-    { id: 4, title: "Forum", icon: "💬", color: "#F59E0B",screen: "Forum" },
+    { id: 3, title: "Forum", icon: "💬", color: "#F59E0B",screen: "Forum" },
     { id: 4, title: "MarketPlace", icon: "💬", color: "#3B82F6",screen: "MarketPlace" },
+    { id: 5, title: "Cars", icon: "💬", color: "#3B82F6",screen: "Cars" },
+    { id: 6, title: "Reservations", icon: "💬", color: "#3B82F6",screen: "Reservations" },
   ]
 
   const recentActivity = [

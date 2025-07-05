@@ -258,7 +258,6 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
               onPress={handleCardPress}
               onRatePress={handleRatePress}
               showRateAgain={true}
-              compact={false}
             />
           </View>
         )}

@@ -13,8 +13,12 @@ import Colors from '../constants/colors';
 import Header from '../components/Header';
 import Button from '../components/Button';
 import BorderButton from '../components/BorderButton';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const ReservationsScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming', 'ongoing', 'completed'
   const [notifications, setNotifications] = useState([]);
 
@@ -208,9 +212,9 @@ const ReservationsScreen = () => {
       </View>
       
       <View style={styles.cardActions}>
-        <Button label="Call" icon='call' containerStyle={{width: 105}} onPress={() => {}} />
-        <Button label="Chat" icon='chatbubble' containerStyle={{width: 105}} onPress={() => {}} />
-        <BorderButton label="Reschedule" icon="create-outline" style={{width: 130}} onPress={() => {}} />
+        <Button label="Call" icon='call' containerStyle={{width: 100}} onPress={() => {}} />
+        <Button label="Chat" icon='chatbubble' containerStyle={{width: 100}} onPress={() => {}} />
+        <BorderButton label="Reschedule" icon="create-outline" style={{width: 140}} onPress={() => {}} />
       </View>
     </TouchableOpacity>
   );
@@ -264,7 +268,7 @@ const ReservationsScreen = () => {
       <View style={styles.cardActions}>
         <Button label="Call" icon='call' containerStyle={{width: 105}} onPress={() => {}} />
         <Button label="Chat" icon='chatbubble' containerStyle={{width: 105}} onPress={() => {}} />
-        <BorderButton label="View Details" icon="eye" style={{width: 130}} onPress={() => {}} />
+        <BorderButton label="View Details" icon="eye" style={{width: 130}} onPress={() => navigation.navigate('InspectionResults')} />
       </View>
     </TouchableOpacity>
   );
@@ -292,7 +296,7 @@ const ReservationsScreen = () => {
       </View>
       
       <View style={styles.cardActions}>
-        <BorderButton label="View Report" icon="eye" style={{width: '100%'}} onPress={() => {}} />
+        <BorderButton label="View Report" icon="eye" style={{width: '100%'}} onPress={() => navigation.navigate('PaidServiceBillSummary')} />
       </View>
     </TouchableOpacity>
   );
@@ -340,9 +344,10 @@ const ReservationsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <Header 
-        icon="menu"
+        icon="back"
         name="Garage Management"
         image=""
+        onIconPress={() => navigation.navigate('Home')}
       />
 
       {/* Tab Navigation */}

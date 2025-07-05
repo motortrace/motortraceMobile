@@ -23,6 +23,8 @@ import GaragePackage from './src/screens/GaragePackages'
 import GarageReview from './src/screens/GarageReview'
 import GarageServices from './src/screens/GarageServices'
 import GarageServiceDetails from './src/screens/GarageServiceDetails'
+import DetailedBill from './src/screens/DetailedBill';
+import PaidServiceBillSummary from './src/screens/PaidServiceBillSummary';
 
 import Forum from './src/screens/Forum'
 import SearchPosts from './src/screens/SearchPost';
@@ -43,6 +45,7 @@ import DeleteAccount from './src/screens/DeleteAccount';
 import LoginActivity from './src/screens/LoginActivity';
 import ActiveSession from './src/screens/ActiveSession';
 import SupportChat from './src/screens/SupportChat';
+import faq from './src/screens/faq'
 
 import MarketPlace from './src/screens/MarketPlace'
 import OrderDetails from './src/screens/OrderDetails';
@@ -51,15 +54,18 @@ import PurchaseHistory from './src/screens/PurchaseHistory';
 import RecommendedProduct from './src/screens/RecommendedProduct';
 import Carts from './src/screens/Cart'
 import FavouriteProducts from './src/screens/FavouriteProducts';
+import TrackOrder from './src/screens/TrackOrder';
 
 import Cars from './src/screens/Cars'
 import CarDetails from './src/screens/CarDetails';
 import EditCarDetails from './src/screens/EditCarDetails';
 import CarOnboarding from './src/screens/CarOnboarding';
-import PurchaseHistoryScreen from './src/screens/PurchaseHistory';
-import MarketplaceRecommendedScreen from './src/screens/RecommendedProduct';
-import ResetPasswordScreen from './src/screens/ResetPassword';
-import PrivacySettingsScreen from './src/screens/PrivacySettings';
+import CarProducts from './src/screens/CarProducts';
+import CarServices from './src/screens/CarServices';
+
+import InspectionResults from './src/screens/InspectionResult';
+import PartsSelection from './src/screens/PartsSelection';
+import Reservations from './src/screens/Reservations';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -82,6 +88,8 @@ export type RootStackParamList = {
   GarageReview: undefined;
   GarageServices: undefined;
   GarageServiceDetails: undefined;
+  DetailedBill: undefined;
+  PaidServiceBillSummary: undefined
 
   Forum: undefined;
   SearchPosts: undefined;
@@ -102,6 +110,7 @@ export type RootStackParamList = {
   LoginActivity: undefined;
   ActiveSession: undefined;
   SupportChat: undefined;
+  faq: undefined;
 
   Carts: undefined;
   MarketPlace: undefined;
@@ -110,11 +119,18 @@ export type RootStackParamList = {
   PurchaseHistory: undefined;
   RecommendedProduct: undefined;
   FavouriteProducts: undefined;
+  TrackOrder: undefined;
 
   Cars: undefined;
   CarDetails: undefined;
   EditCarDetails: undefined;
   CarOnboarding: undefined;
+  CarProducts: undefined;
+  CarServices: undefined;
+
+  Reservations: undefined;
+  InspectionResults: undefined;
+  PartsSelection: undefined
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -156,6 +172,8 @@ function App(): React.ReactElement {
         <Stack.Screen name="GarageReview" component={GarageReview} />
         <Stack.Screen name="GarageServices" component={GarageServices} />
         <Stack.Screen name="GarageServiceDetails" component={GarageServiceDetails} />
+        <Stack.Screen name="DetailedBill" component={DetailedBill} />
+        <Stack.Screen name="PaidServiceBillSummary" component={PaidServiceBillSummary} />
 
         {/* Forum */}
         <Stack.Screen name="Forum" component={Forum} />
@@ -178,6 +196,7 @@ function App(): React.ReactElement {
         <Stack.Screen name="LoginActivity" component={LoginActivity} />
         <Stack.Screen name="ActiveSession" component={ActiveSession} />
         <Stack.Screen name="SupportChat" component={SupportChat} />
+        <Stack.Screen name="faq" component={faq} />
 
         {/* Market Place */}
         <Stack.Screen name="Carts" component={Carts} />
@@ -187,12 +206,19 @@ function App(): React.ReactElement {
         <Stack.Screen name="PurchaseHistory" component={PurchaseHistory} />
         <Stack.Screen name="RecommendedProduct" component={RecommendedProduct} />
         <Stack.Screen name="FavouriteProducts" component={FavouriteProducts} />
+        <Stack.Screen name="TrackOrder" component={TrackOrder} />
 
         {/* Cars */}
         <Stack.Screen name="Cars" component={Cars} />
         <Stack.Screen name="CarDetails" component={CarDetails} />
         <Stack.Screen name="EditCarDetails" component={EditCarDetails} />
-        {/* <Stack.Screen name="CarOnboarding" component={CarOnboarding} /> */}
+        <Stack.Screen name="CarOnboarding" component={CarOnboarding} />
+        <Stack.Screen name="CarProducts" component={CarProducts} />
+        <Stack.Screen name="CarServices" component={CarServices} />
+
+        <Stack.Screen name="Reservations" component={Reservations} />
+        <Stack.Screen name="InspectionResults" component={InspectionResults} />
+        <Stack.Screen name="PartsSelection" component={PartsSelection} />
 
       </Stack.Navigator>
     </NavigationContainer>

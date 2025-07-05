@@ -240,7 +240,7 @@ const HelpSupportScreen = () => {
             />
           ))}
           
-          <TouchableOpacity style={styles.viewAllFAQ} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.viewAllFAQ} activeOpacity={0.7} onPress={() => navigation.navigate('faq')}>
             <Text style={styles.viewAllText}>View All FAQs</Text>
             <Icon name="chevron-forward" size={16} color={Colors.primary} />
           </TouchableOpacity>

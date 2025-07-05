@@ -8,6 +8,9 @@ import {
 } from 'react-native';
 import Colors from '../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 export interface VisitHistory {
   id: number;
@@ -39,6 +42,7 @@ const HistoryCard: React.FC<HistoryCardProps> = ({
   onRatePress,
   compact = false,
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -111,7 +115,7 @@ const HistoryCard: React.FC<HistoryCardProps> = ({
     <TouchableOpacity 
       style={[styles.historyCard, compact && styles.historyCardCompact]} 
       activeOpacity={0.7}
-      onPress={handlePress}
+      onPress={() => navigation.navigate('PaidServiceBillSummary')}
     >
       <View style={styles.cardHeader}>
         <View style={styles.cardHeaderLeft}>
