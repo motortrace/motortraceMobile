@@ -17,6 +17,9 @@ import BottomNavigation from '../components/BottomNav';
 import CarSelection from '../components/CarSelection';
 import CategoryList from '../components/CategoryList';
 import Colors from '../constants/colors';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -51,11 +54,12 @@ const ProductGrid = ({ products, onProductPress, onAddToCart, onSortPress }) => 
 
 // Main Home Screen Component
 const MarketplaceHomeScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCar, setSelectedCar] = useState(null);
   const [currentPage, setCurrentPage] = useState('home');
-  const [activeTab, setActiveTab] = useState(0)
+  const [activeTab, setActiveTab] = useState(2)
 
   // Mock data
   const userCars = [
@@ -130,29 +134,29 @@ const MarketplaceHomeScreen = () => {
     {
       id: "recommended",
       icon: "flame",
-      onPress: () => setActiveTab(1)
+      onPress: () => navigation.navigate('RecommendedProduct')
     },
     {
       id: "history",
       icon: "time",
-      onPress: () => setActiveTab(2),
+      onPress: () => navigation.navigate('PurchaseHistory')
     },
     {
       id: "search",
       icon: "search",
-      onPress: () => setActiveTab(0),
+      onPress: () => navigation.navigate('MarketPlace')
     },
     {
       id: "heart",
       icon: "heart",
       label: "Nearby",
-      onPress: () => setActiveTab(3),
+      onPress: () => navigation.navigate('FavouriteProducts')
     },
     {
       id: "cart",
       icon: "cart",
       label: "Favourite",
-      onPress: () => setActiveTab(4),
+      onPress: () => navigation.navigate('Carts')
     },
   ]
 
@@ -177,8 +181,7 @@ const MarketplaceHomeScreen = () => {
       <Header
         icon="back"
         name="John Doe"
-        image=""
-        onIconPress={() => console.log('Menu Pressed')}
+        onIconPress={() => navigation.navigate('Home')}
       />
       
       <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>

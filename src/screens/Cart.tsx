@@ -14,6 +14,10 @@ import Header from '../components/Header';
 import Colors from '../constants/colors';
 import Button from '../components/Button';
 import BorderButton from '../components/BorderButton';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
+import BottomNav from '../components/BottomNav';
 
 const initialCartData = {
   items: [
@@ -67,6 +71,8 @@ const initialCartData = {
 };
 
 const ShoppingCartScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [activeTab, setActiveTab] = useState(4)
   const [cartData, setCartData] = useState(initialCartData);
   const [promoCodeInput, setPromoCodeInput] = useState('');
   const [isPromoExpanded, setIsPromoExpanded] = useState(false);
@@ -162,6 +168,36 @@ const ShoppingCartScreen = () => {
     handleRemoveItem(itemId);
   };
 
+    const navItems = [
+    {
+      id: "recommended",
+      icon: "flame",
+      onPress: () => navigation.navigate('RecommendedProduct')
+    },
+    {
+      id: "history",
+      icon: "time",
+      onPress: () => navigation.navigate('PurchaseHistory')
+    },
+    {
+      id: "search",
+      icon: "search",
+      onPress: () => navigation.navigate('MarketPlace')
+    },
+    {
+      id: "heart",
+      icon: "heart",
+      label: "Nearby",
+      onPress: () => navigation.navigate('FavouriteProducts')
+    },
+    {
+      id: "cart",
+      icon: "cart",
+      label: "Favourite",
+      onPress: () => navigation.navigate('Carts')
+    },
+  ]
+
   // Calculations
   const subtotal = cartData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const promoDiscountAmount = (subtotal * cartData.promoDiscount) / 100;
@@ -209,7 +245,7 @@ const ShoppingCartScreen = () => {
         icon="back"
         name="Shopping Cart"
         image=""
-        onIconPress={() => console.log('Back Pressed')}
+        onIconPress={() => navigation.navigate('Home')}
       />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -453,6 +489,11 @@ const ShoppingCartScreen = () => {
           disabled={cartData.items.some(item => !item.inStock)}
         />
       </View>
+      <BottomNav
+        navItems={navItems}
+        activeTab={activeTab}
+        onTabPress={() => {}}
+      />
     </SafeAreaView>
   );
 };

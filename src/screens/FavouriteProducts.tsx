@@ -13,10 +13,14 @@ import Header from '../components/Header';
 import ProductCard from '../components/ProductCard';
 import BottomNavigation from '../components/BottomNav';
 import Colors from '../constants/colors';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 const FavoritesScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState(3);
   const [favorites, setFavorites] = useState([
     {
@@ -103,31 +107,31 @@ const FavoritesScreen = () => {
     {
       id: "recommended",
       icon: "flame",
-      onPress: () => setActiveTab(1)
+      onPress: () => navigation.navigate('RecommendedProduct')
     },
     {
       id: "history",
       icon: "time",
-      onPress: () => setActiveTab(2),
+      onPress: () => navigation.navigate('PurchaseHistory')
     },
     {
       id: "search",
       icon: "search",
-      onPress: () => setActiveTab(0),
+      onPress: () => navigation.navigate('MarketPlace')
     },
     {
       id: "heart",
       icon: "heart",
       label: "Nearby",
-      onPress: () => setActiveTab(3),
+      onPress: () => navigation.navigate('FavouriteProducts')
     },
     {
       id: "cart",
       icon: "cart",
       label: "Favourite",
-      onPress: () => setActiveTab(4),
+      onPress: () => navigation.navigate('Carts')
     },
-  ];
+  ]
 
   const handleProductPress = (product) => {
     console.log('Product pressed:', product);
@@ -180,7 +184,7 @@ const FavoritesScreen = () => {
         icon="back"
         name="John Doe"
         image=""
-        onIconPress={() => console.log('Notifications Pressed')}
+        onIconPress={() => navigation.navigate('Home')}
       />
       
       <View style={styles.header}>

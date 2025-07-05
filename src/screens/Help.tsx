@@ -66,7 +66,7 @@ const HelpSupportScreen = () => {
       subtitle: 'Chat with our support team',
       icon: 'chatbubble-outline',
       availability: 'Available 24/7',
-      action: () => Alert.alert('Live Chat', 'Opening chat window...'),
+      action: 'SupportChat',
     },
     {
       title: 'Email Support',
@@ -149,7 +149,7 @@ const HelpSupportScreen = () => {
   const ContactCard = ({ option }) => (
     <TouchableOpacity
       style={styles.contactCard}
-      onPress={option.action}
+      onPress={()=> navigation.navigate(option.action)}
       activeOpacity={0.8}
     >
       <View style={styles.contactLeft}>

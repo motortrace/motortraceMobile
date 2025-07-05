@@ -8,6 +8,9 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface Product {
   id: string;
@@ -31,10 +34,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onProductPress,
   onAddToCart,
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   return (
     <TouchableOpacity
       style={styles.productCard}
-      onPress={() => onProductPress(product)}
+      onPress={() => navigation.navigate('ProductDetails')}
     >
       <View style={styles.productImageContainer}>
         <View style={styles.productImage}>

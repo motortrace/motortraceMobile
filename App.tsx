@@ -41,6 +41,8 @@ import Help from './src/screens/Help'
 import PrivacyPolicy from './src/screens/PrivacyPolicy'
 import DeleteAccount from './src/screens/DeleteAccount';
 import LoginActivity from './src/screens/LoginActivity';
+import ActiveSession from './src/screens/ActiveSession';
+import SupportChat from './src/screens/SupportChat';
 
 import MarketPlace from './src/screens/MarketPlace'
 import OrderDetails from './src/screens/OrderDetails';
@@ -48,6 +50,7 @@ import ProductDetails from './src/screens/ProductDetails';
 import PurchaseHistory from './src/screens/PurchaseHistory';
 import RecommendedProduct from './src/screens/RecommendedProduct';
 import Carts from './src/screens/Cart'
+import FavouriteProducts from './src/screens/FavouriteProducts';
 
 import Cars from './src/screens/Cars'
 import CarDetails from './src/screens/CarDetails';
@@ -97,6 +100,8 @@ export type RootStackParamList = {
   PrivacyPolicy: undefined;
   DeleteAccount: undefined;
   LoginActivity: undefined;
+  ActiveSession: undefined;
+  SupportChat: undefined;
 
   Carts: undefined;
   MarketPlace: undefined;
@@ -104,6 +109,7 @@ export type RootStackParamList = {
   ProductDetails: undefined;
   PurchaseHistory: undefined;
   RecommendedProduct: undefined;
+  FavouriteProducts: undefined;
 
   Cars: undefined;
   CarDetails: undefined;
@@ -170,6 +176,8 @@ function App(): React.ReactElement {
         <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
         <Stack.Screen name="DeleteAccount" component={DeleteAccount} />
         <Stack.Screen name="LoginActivity" component={LoginActivity} />
+        <Stack.Screen name="ActiveSession" component={ActiveSession} />
+        <Stack.Screen name="SupportChat" component={SupportChat} />
 
         {/* Market Place */}
         <Stack.Screen name="Carts" component={Carts} />
@@ -178,9 +186,10 @@ function App(): React.ReactElement {
         <Stack.Screen name="ProductDetails" component={ProductDetails} />
         <Stack.Screen name="PurchaseHistory" component={PurchaseHistory} />
         <Stack.Screen name="RecommendedProduct" component={RecommendedProduct} />
+        <Stack.Screen name="FavouriteProducts" component={FavouriteProducts} />
 
         {/* Cars */}
-        {/* <Stack.Screen name="Cars" component={Cars} /> */}
+        <Stack.Screen name="Cars" component={Cars} />
         <Stack.Screen name="CarDetails" component={CarDetails} />
         <Stack.Screen name="EditCarDetails" component={EditCarDetails} />
         {/* <Stack.Screen name="CarOnboarding" component={CarOnboarding} /> */}

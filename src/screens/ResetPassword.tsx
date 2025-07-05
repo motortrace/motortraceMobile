@@ -7,6 +7,9 @@ import FormInput from "../components/FormInput"
 import AnimatedButton from "../components/AnimatedButton"
 import Link from "../components/Link"
 import BackButton from "../components/Back"
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface ResetPasswordScreenProps {
   email?: string
@@ -19,6 +22,7 @@ const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
   onResetSuccess,
   onBack,
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
 
@@ -39,7 +43,7 @@ const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         {/* Header */}
-        <BackButton onPress={onBack} />
+        <BackButton onPress={() => navigation.navigate('Profile')} />
 
         <View style={styles.iconContainer}>
           <Image source={require("../assets/images/Logo_white_no_bg.png")} style={styles.Logo} />

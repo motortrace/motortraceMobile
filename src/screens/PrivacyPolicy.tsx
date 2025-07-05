@@ -359,7 +359,7 @@ We encourage you to review this Privacy Policy periodically to stay informed abo
       <Header 
         icon="back"
         name="Privacy Policy"
-        onIconPress={() => navigation.navigate('Home')}
+        onIconPress={() => navigation.navigate('PrivacySettings')}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

@@ -160,7 +160,7 @@ const PrivacySettingsScreen = () => {
             subtitle="View your recent login history"
             iconName="time-outline"
             showArrow={true}
-            onPress={() => Alert.alert('Login Activity', 'Feature coming soon')}
+            onPress={() => navigation.navigate('LoginActivity')}
           />
 
           <SettingRow
@@ -168,7 +168,7 @@ const PrivacySettingsScreen = () => {
             subtitle="Manage your active sessions"
             iconName="desktop-outline"
             showArrow={true}
-            onPress={() => Alert.alert('Active Sessions', 'Feature coming soon')}
+            onPress={() => navigation.navigate('ActiveSession')}
             isLast={true}
           />
         </FormBox>

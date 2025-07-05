@@ -15,6 +15,9 @@ import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNav';
 import Colors from '../constants/colors';
 import OrderItem from '../components/OrderItem';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -160,6 +163,7 @@ const OngoingDeliveriesSection = ({ deliveries, onTrackDelivery }) => (
 
 // Main Purchase History Screen Component
 const PurchaseHistoryScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState(1);
   const [activeFilter, setActiveFilter] = useState('all');
 
@@ -328,35 +332,35 @@ const PurchaseHistoryScreen = () => {
     }
   ];
 
-  const navItems = [
+    const navItems = [
     {
       id: "recommended",
       icon: "flame",
-      onPress: () => setActiveTab(0)
+      onPress: () => navigation.navigate('RecommendedProduct')
     },
     {
       id: "history",
       icon: "time",
-      onPress: () => setActiveTab(1),
+      onPress: () => navigation.navigate('PurchaseHistory')
     },
     {
       id: "search",
       icon: "search",
-      onPress: () => setActiveTab(2),
+      onPress: () => navigation.navigate('MarketPlace')
     },
     {
       id: "heart",
       icon: "heart",
       label: "Nearby",
-      onPress: () => setActiveTab(3),
+      onPress: () => navigation.navigate('FavouriteProducts')
     },
     {
       id: "cart",
       icon: "cart",
       label: "Favourite",
-      onPress: () => setActiveTab(4),
+      onPress: () => navigation.navigate('Carts')
     },
-  ];
+  ]
 
   const filteredOrders = activeFilter === 'all' 
     ? purchaseHistory 
@@ -384,7 +388,7 @@ const PurchaseHistoryScreen = () => {
         icon="back"
         name="John Doe"
         image=""
-        onIconPress={() => console.log('Notifications Pressed')}
+        onIconPress={() => navigation.navigate('Home')}
       />
 
       <OngoingDeliveriesSection 

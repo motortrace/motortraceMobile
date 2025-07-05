@@ -14,6 +14,9 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors'; 
 import Header from '../components/Header';
 import Button from '../components/Button';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const { width } = Dimensions.get('window');
 
@@ -65,6 +68,7 @@ const productData = {
 };
 
 const ProductDetailsScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
@@ -177,7 +181,7 @@ const ProductDetailsScreen = () => {
         icon="back"
         name="John Doe"
         image=""
-        onIconPress={() => console.log('Notifications Pressed')}
+        onIconPress={() => navigation.navigate('MarketPlace')}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

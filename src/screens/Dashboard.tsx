@@ -25,9 +25,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const quickActions = [
     { id: 1, title: "Book Service", icon: "🔧", color: "#3B82F6", screen: "Locations" },
     { id: 2, title: "Find Location", icon: "📍", color: "#10B981", screen: "Locations"},
-    { id: 3, title: "Emergency", icon: "🚨", color: "#EF4444",screen: "Locations" },
-    { id: 4, title: "Support", icon: "💬", color: "#F59E0B",screen: "Locations" },
-    { id: 5, title: "Forum", icon: "💬", color: "#F59E0B",screen: "Forum" },
+    { id: 3, title: "Support", icon: "💬", color: "#F59E0B",screen: "Locations" },
+    { id: 4, title: "Forum", icon: "💬", color: "#F59E0B",screen: "Forum" },
+    { id: 4, title: "MarketPlace", icon: "💬", color: "#3B82F6",screen: "MarketPlace" },
   ]
 
   const recentActivity = [
