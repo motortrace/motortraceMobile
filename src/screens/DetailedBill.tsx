@@ -41,8 +41,8 @@ const DetailedBill: React.FC<DetailedBillProps> = ({
   time = "10:00 AM",
   garageName = "Spring Car Garage",
   services = [
-    { name: "AC Repair", price: 20.00 },
-    { name: "Wheel Care", price: 45.00 },
+    { name: "AC Repair", price: 25.00 },
+    { name: "Wheel Care", price: 50.00 },
     { name: "Oil Change", price: 30.00 },
     { name: "Brake Inspection", price: 25.00 },
     { name: "Battery Check", price: 15.00 },
@@ -52,8 +52,6 @@ const DetailedBill: React.FC<DetailedBillProps> = ({
   cgst = 2.00,
   sgst = 2.00,
   discount = 5.00,
-  onClose,
-  onShare,
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const subtotal = services.reduce((sum, service) => sum + service.price, 0);

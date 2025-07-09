@@ -13,12 +13,7 @@ import {
 import Colors from '../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
 import BottomNavigation from '../components/BottomNav';
-import HistoryCard, { VisitHistory } from '../components/GarageHistoryCard';
-import Header from '../components/Header'
-import SearchBar from '../components/SearchBar';
-import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import HistoryCard, { VisitHistory } from '../components/ServiceHistoryCard';
 
 interface HistoryScreenProps {
   onBack?: () => void;
@@ -31,42 +26,44 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
   onViewNearby,
   handleTabPress,
 }) => {
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(2);
   const [selectedFilter, setSelectedFilter] = useState('All');
 
-    const navItems = [
+  const navItems = [
     {
-      id: "location",
-      icon: "location",
-      onPress: () => navigation.navigate('Locations'),
+      id: 'location',
+      icon: 'location',
+      onPress: () => setActiveTab(0),
     },
     {
-      id: "recommended",
-      icon: "star",
-      onPress: () => navigation.navigate('GarageRecommendations'),
+      id: 'recommended',
+      icon: 'star',
+      onPress: () => setActiveTab(1),
     },
     {
-      id: "history",
-      icon: "time",
-      onPress: () => navigation.navigate('GarageHistory'),
+      id: 'history',
+      icon: 'time',
+      label: 'History',
+      onPress: () => setActiveTab(2),
     },
     {
-      id: "nearby",
-      icon: "compass",
-      label: "Nearby",
-      onPress: () => navigation.navigate('GarageExplore'),
+      id: 'nearby',
+      icon: 'compass',
+      onPress: () => {
+        setActiveTab(3);
+        onViewNearby?.();
+      },
     },
     {
-      id: "heart",
-      icon: "heart",
-      label: "Favourite",
-      onPress: () => navigation.navigate('GarageFavourites'),
+      id: 'heart',
+      icon: 'heart',
+      label: 'Favourite',
+      onPress: () => setActiveTab(4),
     },
-  ]
+  ];
 
-  const filters = ['All', 'This Week', 'This Month', 'This Year'];
+  const filters = ['All', 'This Week', 'This Month', 'Last 3 Months', 'This Year'];
 
   const visitHistory: VisitHistory[] = [
     {
@@ -193,7 +190,7 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* <View style={styles.header}>
+      <View style={styles.header}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Icon name="chevron-back" size={30} color={Colors.neutral0} />
@@ -214,21 +211,7 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
             </View>
           </View>
         </View>
-      </View> */}
-
-      <Header
-        icon="back"
-        name="John Doe"
-        image=""
-        onIconPress={() => navigation.navigate('Home')}
-      />
-      <SearchBar
-        containerStyle={{
-          marginTop: 10,
-          marginBottom: -10,
-        }}
-        placeholder="Search products..."
-      />
+      </View>
 
       {/* Filters */}
       <View style={styles.filtersContainer}>
@@ -245,6 +228,34 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
             ))}
           </View>
         </ScrollView>
+      </View>
+
+      {/* Stats Header */}
+      <View style={styles.statsHeader}>
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{filteredHistory.filter(h => h.status === 'completed').length}</Text>
+          <Text style={styles.statLabel}>Completed</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>
+            LKR {filteredHistory
+              .filter(h => h.status === 'completed')
+              .reduce((sum, h) => sum + parseFloat(h.totalCost.replace('LKR ', '').replace(',', '')), 0)
+              .toLocaleString()}
+          </Text>
+          <Text style={styles.statLabel}>Total Spent</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>
+            {(filteredHistory
+              .filter(h => h.status === 'completed')
+              .reduce((sum, h) => sum + h.rating, 0) / 
+              filteredHistory.filter(h => h.status === 'completed').length || 0).toFixed(1)}
+          </Text>
+          <Text style={styles.statLabel}>Avg Rating</Text>
+        </View>
       </View>
 
       {/* History List */}
@@ -280,12 +291,68 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.primarybg,
   },
+  header: {
+    paddingTop: 55,
+    paddingBottom: 10,
+    shadowColor: Colors.shadowMd,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 10,
+    backgroundColor: Colors.primary,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.shadowSm,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  searchBarContainer: {
+    flex: 1,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.neutral50,
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: Colors.neutral200,
+    shadowColor: Colors.shadowSm,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  searchIconContainer: {
+    marginRight: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.neutral900,
+    fontWeight: '400',
+  },
   filtersContainer: {
     backgroundColor: Colors.neutral0,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral200,
-    marginTop: 10,
   },
   filterSectionTitle: {
     fontSize: 14,
@@ -355,7 +422,6 @@ const styles = StyleSheet.create({
   cardContainer: {
     paddingHorizontal: 20,
     paddingVertical: 6,
-    marginTop: 5
   },
 });
 

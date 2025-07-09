@@ -14,7 +14,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
 
 interface HeaderProps {
-  icon?: 'back' | 'menu';
+  icon?: 'back' | 'menu' | '';
   style?: TextStyle;
   name: string;
   image?: string;
@@ -43,13 +43,15 @@ const Header: React.FC<HeaderProps> = ({ icon = 'back', style, name, image, onIc
   return (
     <View style={[styles.header, style]}>
       <View style={styles.headerContent}>
-        <TouchableOpacity onPress={onIconPress} style={styles.backButton}>
-          <Icon
-            name={icon === 'back' ? 'chevron-back' : 'menu'}
-            size={28}
-            color={Colors.neutral0}
-          />
-        </TouchableOpacity>
+        {icon !== "" && (
+          <TouchableOpacity onPress={onIconPress} style={styles.backButton}>
+            <Icon
+              name={icon === 'back' ? 'chevron-back' : 'menu'}
+              size={28}
+              color={Colors.neutral0}
+            />
+          </TouchableOpacity>
+        )}
         <View style={styles.logoContainer}>
           <Image
             source={require('../assets/images/Logo_white_no_bg.png')}

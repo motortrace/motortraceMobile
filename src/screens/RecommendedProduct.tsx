@@ -476,21 +476,21 @@ const styles = StyleSheet.create({
   },
   clearText: {
     fontSize: 14,
-    color: Colors.error,
+    color: Colors.danger,
     fontWeight: '500',
   },
   timerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: Colors.error + '10',
+    backgroundColor: Colors.danger + '10',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   timerText: {
     fontSize: 12,
-    color: Colors.error,
+    color: Colors.danger,
     fontWeight: '500',
   },
   horizontalList: {

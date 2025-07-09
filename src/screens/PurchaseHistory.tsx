@@ -20,7 +20,6 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
 
 const { width: screenWidth } = Dimensions.get('window');
-const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
 // Order Status Badge Component
 const StatusBadge = ({ status }) => {
@@ -122,7 +121,6 @@ const OngoingDeliveriesSection = ({ deliveries, onTrackDelivery }) => (
             <TouchableOpacity
               key={delivery.id}
               style={styles.deliveryCard}
-              onPress={() => navigation.navigate('TrackOrder') }
             >
               <View style={styles.deliveryHeader}>
                 <View style={styles.deliveryStatus}>
@@ -164,6 +162,7 @@ const OngoingDeliveriesSection = ({ deliveries, onTrackDelivery }) => (
 
 // Main Purchase History Screen Component
 const PurchaseHistoryScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState(1);
   const [activeFilter, setActiveFilter] = useState('all');
 

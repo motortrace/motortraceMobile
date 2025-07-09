@@ -195,7 +195,6 @@ const Cars = () => {
         {cars.map(car => (
           <CarCard
             car={car}
-            onPress={() => console.log(`Selected car: ${car.name}`)}
             getStatusConfig={getStatusConfig}
             getFuelLevelColor={getFuelLevelColor}
           />

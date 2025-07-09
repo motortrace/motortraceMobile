@@ -11,12 +11,8 @@ import {
 import Colors from '../constants/colors';
 import Header from '../components/Header';
 import CategoryBadge from '../components/CategoryBadge';
-import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
 
 const InspectionResultsScreen = () => {
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [selectedRepairs, setSelectedRepairs] = useState({});
 
   // Mock inspection findings with different urgency levels
@@ -154,7 +150,6 @@ const InspectionResultsScreen = () => {
         icon="back"
         name="Inspection Results"
         image=""
-        onIconPress={() => navigation.navigate('Reservations')}
       />
       <ScrollView style={styles.scrollView}>
 

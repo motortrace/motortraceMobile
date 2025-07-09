@@ -4,7 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import 'react-native-gesture-handler';
 
 import SplashScreen from './src/screens/SplashScreen';
-import HomeScreen from './src/screens/Dashboard';
+import Home from './src/screens/Dashboard';
 import LogIn from './src/screens/LogIn'
 import SignUp from './src/screens/SignUp';
 import ForgotPassword from './src/screens/ForgotPassword';
@@ -182,7 +182,7 @@ function App(): React.ReactElement {
         <Stack.Screen name="RecoverPassword" component={RecoverPassword} />
 
         {/* Main App screens */}
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Home" component={Home} />
 
         {/* Garages and Locations */}
         <Stack.Screen name="Locations" component={Locations} />

@@ -215,7 +215,7 @@ const ReservationsScreen = () => {
       
       <View style={styles.cardActions}>
         <Button label="Call" icon='call' containerStyle={{width: 100}} onPress={() => {}} />
-        <Button label="Chat" icon='chatbubble' containerStyle={{width: 100}} onPress={() => {}} />
+        <Button label="Chat" icon='chatbubble' containerStyle={{width: 100}} onPress={() => {navigation.navigate('ChatBox')}} />
         <BorderButton label="Reschedule" icon="create-outline" style={{width: 140}} onPress={() => {}} />
       </View>
     </TouchableOpacity>
@@ -268,9 +268,9 @@ const ReservationsScreen = () => {
       </View>
       
       <View style={styles.cardActions}>
-        <Button label="Call" icon='call' containerStyle={{width: 105}} onPress={() => {}} />
-        <Button label="Chat" icon='chatbubble' containerStyle={{width: 105}} onPress={() => {}} />
-        <BorderButton label="View Details" icon="eye" style={{width: 130}} onPress={() => navigation.navigate('InspectionResults')} />
+        <Button label="Call" icon='call' containerStyle={{width: 100}} onPress={() => {}} />
+        <Button label="Chat" icon='chatbubble' containerStyle={{width: 100}} onPress={() =>navigation.navigate('ChatBox') } />
+        <BorderButton label="View Details" icon="eye" style={{width: 140}} onPress={() => navigation.navigate('ChatBox') } />
       </View>
     </TouchableOpacity>
   );
@@ -298,7 +298,7 @@ const ReservationsScreen = () => {
       </View>
       
       <View style={styles.cardActions}>
-        <BorderButton label="View Report" icon="eye" style={{width: '100%'}} onPress={() => navigation.navigate('PaidServiceBillSummary')} />
+        <BorderButton label="View Report" icon="eye" style={{width: '100%'}} onPress={() => {}} />
       </View>
     </TouchableOpacity>
   );
@@ -346,10 +346,9 @@ const ReservationsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <Header 
-        icon="back"
+        icon="menu"
         name="Garage Management"
         image=""
-        onIconPress={() => navigation.navigate('Home')}
       />
 
       {/* Tab Navigation */}
