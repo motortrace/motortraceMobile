@@ -15,126 +15,125 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
 
-const InspectionResultsScreen = () => {
+const repairs = [
+  {
+    id: 1,
+    category: 'Critical',
+    categoryColor: Colors.danger,
+    categoryBg: Colors.dangerLight,
+    title: 'Brake Pads Replacement',
+    description: 'Brake pads are severely worn and require immediate replacement for safety.',
+    price: 150,
+    estimatedTime: '2 hours',
+  },
+  {
+    id: 2,
+    category: 'Recommended',
+    categoryColor: Colors.warning,
+    categoryBg: Colors.warningLight,
+    title: 'Engine Oil Change',
+    description: 'Oil is due for replacement to maintain optimal engine performance.',
+    price: 45,
+    estimatedTime: '30 minutes',
+  },
+  {
+    id: 3,
+    category: 'Critical',
+    categoryColor: Colors.danger,
+    categoryBg: Colors.dangerLight,
+    title: 'Tire Replacement (Front Left)',
+    description: 'Tire tread is below safe limits and poses a safety risk.',
+    price: 120,
+    estimatedTime: '45 minutes',
+  },
+  {
+    id: 4,
+    category: 'Optional',
+    categoryColor: Colors.info,
+    categoryBg: Colors.infoLight,
+    title: 'Air Filter Replacement',
+    description: 'Air filter is slightly dirty but can improve fuel efficiency when replaced.',
+    price: 25,
+    estimatedTime: '15 minutes',
+  },
+  {
+    id: 5,
+    category: 'Recommended',
+    categoryColor: Colors.warning,
+    categoryBg: Colors.warningLight,
+    title: 'Battery Check & Clean',
+    description: 'Battery terminals show corrosion and should be cleaned for better performance.',
+    price: 30,
+    estimatedTime: '20 minutes',
+  },
+];
+
+const ReviewRepairsScreen = () => {
+  const [selected, setSelected] = useState<{ [id: number]: boolean }>({
+    1: true,
+    3: true,
+  });
+
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const [selectedRepairs, setSelectedRepairs] = useState({});
 
-  // Mock inspection findings with different urgency levels
-  const inspectionFindings = [
-    {
-      id: 1,
-      category: 'Critical',
-      categoryColor: Colors.danger,
-      categoryBg: Colors.dangerLight,
-      title: 'Brake Pads Replacement',
-      description: 'Brake pads are severely worn and require immediate replacement for safety.',
-      price: 150,
-      estimatedTime: '2 hours',
-      selected: false,
-    },
-    {
-      id: 2,
-      category: 'Recommended',
-      categoryColor: Colors.warning,
-      categoryBg: Colors.warningLight,
-      title: 'Engine Oil Change',
-      description: 'Oil is due for replacement to maintain optimal engine performance.',
-      price: 45,
-      estimatedTime: '30 minutes',
-      selected: false,
-    },
-    {
-      id: 3,
-      category: 'Critical',
-      categoryColor: Colors.danger,
-      categoryBg: Colors.dangerLight,
-      title: 'Tire Replacement (Front Left)',
-      description: 'Tire tread is below safe limits and poses a safety risk.',
-      price: 120,
-      estimatedTime: '45 minutes',
-      selected: false,
-    },
-    {
-      id: 4,
-      category: 'Optional',
-      categoryColor: Colors.info,
-      categoryBg: Colors.infoLight,
-      title: 'Air Filter Replacement',
-      description: 'Air filter is slightly dirty but can improve fuel efficiency when replaced.',
-      price: 25,
-      estimatedTime: '15 minutes',
-      selected: false,
-    },
-    {
-      id: 5,
-      category: 'Recommended',
-      categoryColor: Colors.warning,
-      categoryBg: Colors.warningLight,
-      title: 'Battery Check & Clean',
-      description: 'Battery terminals show corrosion and should be cleaned for better performance.',
-      price: 30,
-      estimatedTime: '20 minutes',
-      selected: false,
-    },
-  ];
-
-  const toggleRepairSelection = (repairId) => {
-    setSelectedRepairs(prev => ({
+  const toggleRepair = (id: number) => {
+    setSelected(prev => ({
       ...prev,
-      [repairId]: !prev[repairId]
+      [id]: !prev[id],
     }));
   };
 
+  const selectedRepairs = repairs.filter(r => selected[r.id]);
+  const unselectedRepairs = repairs.filter(r => !selected[r.id]);
+
   const getSelectedRepairsTotal = () => {
-    return inspectionFindings
-      .filter(finding => selectedRepairs[finding.id])
-      .reduce((total, finding) => total + finding.price, 0);
+    return selectedRepairs.reduce((total, repair) => total + repair.price, 0);
   };
 
   const getSelectedRepairsCount = () => {
-    return Object.values(selectedRepairs).filter(Boolean).length;
+    return selectedRepairs.length;
   };
 
-  const handleApproveRepairs = () => {
+  const handleSubmit = () => {
     const selectedCount = getSelectedRepairsCount();
+    const total = getSelectedRepairsTotal();
+
     if (selectedCount === 0) {
       Alert.alert('No Repairs Selected', 'Please select at least one repair to proceed.');
       return;
     }
-    
+
     Alert.alert(
-      'Confirm Repairs',
-      `You have selected ${selectedCount} repair(s) totaling $${getSelectedRepairsTotal()}. Do you want to proceed?`,
+      'Submit Repairs',
+      `You selected ${selectedCount} repair(s) totaling $${total}. Submit?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Approve', onPress: () => console.log('Repairs approved') }
+        { text: 'Submit', onPress: () => console.log('Repairs submitted:', selectedRepairs) },
       ]
     );
   };
 
-  const renderInspectionFinding = (finding) => {
-    const isSelected = selectedRepairs[finding.id];
-    
+  const renderRepairCard = (repair, isSelected) => {
     return (
       <TouchableOpacity
-        key={finding.id}
-        style={[styles.findingCard, isSelected && styles.findingCardSelected]}
-        onPress={() => toggleRepairSelection(finding.id)}
+        key={repair.id}
+        style={[styles.repairCard, isSelected && styles.repairCardSelected]}
+        onPress={() => toggleRepair(repair.id)}
       >
-        <View style={styles.findingHeader}>
+        <View style={styles.repairHeader}>
           <CategoryBadge 
-            category={finding.category}
-            categoryColor={finding.categoryColor}
-            categoryBg={finding.categoryBg}
+            category={repair.category}
+            categoryColor={repair.categoryColor}
+            categoryBg={repair.categoryBg}
           />
           <View style={styles.priceContainer}>
-            <Text style={styles.priceText}>${finding.price}</Text>
-            <Text style={styles.timeText}>{finding.estimatedTime}</Text>
+            <Text style={styles.priceText}>${repair.price}</Text>
+            <Text style={styles.timeText}>{repair.estimatedTime}</Text>
           </View>
         </View>
         
-        <Text style={styles.findingTitle}>{finding.title}</Text>
-        <Text style={styles.findingDescription}>{finding.description}</Text>
+        <Text style={styles.repairTitle}>{repair.title}</Text>
+        <Text style={styles.repairDescription}>{repair.description}</Text>
         
         <View style={styles.selectionContainer}>
           <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
@@ -151,18 +150,17 @@ const InspectionResultsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <Header 
-        icon="back"
-        name="Inspection Results"
-        image=""
-        onIconPress={() => navigation.navigate('InspectionCar')}
+        name="Review Repairs" 
+        icon="back" 
+        onIconPress={() => navigation.navigate('InspectionCar')} 
       />
-      <ScrollView style={styles.scrollView}>
 
-        {/* Inspection Summary */}
+      <ScrollView style={styles.scrollView}>
+        {/* Summary Card */}
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Inspection Complete</Text>
+          <Text style={styles.summaryTitle}>Review Your Selection</Text>
           <Text style={styles.summarySubtitle}>
-            We've identified {inspectionFindings.length} items that need attention
+            Review and modify your repair selections before submitting
           </Text>
           
           <View style={styles.legendContainer}>
@@ -181,10 +179,28 @@ const InspectionResultsScreen = () => {
           </View>
         </View>
 
-        {/* Inspection Findings */}
-        <View style={styles.findingsContainer}>
-          <Text style={styles.sectionTitle}>Repair Recommendations</Text>
-          {inspectionFindings.map(renderInspectionFinding)}
+        {/* Selected Repairs Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>✅ Selected Repairs</Text>
+          {selectedRepairs.length > 0 ? (
+            selectedRepairs.map(repair => renderRepairCard(repair, true))
+          ) : (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>No repairs selected.</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Unselected Repairs Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>🛠️ Available Repairs</Text>
+          {unselectedRepairs.length > 0 ? (
+            unselectedRepairs.map(repair => renderRepairCard(repair, false))
+          ) : (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>All repairs selected.</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -201,14 +217,14 @@ const InspectionResultsScreen = () => {
         
         <TouchableOpacity
           style={[
-            styles.approveButton,
-            getSelectedRepairsCount() === 0 && styles.approveButtonDisabled
+            styles.submitButton,
+            getSelectedRepairsCount() === 0 && styles.submitButtonDisabled
           ]}
-          onPress={handleApproveRepairs}
+          onPress={handleSubmit}
           disabled={getSelectedRepairsCount() === 0}
         >
-          <Text style={styles.approveButtonText}>
-            Approve Selected Repairs
+          <Text style={styles.submitButtonText}>
+            Submit Selected Repairs
           </Text>
         </TouchableOpacity>
       </View>
@@ -266,8 +282,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.neutral700,
   },
-  findingsContainer: {
+  sectionContainer: {
     paddingHorizontal: 20,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,
@@ -275,7 +292,7 @@ const styles = StyleSheet.create({
     color: Colors.neutral900,
     marginBottom: 16,
   },
-  findingCard: {
+  repairCard: {
     backgroundColor: Colors.neutral0,
     borderRadius: 12,
     padding: 16,
@@ -288,11 +305,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  findingCardSelected: {
+  repairCardSelected: {
     borderColor: Colors.primary,
     backgroundColor: Colors.primaryLighter,
   },
-  findingHeader: {
+  repairHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -310,13 +327,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.neutral600,
   },
-  findingTitle: {
+  repairTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.neutral900,
     marginBottom: 6,
   },
-  findingDescription: {
+  repairDescription: {
     fontSize: 14,
     color: Colors.neutral600,
     lineHeight: 20,
@@ -349,6 +366,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.neutral600,
   },
+  emptyCard: {
+    backgroundColor: Colors.neutral0,
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.neutral200,
+    borderStyle: 'dashed',
+  },
+  emptyText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: Colors.neutral500,
+  },
   bottomActionBar: {
     bottom: 0,
     left: 0,
@@ -376,22 +407,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.neutral900,
   },
-  approveButton: {
+  submitButton: {
     backgroundColor: Colors.primary,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 20,
   },
-  approveButtonDisabled: {
+  submitButtonDisabled: {
     backgroundColor: Colors.neutral300,
-    marginBottom: 20,
   },
-  approveButtonText: {
+  submitButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.neutral0,
   },
 });
 
-export default InspectionResultsScreen;
+export default ReviewRepairsScreen;

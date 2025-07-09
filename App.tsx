@@ -69,14 +69,19 @@ import EditCarDetails from './src/screens/EditCarDetails';
 import CarOnboarding from './src/screens/CarOnboarding';
 import CarProducts from './src/screens/CarProducts';
 import CarServices from './src/screens/CarServices';
+import MileageTracking from './src/screens/MilageTracking';
 
 import InspectionResults from './src/screens/InspectionResult';
 import PartsSelection from './src/screens/PartsSelection';
 import Reservations from './src/screens/Reservations';
 import ChatBox from './src/screens/Chatbox'
+import InspectionResultSelected from './src/screens/InspectionResultSelected';
+import SelectedParts from './src/screens/SelectedParts'
+import ServiceProgress from './src/screens/ServiceProgress';
 
 import Rewards from './src/screens/Rewards';
 import RewardHistory from './src/screens/RewardHistory';
+import InspectionCar from './src/screens/InspectionsCar';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -145,11 +150,16 @@ export type RootStackParamList = {
   CarOnboarding: undefined;
   CarProducts: undefined;
   CarServices: undefined;
+  MileageTracking: undefined;
 
   Reservations: undefined;
   InspectionResults: undefined;
   PartsSelection: undefined;
   ChatBox: undefined;
+  InspectionCar: undefined;
+  InspectionResultSelected: undefined;
+  SelectedParts: undefined;
+  ServiceProgress: undefined;
 
   Rewards: undefined;
   RewardHistory: undefined;
@@ -243,11 +253,16 @@ function App(): React.ReactElement {
         <Stack.Screen name="CarOnboarding" component={CarOnboarding} />
         <Stack.Screen name="CarProducts" component={CarProducts} />
         <Stack.Screen name="CarServices" component={CarServices} />
+        <Stack.Screen name="MileageTracking" component={MileageTracking} />
 
         <Stack.Screen name="Reservations" component={Reservations} />
         <Stack.Screen name="InspectionResults" component={InspectionResults} />
         <Stack.Screen name="PartsSelection" component={PartsSelection} />
         <Stack.Screen name="ChatBox" component={ChatBox} />
+        <Stack.Screen name="InspectionCar" component={InspectionCar} />
+        <Stack.Screen name="InspectionResultSelected" component={InspectionResultSelected} />
+        <Stack.Screen name="SelectedParts" component={SelectedParts} />
+        <Stack.Screen name="ServiceProgress" component={ServiceProgress} />
 
         <Stack.Screen name="Rewards" component={Rewards} />
         <Stack.Screen name="RewardHistory" component={RewardHistory} />

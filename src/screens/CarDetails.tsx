@@ -115,9 +115,9 @@ const CarDetailsPage = () => {
         <View style={styles.quickActions}>
 
           <BorderButton 
-            label='Update Mileage'
+            label='Mileage Tracking'
             icon = 'speedometer-outline'
-            onPress={() => setShowMileageModal(true)}
+            onPress={() => navigation.navigate('MileageTracking')}
             style={{width: '48%', height: 50}}
           />
 
@@ -183,33 +183,6 @@ const CarDetailsPage = () => {
             ))}
           </View>
         )}
-
-        {/* Service History */}
-        <View style={styles.serviceHistoryCard}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Recent Service History</Text>
-          </View>
-          
-          {car.services && car.services.length > 0 ? (
-            car.services.map((service, index) => (
-              <View key={index} style={styles.serviceItem}>
-                <View style={styles.serviceHeader}>
-                  <Text style={styles.serviceDate}>{service.date}</Text>
-                  <Text style={styles.serviceMileage}>{service.mileage}</Text>
-                </View>
-                <Text style={styles.serviceType}>{service.type}</Text>
-                <Text style={styles.serviceDescription}>{service.description}</Text>
-                <Text style={styles.serviceCost}>${service.cost}</Text>
-              </View>
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <Icon name="build-outline" size={32} color={Colors.neutral400} />
-              <Text style={styles.emptyStateText}>No service records yet</Text>
-              <Text style={styles.emptyStateSubtext}>Add your first service record</Text>
-            </View>
-          )}
-        </View>
       </ScrollView>
 
       {/* Update Mileage Modal */}
@@ -426,55 +399,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: Colors.neutral700,
-  },
-  serviceHistoryCard: {
-    backgroundColor: Colors.neutral0,
-    marginHorizontal: 16,
-    marginBottom: 32,
-    padding: 20,
-    borderRadius: 16,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  serviceItem: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral100,
-    paddingBottom: 16,
-    marginBottom: 16,
-  },
-  serviceHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  serviceDate: {
-    fontSize: 12,
-    color: Colors.neutral600,
-    fontWeight: '500',
-  },
-  serviceMileage: {
-    fontSize: 12,
-    color: Colors.neutral600,
-  },
-  serviceType: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.neutral900,
-    marginBottom: 4,
-  },
-  serviceDescription: {
-    fontSize: 14,
-    color: Colors.neutral700,
-    marginBottom: 8,
-  },
-  serviceCost: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.primary,
   },
   emptyState: {
     alignItems: 'center',

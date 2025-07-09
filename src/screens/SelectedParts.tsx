@@ -10,16 +10,68 @@ import {
 } from 'react-native';
 import Colors from '../constants/colors';
 import Header from '../components/Header';
-import Button from '../components/Button'
+import Button from '../components/Button';
 import CategoryBadge from '../components/CategoryBadge';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
-import PartCard from '../components/PartCard'
+import PartCard from '../components/PartCard';
+
+const repairs = [
+  {
+    id: 1,
+    category: 'Critical',
+    categoryColor: Colors.danger,
+    categoryBg: Colors.dangerLight,
+    title: 'Brake Pads Replacement',
+    description: 'Brake pads are severely worn and require immediate replacement for safety.',
+    price: 150,
+    estimatedTime: '2 hours',
+  },
+  {
+    id: 2,
+    category: 'Recommended',
+    categoryColor: Colors.warning,
+    categoryBg: Colors.warningLight,
+    title: 'Engine Oil Change',
+    description: 'Oil is due for replacement to maintain optimal engine performance.',
+    price: 45,
+    estimatedTime: '30 minutes',
+  },
+  {
+    id: 3,
+    category: 'Critical',
+    categoryColor: Colors.danger,
+    categoryBg: Colors.dangerLight,
+    title: 'Tire Replacement (Front Left)',
+    description: 'Tire tread is below safe limits and poses a safety risk.',
+    price: 120,
+    estimatedTime: '45 minutes',
+  },
+  {
+    id: 4,
+    category: 'Optional',
+    categoryColor: Colors.info,
+    categoryBg: Colors.infoLight,
+    title: 'Air Filter Replacement',
+    description: 'Air filter is slightly dirty but can improve fuel efficiency when replaced.',
+    price: 25,
+    estimatedTime: '15 minutes',
+  },
+  {
+    id: 5,
+    category: 'Recommended',
+    categoryColor: Colors.warning,
+    categoryBg: Colors.warningLight,
+    title: 'Battery Check & Clean',
+    description: 'Battery terminals show corrosion and should be cleaned for better performance.',
+    price: 30,
+    estimatedTime: '20 minutes',
+  },
+];
 
 const PartsSelectionScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const { approvedRepairs } = route.params || {};
   
   const [partsSelection, setPartsSelection] = useState({});
 
@@ -39,7 +91,8 @@ const PartsSelectionScreen = () => {
       category: 'Critical',
       categoryColor: Colors.danger,
       categoryBg: Colors.dangerLight,
-      selected: 'garage', // 'garage' or 'customer'
+      estimatedTime: '2 hours',
+      selected: 'garage',
     },
     {
       id: 2,
@@ -55,6 +108,7 @@ const PartsSelectionScreen = () => {
       category: 'Critical',
       categoryColor: Colors.danger,
       categoryBg: Colors.dangerLight,
+      estimatedTime: '45 minutes',
       selected: 'garage',
     },
     {
@@ -71,6 +125,7 @@ const PartsSelectionScreen = () => {
       category: 'Recommended',
       categoryColor: Colors.warning,
       categoryBg: Colors.warningLight,
+      estimatedTime: '30 minutes',
       selected: 'garage',
     },
     {
@@ -87,6 +142,7 @@ const PartsSelectionScreen = () => {
       category: 'Recommended',
       categoryColor: Colors.warning,
       categoryBg: Colors.warningLight,
+      estimatedTime: '20 minutes',
       selected: 'garage',
     },
   ];
@@ -120,7 +176,7 @@ const PartsSelectionScreen = () => {
     if (customerParts.length > 0) {
       Alert.alert(
         'Customer Parts Information',
-        `You've chosen to provide ${customerParts.length} part(s). Please bring these parts on your service date. Total garage parts: $${totals.garagePartsTotal}`,
+        `You've chosen to provide ${customerParts.length} part(s). Please bring these parts on your service date. Total garage parts: ${totals.garagePartsTotal}`,
         [
           { text: 'OK', onPress: () => navigation.navigate('ServiceSchedule') }
         ]
@@ -128,7 +184,7 @@ const PartsSelectionScreen = () => {
     } else {
       Alert.alert(
         'Parts Confirmed',
-        `All parts will be provided by the garage. Total: $${totals.garagePartsTotal}`,
+        `All parts will be provided by the garage. Total: ${totals.garagePartsTotal}`,
         [
           { text: 'OK', onPress: () => navigation.navigate('ServiceSchedule') }
         ]
@@ -148,7 +204,6 @@ const PartsSelectionScreen = () => {
       />
 
       <ScrollView style={styles.scrollView}>
-
         {/* Summary Card */}
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Required Parts</Text>
@@ -156,6 +211,21 @@ const PartsSelectionScreen = () => {
             {requiredParts.length} parts needed for your approved repairs
           </Text>
           
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: Colors.danger }]} />
+              <Text style={styles.legendText}>Critical - Safety Priority</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: Colors.warning }]} />
+              <Text style={styles.legendText}>Recommended - Performance</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: Colors.info }]} />
+              <Text style={styles.legendText}>Optional - Enhancement</Text>
+            </View>
+          </View>
+
           <View style={styles.infoContainer}>
             <Text style={styles.infoText}>
               💡 Choose who provides each part. We recommend garage-provided parts for quality assurance and warranty coverage.
@@ -176,7 +246,7 @@ const PartsSelectionScreen = () => {
       </ScrollView>
 
       {/* Bottom Summary */}
-      <View style={styles.bottomSummary}>
+      <View style={styles.bottomActionBar}>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Garage Parts ({totals.garagePartsCount})</Text>
           <Text style={styles.summaryAmount}>${totals.garagePartsTotal}</Text>
@@ -189,8 +259,12 @@ const PartsSelectionScreen = () => {
           </View>
         )}
 
-        < Button label="Confirm Parts selection"/>
-
+        <TouchableOpacity
+          style={styles.proceedButton}
+          onPress={handleProceed}
+        >
+          <Text style={styles.proceedButtonText}>Confirm Parts Selection</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -216,7 +290,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    marginTop: 20
+    marginTop: 20,
   },
   summaryTitle: {
     fontSize: 20,
@@ -227,7 +301,25 @@ const styles = StyleSheet.create({
   summarySubtitle: {
     fontSize: 14,
     color: Colors.neutral600,
+    marginBottom: 20,
+  },
+  legendContainer: {
+    gap: 12,
     marginBottom: 16,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  legendText: {
+    fontSize: 14,
+    color: Colors.neutral700,
   },
   infoContainer: {
     backgroundColor: Colors.primarybg,
@@ -250,7 +342,7 @@ const styles = StyleSheet.create({
     color: Colors.neutral900,
     marginBottom: 16,
   },
-  bottomSummary: {
+  bottomActionBar: {
     bottom: 0,
     left: 0,
     right: 0,
@@ -264,22 +356,33 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
-    marginBottom: 15,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   summaryLabel: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.neutral600,
   },
   summaryAmount: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: Colors.neutral900,
+  },
+  proceedButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  proceedButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.neutral0,
   },
 });
 

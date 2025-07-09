@@ -79,7 +79,7 @@ const ReservationsScreen = () => {
       hasNotification: true,
       notificationType: 'inspection_results',
       progress: 75,
-      navigation: 'InspectionResults',
+      navigation: 'InspectionCar',
     },
     {
       id: 5,
@@ -96,7 +96,7 @@ const ReservationsScreen = () => {
       technician: 'Maria Rodriguez',
       hasNotification: false,
       progress: 45,
-      navigation: 'PartsSelection',
+      navigation: 'InspectionCar',
     },
     {
       id: 6,
@@ -270,7 +270,7 @@ const ReservationsScreen = () => {
       <View style={styles.cardActions}>
         <Button label="Call" icon='call' containerStyle={{width: 100}} onPress={() => {}} />
         <Button label="Chat" icon='chatbubble' containerStyle={{width: 100}} onPress={() =>navigation.navigate('ChatBox') } />
-        <BorderButton label="View Details" icon="eye" style={{width: 140}} onPress={() => navigation.navigate('ChatBox') } />
+        <BorderButton label="View Details" icon="eye" style={{width: 140}} onPress={() => navigation.navigate(item.navigation)} />
       </View>
     </TouchableOpacity>
   );
@@ -346,9 +346,10 @@ const ReservationsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <Header 
-        icon="menu"
+        icon="back"
         name="Garage Management"
         image=""
+        onIconPress={() => navigation.navigate('Home')}
       />
 
       {/* Tab Navigation */}
