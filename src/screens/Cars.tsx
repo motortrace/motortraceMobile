@@ -210,7 +210,7 @@ const Cars = () => {
             <Text style={styles.addCarSubtitle}>
               Register your car to start tracking maintenance and issues
             </Text>
-            <TouchableOpacity style={styles.addCarButton}>
+            <TouchableOpacity style={styles.addCarButton} onPress={() => navigation.navigate('CarOnboarding')}>
               <Text style={styles.addCarButtonText}>Get Started</Text>
             </TouchableOpacity>
           </View>

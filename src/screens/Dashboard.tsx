@@ -23,12 +23,54 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   const quickActions = [
-    { id: 1, title: "Book Service", icon: "🔧", color: "#3B82F6", screen: "Locations" },
-    { id: 2, title: "Find Location", icon: "📍", color: "#10B981", screen: "Locations"},
-    { id: 3, title: "Forum", icon: "💬", color: "#F59E0B",screen: "Forum" },
-    { id: 4, title: "MarketPlace", icon: "💬", color: "#3B82F6",screen: "MarketPlace" },
-    { id: 5, title: "Cars", icon: "💬", color: "#3B82F6",screen: "Cars" },
-    { id: 6, title: "Reservations", icon: "💬", color: "#3B82F6",screen: "Reservations" },
+    { 
+      id: 1, 
+      title: "Rewards", 
+      icon: "gift-outline", 
+      color: Colors.primary, 
+      screen: "Rewards",
+      bgColor: Colors.neutral0
+    },
+    { 
+      id: 2, 
+      title: "Find Location", 
+      icon: "location-outline", 
+      color: Colors.primary, 
+      screen: "Locations",
+      bgColor: Colors.neutral0
+    },
+    { 
+      id: 3, 
+      title: "Forum", 
+      icon: "chatbubbles-outline", 
+      color: Colors.primary,
+      screen: "Forum",
+      bgColor: Colors.neutral0
+    },
+    { 
+      id: 4, 
+      title: "MarketPlace", 
+      icon: "storefront-outline", 
+      color: Colors.primary,
+      screen: "MarketPlace",
+      bgColor: Colors.neutral0
+    },
+    { 
+      id: 5, 
+      title: "Cars", 
+      icon: "car-outline", 
+      color: Colors.primary,
+      screen: "Cars",
+      bgColor: Colors.neutral0
+    },
+    { 
+      id: 6, 
+      title: "Reservations", 
+      icon: "calendar-outline", 
+      color: Colors.primary,
+      screen: "Reservations",
+      bgColor: Colors.neutral0
+    },
   ]
 
   const recentActivity = [

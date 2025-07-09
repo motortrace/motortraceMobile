@@ -29,6 +29,7 @@ const HelpSupportScreen = () => {
       subtitle: 'Reset or recover your password',
       icon: 'key-outline',
       color: '#FF6B6B',
+      navigation: 'RecoverPassword'
     },
     {
       id: 3,
@@ -132,7 +133,7 @@ const HelpSupportScreen = () => {
   const QuickHelpCard = ({ topic }) => (
     <TouchableOpacity
       style={styles.quickHelpCard}
-      onPress={() => handleTopicPress(topic)}
+      onPress={() => navigation.navigate('RecoverPassword')}
       activeOpacity={0.8}
     >
       <View style={[styles.quickHelpIcon, { backgroundColor: `${topic.color}15` }]}>
@@ -170,7 +171,7 @@ const HelpSupportScreen = () => {
     <View>
       <TouchableOpacity
         style={styles.faqItem}
-        onPress={() => Alert.alert('FAQ', 'This will show the full answer')}
+        onPress={() => navigation.navigate('FaqAnswer')}
         activeOpacity={0.7}
       >
         <View style={styles.faqContent}>

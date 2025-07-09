@@ -1,7 +1,7 @@
 import React from "react"
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from "react-native"
 import Colors from "../constants/colors"
-import Link from "./Link"
+import Link from "../components/Link"
 
 interface VerificationRowProps {
   type: "email" | "contact"

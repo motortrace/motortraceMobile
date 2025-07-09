@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../constants/colors';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-export default function HomeScreen() {
+export default function LaodingScreen() {
   const cog1Rotation = useRef(new Animated.Value(0)).current;
   const cog2Rotation = useRef(new Animated.Value(0)).current;
   const [dotCount, setDotCount] = useState(0);

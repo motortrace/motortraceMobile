@@ -12,9 +12,9 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
-import SettingRow from '../components/SettingRow';
 
 const AccountDelegationPage = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();

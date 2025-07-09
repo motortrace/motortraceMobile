@@ -62,7 +62,6 @@ const ReservationsScreen = () => {
     },
   ];
 
-  // Mock data for ongoing reservations (vehicles currently in garage)
   const ongoingReservations = [
     {
       id: 4,
@@ -80,6 +79,7 @@ const ReservationsScreen = () => {
       hasNotification: true,
       notificationType: 'inspection_results',
       progress: 75,
+      navigation: 'InspectionResults',
     },
     {
       id: 5,
@@ -96,6 +96,7 @@ const ReservationsScreen = () => {
       technician: 'Maria Rodriguez',
       hasNotification: false,
       progress: 45,
+      navigation: 'PartsSelection',
     },
     {
       id: 6,
@@ -113,6 +114,7 @@ const ReservationsScreen = () => {
       hasNotification: true,
       notificationType: 'parts_needed',
       progress: 30,
+      navigation: 'InspectionCar',
     },
   ];
 

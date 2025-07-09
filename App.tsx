@@ -10,6 +10,11 @@ import SignUp from './src/screens/SignUp';
 import ForgotPassword from './src/screens/ForgotPassword';
 import Onbording from './src/screens/Onboarding';
 import Verification from './src/screens/Verification'
+import LoadingScreen from './src/screens/LoadingScreen'
+import Success from './src/screens/Success';
+import Confirm from './src/screens/Confirm';
+import RecoverPassword from './src/screens/RecoverPassword';
+
 import AllPackages from  './src/screens/AllPackages'
 import AllServices from  './src/screens/AllServices'
 import AllReviews from  './src/screens/AllReviews'
@@ -25,6 +30,7 @@ import GarageServices from './src/screens/GarageServices'
 import GarageServiceDetails from './src/screens/GarageServiceDetails'
 import DetailedBill from './src/screens/DetailedBill';
 import PaidServiceBillSummary from './src/screens/PaidServiceBillSummary';
+import Appointment from './src/screens/Appointment'
 
 import Forum from './src/screens/Forum'
 import SearchPosts from './src/screens/SearchPost';
@@ -46,6 +52,7 @@ import LoginActivity from './src/screens/LoginActivity';
 import ActiveSession from './src/screens/ActiveSession';
 import SupportChat from './src/screens/SupportChat';
 import faq from './src/screens/faq'
+import FaqAnswer from './src/screens/FaqAnswer';
 
 import MarketPlace from './src/screens/MarketPlace'
 import OrderDetails from './src/screens/OrderDetails';
@@ -66,6 +73,10 @@ import CarServices from './src/screens/CarServices';
 import InspectionResults from './src/screens/InspectionResult';
 import PartsSelection from './src/screens/PartsSelection';
 import Reservations from './src/screens/Reservations';
+import ChatBox from './src/screens/Chatbox'
+
+import Rewards from './src/screens/Rewards';
+import RewardHistory from './src/screens/RewardHistory';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -74,6 +85,11 @@ export type RootStackParamList = {
   SignUp: undefined;
   ForgotPassword: undefined;
   Verification: undefined;
+  LoadingScreen: undefined;
+  Success: undefined;
+  Confirm: undefined;
+  RecoverPassword: undefined;
+
   Home: undefined;
   Locations: undefined;
   GarageRecommendations: undefined;
@@ -90,6 +106,7 @@ export type RootStackParamList = {
   GarageServiceDetails: undefined;
   DetailedBill: undefined;
   PaidServiceBillSummary: undefined
+  Appointment: undefined;
 
   Forum: undefined;
   SearchPosts: undefined;
@@ -111,6 +128,7 @@ export type RootStackParamList = {
   ActiveSession: undefined;
   SupportChat: undefined;
   faq: undefined;
+  FaqAnswer: undefined;
 
   Carts: undefined;
   MarketPlace: undefined;
@@ -130,7 +148,11 @@ export type RootStackParamList = {
 
   Reservations: undefined;
   InspectionResults: undefined;
-  PartsSelection: undefined
+  PartsSelection: undefined;
+  ChatBox: undefined;
+
+  Rewards: undefined;
+  RewardHistory: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -154,6 +176,10 @@ function App(): React.ReactElement {
         <Stack.Screen name="SignUp" component={SignUp} />
         <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
         <Stack.Screen name="Verification" component={Verification} />
+        <Stack.Screen name="LoadingScreen" component={LoadingScreen} />
+        <Stack.Screen name="Success" component={Success} />
+        <Stack.Screen name="Confirm" component={Confirm} />
+        <Stack.Screen name="RecoverPassword" component={RecoverPassword} />
 
         {/* Main App screens */}
         <Stack.Screen name="Home" component={HomeScreen} />
@@ -174,6 +200,7 @@ function App(): React.ReactElement {
         <Stack.Screen name="GarageServiceDetails" component={GarageServiceDetails} />
         <Stack.Screen name="DetailedBill" component={DetailedBill} />
         <Stack.Screen name="PaidServiceBillSummary" component={PaidServiceBillSummary} />
+        <Stack.Screen name="Appointment" component={Appointment} />
 
         {/* Forum */}
         <Stack.Screen name="Forum" component={Forum} />
@@ -197,6 +224,7 @@ function App(): React.ReactElement {
         <Stack.Screen name="ActiveSession" component={ActiveSession} />
         <Stack.Screen name="SupportChat" component={SupportChat} />
         <Stack.Screen name="faq" component={faq} />
+        <Stack.Screen name="FaqAnswer" component={FaqAnswer} />
 
         {/* Market Place */}
         <Stack.Screen name="Carts" component={Carts} />
@@ -219,6 +247,10 @@ function App(): React.ReactElement {
         <Stack.Screen name="Reservations" component={Reservations} />
         <Stack.Screen name="InspectionResults" component={InspectionResults} />
         <Stack.Screen name="PartsSelection" component={PartsSelection} />
+        <Stack.Screen name="ChatBox" component={ChatBox} />
+
+        <Stack.Screen name="Rewards" component={Rewards} />
+        <Stack.Screen name="RewardHistory" component={RewardHistory} />
 
       </Stack.Navigator>
     </NavigationContainer>

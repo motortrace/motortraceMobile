@@ -54,7 +54,7 @@ export default function SplashScreen() {
       useNativeDriver: true,
     }).start();
 
-    navigation.navigate('Home');
+    navigation.navigate('SignUp');
   };
 
   return (
