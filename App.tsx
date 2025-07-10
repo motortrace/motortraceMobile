@@ -161,7 +161,7 @@ function App(): React.ReactElement {
   return (
     <NavigationContainer>
       <Stack.Navigator 
-        initialRouteName="Splash"
+        initialRouteName="AllPackages"
         screenOptions={{ 
           headerShown: false,
           gestureEnabled: true,

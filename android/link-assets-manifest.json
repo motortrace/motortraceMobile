@@ -1,0 +1,25 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "src/assets/fonts/Coinbase_Mono-Regular.ttf",
+      "sha1": "d69716e12b90df47a12e4715ad0fbff908079999"
+    },
+    {
+      "path": "src/assets/fonts/Coinbase_Sans-Medium.ttf",
+      "sha1": "0108d1859b57a1e37a341c70db5803c1711c4b2c"
+    },
+    {
+      "path": "src/assets/fonts/Inter_24pt-Bold.ttf",
+      "sha1": "327abbf74a5d71ffa8d888d976234cb11dabf194"
+    },
+    {
+      "path": "src/assets/fonts/Poppins-Regular.ttf",
+      "sha1": "fdd3002e7d814ee47c1c1b8487c72c6bbb3a2d00"
+    },
+    {
+      "path": "src/assets/fonts/Poppins-SemiBold.ttf",
+      "sha1": "8a4ace9392d06bcb7f8ea2f5169b07e4c383a90d"
+    }
+  ]
+}

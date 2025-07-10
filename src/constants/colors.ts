@@ -1,12 +1,12 @@
 const Colors = {
 
   // Primary Brand Colors
-  primary: '#2563eb',
+  primary: '#1F1F1F',
   primaryDark: '#1d4ed8',
   primaryLight: '#93c5fd',
   primaryLighter: '#bfdbfe',
   // primarybg: '#FFFFFF',
-  primarybg: '#E3F2FF',
+  primarybg: '#F2F4F5',
 
   // Secondary Palette - Updated to Teal
   secondary: '#0d9488',
