@@ -3,6 +3,9 @@ import { Text, TouchableOpacity, Image, Dimensions, View, StyleSheet } from "rea
 import Icon from 'react-native-vector-icons/Ionicons'
 import Colors from "../constants/colors"
 import AutoSizeImage from "../helper/AutoSizeImage"
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface PostCardProps {
   id: string
@@ -51,6 +54,7 @@ const PostCard: React.FC<PostCardProps> = ({
   onShare,
   onAuthorPress
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [localUpvoted, setLocalUpvoted] = useState(isUpvoted)
   const [localDownvoted, setLocalDownvoted] = useState(isDownvoted)
   const [localSaved, setLocalSaved] = useState(isSaved)
@@ -75,7 +79,7 @@ const PostCard: React.FC<PostCardProps> = ({
   const netVotes = upvotes - downvotes + (localUpvoted ? 1 : 0) - (localDownvoted ? 1 : 0)
 
   return (
-    <TouchableOpacity style={styles.postCard} onPress={onPress} activeOpacity={0.9}>
+    <TouchableOpacity style={styles.postCard} onPress={() => navigation.navigate('ForumDetail')} activeOpacity={0.9}>
       {/* Header */}
       <View style={styles.postHeader}>
         <TouchableOpacity 

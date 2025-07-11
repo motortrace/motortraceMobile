@@ -9,9 +9,12 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface HeaderProps {
-  icon?: 'back' | 'menu';
+  icon?: 'back' | 'menu' | '';
   style?: TextStyle;
   name: string;
   image?: string;
@@ -21,26 +24,34 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ icon = 'back', style, name, image, onIconPress }) => {
   const renderProfile = () => {
     if (image) {
-      return <Image source={{ uri: image }} style={styles.profileImage} />;
+      return (
+        <TouchableOpacity onPress={()=> navigation.navigate('Profile') } >
+          <Image source={{ uri: image }} style={styles.profileImage}  />
+        </TouchableOpacity>
+      )
     } else {
       return (
-        <View style={styles.profilePlaceholder}>
+        <TouchableOpacity style={styles.profilePlaceholder} onPress={()=> navigation.navigate('Profile') }>
           <Text style={styles.profileInitial}>{name.charAt(0).toUpperCase()}</Text>
-        </View>
+        </TouchableOpacity>
       );
     }
   };
 
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
   return (
     <View style={[styles.header, style]}>
       <View style={styles.headerContent}>
-        <TouchableOpacity onPress={onIconPress} style={styles.backButton}>
-          <Icon
-            name={icon === 'back' ? 'chevron-back' : 'menu'}
-            size={28}
-            color={Colors.neutral0}
-          />
-        </TouchableOpacity>
+        {icon !== "" && (
+          <TouchableOpacity onPress={onIconPress} style={styles.backButton}>
+            <Icon
+              name={icon === 'back' ? 'chevron-back' : 'menu'}
+              size={28}
+              color={Colors.neutral0}
+            />
+          </TouchableOpacity>
+        )}
         <View style={styles.logoContainer}>
           <Image
             source={require('../assets/images/Logo_white_no_bg.png')}

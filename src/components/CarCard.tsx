@@ -8,6 +8,9 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface CarCardProps {
   car: {
@@ -41,12 +44,13 @@ const CarCard: React.FC<CarCardProps> = ({
   isAddCard = false, 
   getStatusConfig 
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   // Add Car Card
   if (isAddCard) {
     return (
       <TouchableOpacity 
         style={[styles.carCard, styles.addCarCard]} 
-        onPress={onAddCar} 
+        onPress={() => navigation.navigate('CarOnboarding')} 
         activeOpacity={0.7}
       >
         <View style={styles.addCarContent}>
@@ -66,7 +70,7 @@ const CarCard: React.FC<CarCardProps> = ({
   return (
     <TouchableOpacity 
       style={styles.carCard} 
-      onPress={() => onPress(car.id)} 
+      onPress={() => navigation.navigate('CarDetails')} 
       activeOpacity={0.8}
     >
       {/* Car Image */}

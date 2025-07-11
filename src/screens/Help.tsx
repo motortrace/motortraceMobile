@@ -7,15 +7,18 @@ import {
   SafeAreaView,
   Alert,
   ScrollView,
-  TextInput,
   Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import FormBox from '../components/FormBox';
 import Header from '../components/Header';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const HelpSupportScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
@@ -26,6 +29,7 @@ const HelpSupportScreen = () => {
       subtitle: 'Reset or recover your password',
       icon: 'key-outline',
       color: '#FF6B6B',
+      navigation: 'RecoverPassword'
     },
     {
       id: 3,
@@ -63,7 +67,7 @@ const HelpSupportScreen = () => {
       subtitle: 'Chat with our support team',
       icon: 'chatbubble-outline',
       availability: 'Available 24/7',
-      action: () => Alert.alert('Live Chat', 'Opening chat window...'),
+      action: 'SupportChat',
     },
     {
       title: 'Email Support',
@@ -129,7 +133,7 @@ const HelpSupportScreen = () => {
   const QuickHelpCard = ({ topic }) => (
     <TouchableOpacity
       style={styles.quickHelpCard}
-      onPress={() => handleTopicPress(topic)}
+      onPress={() => navigation.navigate('RecoverPassword')}
       activeOpacity={0.8}
     >
       <View style={[styles.quickHelpIcon, { backgroundColor: `${topic.color}15` }]}>
@@ -146,7 +150,7 @@ const HelpSupportScreen = () => {
   const ContactCard = ({ option }) => (
     <TouchableOpacity
       style={styles.contactCard}
-      onPress={option.action}
+      onPress={()=> navigation.navigate(option.action)}
       activeOpacity={0.8}
     >
       <View style={styles.contactLeft}>
@@ -167,7 +171,7 @@ const HelpSupportScreen = () => {
     <View>
       <TouchableOpacity
         style={styles.faqItem}
-        onPress={() => Alert.alert('FAQ', 'This will show the full answer')}
+        onPress={() => navigation.navigate('FaqAnswer')}
         activeOpacity={0.7}
       >
         <View style={styles.faqContent}>
@@ -187,6 +191,7 @@ const HelpSupportScreen = () => {
       <Header 
         icon="back"
         name="Help & Support"
+        onIconPress={() => navigation.navigate('Profile')}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -236,7 +241,7 @@ const HelpSupportScreen = () => {
             />
           ))}
           
-          <TouchableOpacity style={styles.viewAllFAQ} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.viewAllFAQ} activeOpacity={0.7} onPress={() => navigation.navigate('faq')}>
             <Text style={styles.viewAllText}>View All FAQs</Text>
             <Icon name="chevron-forward" size={16} color={Colors.primary} />
           </TouchableOpacity>

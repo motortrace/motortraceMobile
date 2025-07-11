@@ -13,38 +13,16 @@ import Icon from 'react-native-vector-icons/Ionicons'
 import ServiceCard from '../components/ServiceCard'
 import Colors from '../constants/colors'
 import Header from '../components/Header'
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
-interface Service {
-  id: string
-  icon: string
-  title: string
-  description: string
-  date: string
-  cost: number
-  status: 'completed' | 'pending' | 'in-progress'
-  category: 'maintenance' | 'repair' | 'inspection' | 'upgrade'
-}
-
-interface CarServicesPageProps {
-  carId: string
-  carModel: string
-  carYear: number
-  licensePlate: string
-  onNavigateBack?: () => void
-}
-
-const CarServicesPage: React.FC<CarServicesPageProps> = ({
-  carId,
-  carModel = "Toyota Camry",
-  carYear = 2020,
-  licensePlate = "ABC-1234",
-  onNavigateBack
-}) => {
+const CarServices = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'maintenance' | 'repair' | 'inspection' | 'upgrade'>('all')
 
   // Mock data - replace with actual API call
-  const services: Service[] = [
+  const services = [
     {
       id: '1',
       icon: 'build-outline',
@@ -159,6 +137,8 @@ const CarServicesPage: React.FC<CarServicesPageProps> = ({
     return `$${amount.toFixed(2)}`
   }
 
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
   const getStatusColor = (status: Service['status']) => {
     switch (status) {
       case 'completed': return Colors.success || '#22C55E'
@@ -181,6 +161,7 @@ const CarServicesPage: React.FC<CarServicesPageProps> = ({
         icon = 'back'
         image = ''
         name='Jhon Doe'
+        onIconPress={() => navigation.navigate('CarDetails')}
       />
 
       {/* Stats Cards */}
@@ -442,4 +423,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default CarServicesPage
+export default CarServices

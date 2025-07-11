@@ -6,6 +6,9 @@ import ServiceCard from "../components/ServiceCard"
 import Button from '../components/Button'
 import Header from '../components/Header'
 import SearchBar from '../components/SearchBar';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface AllServicesScreenProps {
   onBack?: () => void,
@@ -13,6 +16,7 @@ interface AllServicesScreenProps {
 }
 
 const AllServicesScreen: React.FC<AllServicesScreenProps> = ({ onBack, onScheduleAppointment }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const services = [
     {
       name: "Oil Change",
@@ -76,7 +80,7 @@ const AllServicesScreen: React.FC<AllServicesScreenProps> = ({ onBack, onSchedul
         icon="back"
         name="John Doe"
         image=""
-        onIconPress={() => console.log('Menu Pressed')}
+        onIconPress={() => navigation.navigate('GarageServices')}
       />
       <SearchBar
         containerStyle={{

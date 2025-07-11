@@ -10,11 +10,13 @@ import {
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import Colors from '../constants/colors';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 export default function SplashScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
 
@@ -29,8 +31,8 @@ export default function SplashScreen() {
     }).start();
 
     const timer = setTimeout(() => {
-      navigation.navigate('Home');
-    }, 3000000);
+      navigation.navigate('SignUp');
+    }, 3000);
 
     return () => {
       clearTimeout(timer);
@@ -52,7 +54,7 @@ export default function SplashScreen() {
       useNativeDriver: true,
     }).start();
 
-    navigation.navigate('Home');
+    navigation.navigate('SignUp');
   };
 
   return (

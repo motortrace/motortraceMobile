@@ -1,9 +1,22 @@
-"use client"
-
 import type React from "react"
 import { useState } from "react"
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native"
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, FlatList } from "react-native"
+import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from "../constants/colors"
+import Header from '../components/Header'
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
+
+interface Vehicle {
+  id: string;
+  name: string;
+  model: string;
+  year: string;
+  license: string;
+  color: string;
+  type: 'sedan' | 'suv' | 'truck' | 'hatchback';
+}
 
 interface DashboardScreenProps {
   userName?: string
@@ -16,67 +29,178 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onMenuPress,
   onNotificationPress,
 }) => {
-  const [selectedTab, setSelectedTab] = useState("overview")
+  const [selectedVehicle, setSelectedVehicle] = useState(0)
+
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
+  const vehicles: Vehicle[] = [
+    {
+      id: '1',
+      name: 'Toyota Camry',
+      model: 'Camry',
+      year: '2022',
+      license: 'ABC-1234',
+      color: Colors.primary,
+      type: 'sedan'
+    },
+    {
+      id: '2',
+      name: 'Honda CR-V',
+      model: 'CR-V',
+      year: '2021',
+      license: 'XYZ-5678',
+      color: Colors.primary,
+      type: 'suv'
+    },
+    {
+      id: '3',
+      name: 'Ford F-150',
+      model: 'F-150',
+      year: '2023',
+      license: 'DEF-9012',
+      color: Colors.primary,
+      type: 'truck'
+    }
+  ]
 
   const quickActions = [
-    { id: 1, title: "Book Service", icon: "🔧", color: "#3B82F6" },
-    { id: 2, title: "Find Location", icon: "📍", color: "#10B981" },
-    { id: 3, title: "Emergency", icon: "🚨", color: "#EF4444" },
-    { id: 4, title: "Support", icon: "💬", color: "#F59E0B" },
+    { 
+      id: 1, 
+      title: "Rewards", 
+      icon: "gift-outline", 
+      color: Colors.primary, 
+      screen: "Rewards",
+      bgColor: Colors.neutral0
+    },
+    { 
+      id: 2, 
+      title: "Find Location", 
+      icon: "location-outline", 
+      color: Colors.primary, 
+      screen: "Locations",
+      bgColor: Colors.neutral0
+    },
+    { 
+      id: 3, 
+      title: "Forum", 
+      icon: "chatbubbles-outline", 
+      color: Colors.primary,
+      screen: "Forum",
+      bgColor: Colors.neutral0
+    },
+    { 
+      id: 4, 
+      title: "MarketPlace", 
+      icon: "storefront-outline", 
+      color: Colors.primary,
+      screen: "MarketPlace",
+      bgColor: Colors.neutral0
+    },
+    { 
+      id: 5, 
+      title: "Cars", 
+      icon: "car-outline", 
+      color: Colors.primary,
+      screen: "Cars",
+      bgColor: Colors.neutral0
+    },
+    { 
+      id: 6, 
+      title: "Reservations", 
+      icon: "calendar-outline", 
+      color: Colors.primary,
+      screen: "Reservations",
+      bgColor: Colors.neutral0
+    },
   ]
 
   const recentActivity = [
-    { id: 1, title: "Oil Change Completed", date: "2 days ago", status: "completed" },
-    { id: 2, title: "Tire Rotation Scheduled", date: "Tomorrow", status: "upcoming" },
-    { id: 3, title: "Annual Service Due", date: "Next week", status: "pending" },
+    { id: 1, title: "Oil Change Completed", date: "2 days ago", status: "completed", icon: "checkmark-circle" },
+    { id: 2, title: "Tire Rotation Scheduled", date: "Tomorrow", status: "upcoming", icon: "time" },
+    { id: 3, title: "Annual Service Due", date: "Next week", status: "pending", icon: "alert-circle" },
   ]
 
   const stats = [
-    { label: "Total Services", value: "12", change: "+2" },
-    { label: "Miles Driven", value: "15.2K", change: "+1.2K" },
-    { label: "Fuel Efficiency", value: "28.5 MPG", change: "+0.8" },
+    { label: "Total Services", value: "12", change: "+2", icon: "build", color: Colors.primary },
+    { label: "Miles Driven", value: "15.2K", change: "+1.2K", icon: "speedometer", color: Colors.primary },
+    { label: "Fuel Efficiency", value: "28.5 MPG", change: "+0.8", icon: "leaf", color: Colors.success },
+    { label: "Fuel Efficiency", value: "28.5 MPG", change: "+0.8", icon: "leaf", color: Colors.success },
   ]
+
+  const getVehicleIcon = (type: string) => {
+    switch (type) {
+      case 'sedan': return 'car-outline'
+      case 'suv': return 'car-sport-outline'
+      case 'truck': return 'bus-outline'
+      case 'hatchback': return 'car-outline'
+      default: return 'car-outline'
+    }
+  }
+
+  const renderVehicleCard = ({ item, index }: { item: Vehicle; index: number }) => (
+    <TouchableOpacity
+      style={[
+        styles.vehicleCard,
+        { marginLeft: index === 0 ? 24 : 0, marginRight: 16 },
+        index === selectedVehicle && styles.selectedVehicleCard
+      ]}
+      onPress={() => setSelectedVehicle(index)}
+    >
+      <View style={[styles.vehicleIconContainer, { backgroundColor: item.color + '15' }]}>
+        <Icon name={getVehicleIcon(item.type)} size={36} color={item.color} />
+      </View>
+      <View style={styles.vehicleInfo}>
+        <Text style={styles.vehicleName}>{item.name}</Text>
+        <Text style={styles.vehicleYear}>{item.year}</Text>
+        <Text style={styles.vehicleDetails}>{item.license}</Text>
+      </View>
+      {index === selectedVehicle && (
+        <View style={styles.selectedIndicator}>
+          <Icon name="checkmark-circle" size={24} color={Colors.success} />
+        </View>
+      )}
+    </TouchableOpacity>
+  )
 
   return (
     <SafeAreaView style={styles.container}>
+        <Header
+          icon=""
+          name="John Doe"
+          image=""
+          onIconPress={() => navigation.navigate('Home')}
+        />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity onPress={onMenuPress} style={styles.menuButton}>
-              <Text style={styles.menuIcon}>☰</Text>
-            </TouchableOpacity>
-            <View style={styles.userInfo}>
-              <Text style={styles.greeting}>Good Morning</Text>
-              <Text style={styles.userName}>{userName}</Text>
-            </View>
-          </View>
-          <TouchableOpacity onPress={onNotificationPress} style={styles.notificationButton}>
-            <Text style={styles.notificationIcon}>🔔</Text>
-            <View style={styles.notificationBadge} />
-          </TouchableOpacity>
-        </View>
 
-        {/* Vehicle Card */}
-        <View style={styles.vehicleCard}>
-          <View style={styles.vehicleInfo}>
-            <Text style={styles.vehicleTitle}>My Vehicle</Text>
-            <Text style={styles.vehicleName}>Toyota Camry 2022</Text>
-            <Text style={styles.vehicleDetails}>License: ABC-1234</Text>
+        {/* Vehicles Section */}
+        <View style={styles.section}>
+          <View style={[styles.sectionHeader, {marginTop: 40}]}>
+            <Text style={styles.sectionTitle}>My Vehicles</Text>
           </View>
-          <View style={styles.vehicleImage}>
-            <Text style={styles.carIcon}>🚗</Text>
-          </View>
+          <FlatList
+            data={vehicles}
+            renderItem={renderVehicleCard}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.vehiclesList}
+          />
         </View>
 
         {/* Quick Actions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.sectionHeaderSimple}>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+          </View>
           <View style={styles.quickActionsGrid}>
             {quickActions.map((action) => (
-              <TouchableOpacity key={action.id} style={styles.quickActionCard}>
-                <View style={[styles.quickActionIcon, { backgroundColor: action.color + "20" }]}>
-                  <Text style={styles.quickActionEmoji}>{action.icon}</Text>
+              <TouchableOpacity 
+                key={action.id} 
+                style={[styles.quickActionCard, { backgroundColor: action.bgColor }]}
+                onPress={() => navigation.navigate(action.screen)}
+              >
+                <View style={[styles.quickActionIcon, { backgroundColor: action.color + "15" }]}>
+                  <Icon name={action.icon} size={26} color={action.color} />
                 </View>
                 <Text style={styles.quickActionTitle}>{action.title}</Text>
               </TouchableOpacity>
@@ -84,15 +208,23 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </View>
         </View>
 
-        {/* Stats */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Overview</Text>
+        {/* Overview Stats */}
+        <View style={[styles.section,{marginTop: 10}]}>
+          <View style={styles.sectionHeaderSimple}>
+            <Text style={styles.sectionTitle}>Overview</Text>
+          </View>
           <View style={styles.statsContainer}>
             {stats.map((stat, index) => (
               <View key={index} style={styles.statCard}>
+                <View style={[styles.statIcon, { backgroundColor: stat.color + "15" }]}>
+                  <Icon name={stat.icon} size={22} color={stat.color} />
+                </View>
                 <Text style={styles.statValue}>{stat.value}</Text>
                 <Text style={styles.statLabel}>{stat.label}</Text>
-                <Text style={styles.statChange}>{stat.change}</Text>
+                <View style={styles.statChangeContainer}>
+                  <Icon name="trending-up" size={14} color={Colors.success} />
+                  <Text style={styles.statChange}>{stat.change}</Text>
+                </View>
               </View>
             ))}
           </View>
@@ -100,70 +232,56 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
         {/* Recent Activity */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <View style={styles.sectionHeaderSimple}>
+            <Text style={styles.sectionTitle}>Recent Activity</Text>
+          </View>
           <View style={styles.activityContainer}>
             {recentActivity.map((activity) => (
               <View key={activity.id} style={styles.activityItem}>
+                <View style={[
+                  styles.activityIconContainer,
+                  {
+                    backgroundColor: activity.status === "completed"
+                      ? Colors.success + "15"
+                      : activity.status === "upcoming"
+                        ? Colors.primary + "15"
+                        : Colors.warning + "15"
+                  }
+                ]}>
+                  <Icon 
+                    name={activity.icon} 
+                    size={22} 
+                    color={
+                      activity.status === "completed"
+                        ? Colors.success
+                        : activity.status === "upcoming"
+                          ? Colors.primary
+                          : Colors.warning
+                    }
+                  />
+                </View>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityTitle}>{activity.title}</Text>
+                  <Text style={styles.activityDate}>{activity.date}</Text>
+                </View>
                 <View
                   style={[
                     styles.activityStatus,
                     {
                       backgroundColor:
                         activity.status === "completed"
-                          ? "#10B981"
+                          ? Colors.success
                           : activity.status === "upcoming"
-                            ? "#3B82F6"
-                            : "#F59E0B",
+                            ? Colors.primary
+                            : Colors.warning,
                     },
                   ]}
                 />
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>{activity.title}</Text>
-                  <Text style={styles.activityDate}>{activity.date}</Text>
-                </View>
               </View>
             ))}
           </View>
         </View>
-
-        {/* Bottom Spacing */}
-        <View style={styles.bottomSpacing} />
       </ScrollView>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={[styles.navItem, selectedTab === "overview" && styles.navItemActive]}
-          onPress={() => setSelectedTab("overview")}
-        >
-          <Text style={[styles.navIcon, selectedTab === "overview" && styles.navIconActive]}>🏠</Text>
-          <Text style={[styles.navLabel, selectedTab === "overview" && styles.navLabelActive]}>Overview</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.navItem, selectedTab === "services" && styles.navItemActive]}
-          onPress={() => setSelectedTab("services")}
-        >
-          <Text style={[styles.navIcon, selectedTab === "services" && styles.navIconActive]}>🔧</Text>
-          <Text style={[styles.navLabel, selectedTab === "services" && styles.navLabelActive]}>Services</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.navItem, selectedTab === "history" && styles.navItemActive]}
-          onPress={() => setSelectedTab("history")}
-        >
-          <Text style={[styles.navIcon, selectedTab === "history" && styles.navIconActive]}>📋</Text>
-          <Text style={[styles.navLabel, selectedTab === "history" && styles.navLabelActive]}>History</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.navItem, selectedTab === "profile" && styles.navItemActive]}
-          onPress={() => setSelectedTab("profile")}
-        >
-          <Text style={[styles.navIcon, selectedTab === "profile" && styles.navIconActive]}>👤</Text>
-          <Text style={[styles.navLabel, selectedTab === "profile" && styles.navLabelActive]}>Profile</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   )
 }
@@ -176,255 +294,241 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  header: {
+  section: {
+    marginBottom: 36,
+  },
+  sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingHorizontal: 24,
+    marginBottom: 20,
   },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
+  sectionHeaderSimple: {
+    paddingHorizontal: 24,
+    marginBottom: 20,
   },
-  menuButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.neutral100 || "#F3F4F6",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  menuIcon: {
-    fontSize: 18,
-    color: Colors.neutral700 || "#374151",
-  },
-  userInfo: {
-    flex: 1,
-  },
-  greeting: {
-    fontSize: 14,
-    color: Colors.neutral500 || "#6B7280",
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: "bold",
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: "700",
     color: Colors.neutral1000 || "#111827",
+    letterSpacing: -0.5,
   },
-  notificationButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.neutral100 || "#F3F4F6",
-    justifyContent: "center",
-    alignItems: "center",
-    position: "relative",
+  addButton: {
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: Colors.primary + "10",
   },
-  notificationIcon: {
-    fontSize: 18,
-  },
-  notificationBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#EF4444",
+  vehiclesList: {
+    paddingRight: 24,
   },
   vehicleCard: {
-    marginHorizontal: 20,
-    marginBottom: 24,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
+    width: 380,
+    backgroundColor: Colors.neutral0,
+    borderRadius: 24,
+    padding: 24,
     flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: Colors.shadowMd,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: Colors.neutral200,
+  },
+  selectedVehicleCard: {
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + "05",
+  },
+  vehicleIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 20,
   },
   vehicleInfo: {
     flex: 1,
   },
-  vehicleTitle: {
-    fontSize: 14,
-    color: Colors.neutral500 || "#6B7280",
-    marginBottom: 4,
-  },
   vehicleName: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 19,
+    fontWeight: "700",
     color: Colors.neutral1000 || "#111827",
-    marginBottom: 2,
+    marginBottom: 6,
+    letterSpacing: -0.3,
+  },
+  vehicleYear: {
+    fontSize: 15,
+    color: Colors.neutral600 || "#6B7280",
+    marginBottom: 4,
+    fontWeight: "500",
   },
   vehicleDetails: {
     fontSize: 14,
-    color: Colors.neutral500 || "#6B7280",
+    color: Colors.neutral500 || "#9CA3AF",
+    fontWeight: "500",
   },
-  vehicleImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.primary + "20" || "#3B82F620",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  carIcon: {
-    fontSize: 32,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: Colors.neutral1000 || "#111827",
-    marginHorizontal: 20,
-    marginBottom: 16,
+  selectedIndicator: {
+    position: "absolute",
+    top: 20,
+    right: 20,
+    backgroundColor: Colors.neutral0,
+    borderRadius: 12,
+    padding: 2,
+    shadowColor: Colors.shadowMd,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   quickActionsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    paddingHorizontal: 20,
-    gap: 12,
+    paddingHorizontal: 24,
+    gap: 20,
   },
   quickActionCard: {
-    width: "47%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
+    width: "46%",
+    backgroundColor: Colors.neutral0,
+    borderRadius: 20,
+    padding: 24,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowColor: Colors.shadowMd,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: Colors.neutral200,
+    minHeight: 120,
+    justifyContent: "center",
   },
   quickActionIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  quickActionTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.neutral700 || "#374151",
+    textAlign: "center",
+    letterSpacing: -0.2,
+  },
+  statsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    paddingHorizontal: 24,
+    gap: 16,
+  },
+  statCard: {
+    flexGrow: 0,
+    backgroundColor: Colors.neutral0,
+    borderRadius: 20,
+    padding: 20,
+    alignItems: "center",
+    shadowColor: Colors.shadowMd,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: Colors.neutral200,
+    minHeight: 140,
+    justifyContent: "center",
+    width: '47%'
+  },
+  statIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 8,
-  },
-  quickActionEmoji: {
-    fontSize: 24,
-  },
-  quickActionTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.neutral700 || "#374151",
-    textAlign: "center",
-  },
-  statsContainer: {
-    flexDirection: "row",
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: 16,
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 26,
+    fontWeight: "800",
     color: Colors.neutral1000 || "#111827",
-    marginBottom: 4,
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 13,
     color: Colors.neutral500 || "#6B7280",
     textAlign: "center",
-    marginBottom: 4,
+    marginBottom: 12,
+    fontWeight: "500",
+  },
+  statChangeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.success + "10",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   statChange: {
-    fontSize: 12,
-    color: "#10B981",
-    fontWeight: "600",
+    fontSize: 13,
+    color: Colors.success,
+    fontWeight: "700",
   },
   activityContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
   activityItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: Colors.neutral0,
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 16,
+    shadowColor: Colors.shadowMd,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: Colors.neutral200,
   },
-  activityStatus: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 12,
+  activityIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 20,
   },
   activityContent: {
     flex: 1,
   },
   activityTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "600",
     color: Colors.neutral1000 || "#111827",
-    marginBottom: 2,
+    marginBottom: 6,
+    letterSpacing: -0.3,
   },
   activityDate: {
-    fontSize: 14,
+    fontSize: 15,
     color: Colors.neutral500 || "#6B7280",
+    fontWeight: "500",
+  },
+  activityStatus: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   bottomSpacing: {
-    height: 20,
-  },
-  bottomNav: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderTopWidth: 1,
-    borderTopColor: Colors.neutral300 || "#E5E7EB",
-  },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  navItemActive: {
-    backgroundColor: Colors.primary + "10" || "#3B82F610",
-    borderRadius: 8,
-  },
-  navIcon: {
-    fontSize: 20,
-    marginBottom: 4,
-  },
-  navIconActive: {
-    color: Colors.primary || "#3B82F6",
-  },
-  navLabel: {
-    fontSize: 12,
-    color: Colors.neutral500 || "#6B7280",
-  },
-  navLabelActive: {
-    color: Colors.primary || "#3B82F6",
-    fontWeight: "600",
+    height: 40,
   },
 })
 

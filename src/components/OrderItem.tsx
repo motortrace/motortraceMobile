@@ -9,6 +9,9 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface Product {
   name: string;
@@ -79,6 +82,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
 };
 
 const OrderItem: React.FC<OrderItemProps> = ({ item, onReorder, onViewDetails, style }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   return (
     <View style={[styles.orderCard, style]}>
       <View style={styles.orderHeader}>
@@ -120,7 +124,7 @@ const OrderItem: React.FC<OrderItemProps> = ({ item, onReorder, onViewDetails, s
         <View style={styles.orderActions}>
           <TouchableOpacity 
             style={styles.actionButton}
-            onPress={() => onViewDetails(item)}
+            onPress={() => navigation.navigate('OrderDetails')}
           >
             <Text style={styles.actionButtonText}>View Details</Text>
           </TouchableOpacity>

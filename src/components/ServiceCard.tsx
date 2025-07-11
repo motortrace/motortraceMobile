@@ -2,6 +2,9 @@ import React from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import Icon from 'react-native-vector-icons/Ionicons'
 import Colors from '../constants/colors'
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface ServiceCardProps {
   icon: string
@@ -16,8 +19,10 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   description, 
   onPress 
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('GarageServiceDetails')} activeOpacity={0.7}>
       <View style={styles.iconContainer}>
         <Icon name={icon} size={28} color={Colors.neutral1000} />
       </View>

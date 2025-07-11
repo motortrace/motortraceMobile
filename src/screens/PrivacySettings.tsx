@@ -2,19 +2,22 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   SafeAreaView,
   Alert,
   ScrollView,
-  Switch,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import FormBox from '../components/FormBox';
 import Header from '../components/Header';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
+import SettingRow from '../components/SettingRow';
 
 const PrivacySettingsScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [settings, setSettings] = useState({
     profileVisibility: 'public', // public, friends, private
     allowSearch: true,
@@ -32,17 +35,6 @@ const PrivacySettingsScreen = () => {
       ...prev,
       [key]: !prev[key]
     }));
-  };
-
-  const handleProfileVisibilityChange = () => {
-    const options = [
-      { text: 'Public', onPress: () => setSettings(prev => ({ ...prev, profileVisibility: 'public' })) },
-      { text: 'Friends Only', onPress: () => setSettings(prev => ({ ...prev, profileVisibility: 'friends' })) },
-      { text: 'Private', onPress: () => setSettings(prev => ({ ...prev, profileVisibility: 'private' })) },
-      { text: 'Cancel', style: 'cancel' },
-    ];
-
-    Alert.alert('Profile Visibility', 'Choose who can see your profile', options);
   };
 
   const handleDataDownload = () => {
@@ -67,64 +59,12 @@ const PrivacySettingsScreen = () => {
     );
   };
 
-  const SettingRow = ({ 
-    title, 
-    subtitle, 
-    iconName, 
-    hasSwitch = false, 
-    switchValue = false, 
-    onSwitchToggle, 
-    onPress,
-    showArrow = false,
-    isLast = false 
-  }) => (
-    <View>
-      <TouchableOpacity 
-        style={styles.settingRow}
-        onPress={onPress}
-        disabled={hasSwitch}
-        activeOpacity={hasSwitch ? 1 : 0.7}
-      >
-        <View style={styles.settingLeft}>
-          <View style={styles.settingIconContainer}>
-            <Icon name={iconName} size={18} color={Colors.primary} />
-          </View>
-          <View style={styles.settingContent}>
-            <Text style={styles.settingTitle}>{title}</Text>
-            {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
-          </View>
-        </View>
-        <View style={styles.settingRight}>
-          {hasSwitch ? (
-            <Switch
-              value={switchValue}
-              onValueChange={onSwitchToggle}
-              trackColor={{ false: Colors.neutral300, true: `${Colors.primary}40` }}
-              thumbColor={switchValue ? Colors.primary : Colors.neutral0}
-            />
-          ) : showArrow && (
-            <Icon name="chevron-forward" size={20} color={Colors.neutral400} />
-          )}
-        </View>
-      </TouchableOpacity>
-      {!isLast && <View style={styles.divider} />}
-    </View>
-  );
-
-  const getVisibilityText = () => {
-    switch (settings.profileVisibility) {
-      case 'public': return 'Public';
-      case 'friends': return 'Friends Only';
-      case 'private': return 'Private';
-      default: return 'Public';
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <Header 
         icon="back"
         name="Privacy Settings"
+        onIconPress={() => navigation.navigate('Profile')}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -158,7 +98,7 @@ const PrivacySettingsScreen = () => {
             subtitle="Permanently delete your account"
             iconName="trash-outline"
             showArrow={true}
-            onPress={handleDeleteAccount}
+            onPress={() => navigation.navigate('DeleteAccount')}
             isLast={true}
           />
         </FormBox>
@@ -220,7 +160,7 @@ const PrivacySettingsScreen = () => {
             subtitle="View your recent login history"
             iconName="time-outline"
             showArrow={true}
-            onPress={() => Alert.alert('Login Activity', 'Feature coming soon')}
+            onPress={() => navigation.navigate('LoginActivity')}
           />
 
           <SettingRow
@@ -228,7 +168,7 @@ const PrivacySettingsScreen = () => {
             subtitle="Manage your active sessions"
             iconName="desktop-outline"
             showArrow={true}
-            onPress={() => Alert.alert('Active Sessions', 'Feature coming soon')}
+            onPress={() => navigation.navigate('ActiveSession')}
             isLast={true}
           />
         </FormBox>
@@ -265,47 +205,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.neutral1000,
     marginLeft: 10,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-  },
-  settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  settingIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: `${Colors.primary}10`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  settingContent: {
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: 16,
-    color: Colors.neutral1000,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  settingSubtitle: {
-    fontSize: 13,
-    color: Colors.neutral500,
-  },
-  settingRight: {
-    marginLeft: 12,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.neutral200,
-    marginLeft: 56,
   },
   bottomSpacing: {
     height: 20,

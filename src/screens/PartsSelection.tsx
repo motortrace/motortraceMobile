@@ -12,8 +12,13 @@ import Colors from '../constants/colors';
 import Header from '../components/Header';
 import Button from '../components/Button'
 import CategoryBadge from '../components/CategoryBadge';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
+import PartCard from '../components/PartCard'
 
-const PartsSelectionScreen = ({ route, navigation }) => {
+const PartsSelectionScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { approvedRepairs } = route.params || {};
   
   const [partsSelection, setPartsSelection] = useState({});
@@ -131,98 +136,6 @@ const PartsSelectionScreen = ({ route, navigation }) => {
     }
   };
 
-  const renderPartCard = (part) => {
-    const selection = getPartSelection(part.id);
-    
-    return (
-      <View key={part.id} style={styles.partCard}>
-
-        <View style={styles.flex}>
-          <View style={styles.partDetails}>
-            <Text style={styles.partName}>{part.partName}</Text>
-            <Text style={styles.partNumber}>Part #: {part.partNumber}</Text>
-            <Text style={styles.oemBrand}>OEM: {part.oem}</Text>
-          </View>
-
-          <View>
-          <CategoryBadge 
-            category={part.category}
-            categoryColor={part.categoryColor}
-            categoryBg={part.categoryBg}
-          />
-          <Text> </Text>
-          </View>
-        </View>
-
-        {/* Selection Options */}
-        <View style={styles.selectionContainer}>
-          <Text style={styles.selectionTitle}>Who will provide this part?</Text>
-          
-          {/* Garage Option */}
-          <TouchableOpacity
-            style={[
-              styles.selectionOption,
-              selection === 'garage' && styles.selectionOptionSelected
-            ]}
-            onPress={() => handlePartSelection(part.id, 'garage')}
-          >
-            <View style={styles.selectionOptionLeft}>
-              <View style={[
-                styles.radioButton,
-                selection === 'garage' && styles.radioButtonSelected
-              ]}>
-                {selection === 'garage' && <View style={styles.radioButtonInner} />}
-              </View>
-              <View>
-                <Text style={styles.selectionOptionTitle}>Garage Provides</Text>
-                <Text style={styles.selectionOptionSubtitle}>
-                  ${part.garagePrice} • {part.warrantyGarage} warranty
-                </Text>
-              </View>
-            </View>
-            <View style={styles.recommendedBadge}>
-              <Text style={styles.recommendedText}>RECOMMENDED</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* Customer Option */}
-          <TouchableOpacity
-            style={[
-              styles.selectionOption,
-              selection === 'customer' && styles.selectionOptionSelected
-            ]}
-            onPress={() => handlePartSelection(part.id, 'customer')}
-          >
-            <View style={styles.selectionOptionLeft}>
-              <View style={[
-                styles.radioButton,
-                selection === 'customer' && styles.radioButtonSelected
-              ]}>
-                {selection === 'customer' && <View style={styles.radioButtonInner} />}
-              </View>
-              <View>
-                <Text style={styles.selectionOptionTitle}>I'll Provide</Text>
-                <Text style={styles.selectionOptionSubtitle}>
-                  Market: ${part.marketPrice} • {part.warrantyOwnParts}
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Warning for customer parts */}
-        {selection === 'customer' && (
-          <View style={styles.warningContainer}>
-            <Text style={styles.warningIcon}>⚠️</Text>
-            <Text style={styles.warningText}>
-              Please bring this part on your service date. Quality and compatibility are your responsibility.
-            </Text>
-          </View>
-        )}
-      </View>
-    );
-  };
-
   const totals = calculateTotals();
 
   return (
@@ -231,6 +144,7 @@ const PartsSelectionScreen = ({ route, navigation }) => {
         icon="back"
         name="Parts Selection"
         image=""
+        onIconPress={() => navigation.navigate('InspectionCar')}
       />
 
       <ScrollView style={styles.scrollView}>
@@ -251,7 +165,13 @@ const PartsSelectionScreen = ({ route, navigation }) => {
 
         {/* Parts List */}
         <View style={styles.partsContainer}>
-          {requiredParts.map(renderPartCard)}
+          <Text style={styles.sectionTitle}>Parts Selection</Text>
+          {requiredParts.map((part) => (
+            <PartCard
+              key={part.id}
+              part={part}
+            />
+          ))}
         </View>
       </ScrollView>
 
@@ -324,157 +244,11 @@ const styles = StyleSheet.create({
   partsContainer: {
     paddingHorizontal: 20,
   },
-  partCard: {
-    backgroundColor: Colors.neutral0,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: Colors.shadowMd,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: Colors.neutral200,
-  },
-  partHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  partHeaderLeft: {
-    flex: 1,
-  },
-  flex: {
-    flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
-  repairName: {
-    fontSize: 16,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: '600',
     color: Colors.neutral900,
-    marginBottom: 8,
-  },
-  urgencyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  urgencyText: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  partDetails: {
     marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral200,
-  },
-  partName: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: Colors.neutral800,
-    marginBottom: 4,
-  },
-  partNumber: {
-    fontSize: 13,
-    color: Colors.neutral600,
-    marginBottom: 2,
-  },
-  oemBrand: {
-    fontSize: 13,
-    color: Colors.neutral600,
-  },
-  selectionContainer: {
-    marginBottom: 8,
-  },
-  selectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.neutral800,
-    marginBottom: 12,
-  },
-  selectionOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: Colors.neutral200,
-    backgroundColor: Colors.neutral0,
-    marginBottom: 8,
-  },
-  selectionOptionSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primarybg,
-  },
-  selectionOptionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  radioButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: Colors.neutral400,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  radioButtonSelected: {
-    borderColor: Colors.primary,
-  },
-  radioButtonInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.primary,
-  },
-  selectionOptionTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.neutral800,
-  },
-  selectionOptionSubtitle: {
-    fontSize: 12,
-    color: Colors.neutral600,
-    marginTop: 2,
-  },
-  recommendedBadge: {
-    backgroundColor: Colors.success,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  recommendedText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.neutral0,
-    letterSpacing: 0.3,
-  },
-  warningContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: Colors.warningLight,
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  warningIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  warningText: {
-    fontSize: 12,
-    color: Colors.warning,
-    flex: 1,
-    lineHeight: 16,
   },
   bottomSummary: {
     bottom: 0,

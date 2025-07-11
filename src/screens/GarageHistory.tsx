@@ -16,6 +16,9 @@ import BottomNavigation from '../components/BottomNav';
 import HistoryCard, { VisitHistory } from '../components/GarageHistoryCard';
 import Header from '../components/Header'
 import SearchBar from '../components/SearchBar';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface HistoryScreenProps {
   onBack?: () => void;
@@ -28,42 +31,40 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
   onViewNearby,
   handleTabPress,
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(2);
   const [selectedFilter, setSelectedFilter] = useState('All');
 
-  const navItems = [
+    const navItems = [
     {
-      id: 'location',
-      icon: 'location',
-      onPress: () => setActiveTab(0),
+      id: "location",
+      icon: "location",
+      onPress: () => navigation.navigate('Locations'),
     },
     {
-      id: 'recommended',
-      icon: 'star',
-      onPress: () => setActiveTab(1),
+      id: "recommended",
+      icon: "star",
+      onPress: () => navigation.navigate('GarageRecommendations'),
     },
     {
-      id: 'history',
-      icon: 'time',
-      label: 'History',
-      onPress: () => setActiveTab(2),
+      id: "history",
+      icon: "time",
+      onPress: () => navigation.navigate('GarageHistory'),
     },
     {
-      id: 'nearby',
-      icon: 'compass',
-      onPress: () => {
-        setActiveTab(3);
-        onViewNearby?.();
-      },
+      id: "nearby",
+      icon: "compass",
+      label: "Nearby",
+      onPress: () => navigation.navigate('GarageExplore'),
     },
     {
-      id: 'heart',
-      icon: 'heart',
-      label: 'Favourite',
-      onPress: () => setActiveTab(4),
+      id: "heart",
+      icon: "heart",
+      label: "Favourite",
+      onPress: () => navigation.navigate('GarageFavourites'),
     },
-  ];
+  ]
 
   const filters = ['All', 'This Week', 'This Month', 'This Year'];
 
@@ -219,7 +220,7 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
         icon="back"
         name="John Doe"
         image=""
-        onIconPress={() => console.log('Menu Pressed')}
+        onIconPress={() => navigation.navigate('Home')}
       />
       <SearchBar
         containerStyle={{

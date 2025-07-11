@@ -15,9 +15,12 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import Header from '../components/Header';
 import CommentCard from '../components/CommontCard';
-
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const ForumDetail = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [isUpvoted, setIsUpvoted] = useState(false);
   const [isDownvoted, setIsDownvoted] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -25,6 +28,7 @@ const ForumDetail = () => {
   const [upvotes, setUpvotes] = useState(156);
   const [downvotes, setDownvotes] = useState(8);
   const [localSaved, setLocalSaved] = useState(true);
+  const [activeTab, setActiveTab] = useState(0)
 
   const postData = {
     title: "Tips for Better Mobile App Development",
@@ -127,7 +131,7 @@ const ForumDetail = () => {
         icon="back"
         name="Community Forum"
         image=""
-        onIconPress={() => console.log('Menu Pressed')}
+        onIconPress={() => navigation.navigate('Forum')}
       />
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>

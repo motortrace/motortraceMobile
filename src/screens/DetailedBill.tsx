@@ -11,8 +11,9 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors'
 import Header from '../components/Header'
-import Button from '../components/Button'
-import BorderButton from '../components/BorderButton';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface ServiceItem {
   name: string;
@@ -40,8 +41,8 @@ const DetailedBill: React.FC<DetailedBillProps> = ({
   time = "10:00 AM",
   garageName = "Spring Car Garage",
   services = [
-    { name: "AC Repair", price: 20.00 },
-    { name: "Wheel Care", price: 45.00 },
+    { name: "AC Repair", price: 25.00 },
+    { name: "Wheel Care", price: 50.00 },
     { name: "Oil Change", price: 30.00 },
     { name: "Brake Inspection", price: 25.00 },
     { name: "Battery Check", price: 15.00 },
@@ -51,9 +52,8 @@ const DetailedBill: React.FC<DetailedBillProps> = ({
   cgst = 2.00,
   sgst = 2.00,
   discount = 5.00,
-  onClose,
-  onShare,
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const subtotal = services.reduce((sum, service) => sum + service.price, 0);
   const totalTax = cgst + sgst;
   const finalTotal = subtotal + totalTax - discount;
@@ -66,6 +66,7 @@ const DetailedBill: React.FC<DetailedBillProps> = ({
         icon="back"
         name="Jhon"
         image=""
+        onIconPress={() => navigation.navigate('PaidServiceBillSummary')}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

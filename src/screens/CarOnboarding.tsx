@@ -15,8 +15,12 @@ import Colors from '../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Header from '../components/Header'
 import Button from '../components/Button'
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
-const CarOnboardingForm = ({ onSubmit }) => {
+const CarOnboardingForm = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [formData, setFormData] = useState({
     name: '',
     model: '',
@@ -64,6 +68,7 @@ const CarOnboardingForm = ({ onSubmit }) => {
         <Header 
           icon = 'back'
           name = 'Jhon Doe'
+          onIconPress={() => navigation.navigate('Cars')}
         />
 
                <View style={styles.imageSection}>

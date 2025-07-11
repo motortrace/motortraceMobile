@@ -12,8 +12,10 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import Header from '../components/Header';
 import Colors from '../constants/colors';
-import Button from '../components/Button';
 import BorderButton from '../components/BorderButton';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const orderData = {
   id: 1,
@@ -67,6 +69,7 @@ const orderData = {
 };
 
 const OrderDetailsScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [expandedSection, setExpandedSection] = useState(null);
 
   const getStatusColor = (status) => {
@@ -128,7 +131,7 @@ const OrderDetailsScreen = () => {
         icon="back"
         name="John Doe"
         image=""
-        onIconPress={() => console.log('Notifications Pressed')}
+        onIconPress={() => navigation.navigate('PurchaseHistory')}
       />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

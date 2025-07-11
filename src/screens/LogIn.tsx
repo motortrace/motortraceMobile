@@ -15,6 +15,9 @@ import FormInput from '../components/FormInput';
 import Link from '../components/Link'
 import SocialLoginButtons from '../components/SocialLoginButtons';
 import FormBox from '../components/FormBox';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface LoginScreenProps {
   onLogin?: (username: string, password: string) => void;
@@ -31,6 +34,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   onSignUp,
   onForgotPassword,
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -97,13 +101,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               <Text style={styles.rememberMeText}>Remember me</Text>
             </View>
 
-            <TouchableOpacity onPress={onForgotPassword}>
+            <TouchableOpacity onPress={()=> {navigation.navigate('ForgotPassword')}}>
               <Link link="Forgot password?" />
             </TouchableOpacity>
           </View>
 
           {/* Sign In Button */}
-          <AnimatedButton title="Sign in" onPress={handleLogin} style={{ marginBottom: 24 }} />
+          <AnimatedButton title="Log In" onPress={()=> {navigation.navigate('Onboarding')}} style={{ marginBottom: 24 }} />
 
           {/* Divider */}
           <View style={styles.dividerContainer}>
@@ -123,7 +127,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         {/* Sign Up Link */}
         <View style={styles.signUpContainer}>
           <Text style={styles.signUpText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={onSignUp}>
+          <TouchableOpacity onPress={()=> {navigation.navigate('SignUp')}}>
             <Link link="Sign up" style={{ marginTop: 25 }} />
           </TouchableOpacity>
         </View>

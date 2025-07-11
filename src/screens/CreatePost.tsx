@@ -45,6 +45,10 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import Header from '../components/Header';
 import Button from '../components/Button';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
+import BottomNavigation from '../components/BottomNav';
 
 const CreatePost = () => {
   const [title, setTitle] = useState('');
@@ -53,8 +57,43 @@ const CreatePost = () => {
   const [currentCategory, setCurrentCategory] = useState('');
   const [tags, setTags] = useState('');
   const [images, setImages] = useState([]);
+  const [activeTab, setActiveTab] = useState(2);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [allowComments, setAllowComments] = useState(true);
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
+  const navItems = [
+  {
+    id: "home",
+    icon: "home-outline",
+    label: "Home",
+    onPress: () => navigation.navigate('Forum'),
+  },
+  { 
+    id: "search",
+    icon: "search-outline",
+    label: "Discover",
+    onPress: () => navigation.navigate('SearchPosts'),
+  },
+  {
+    id: "create",
+    icon: "add-circle-outline",
+    label: "Create",
+    onPress: () => navigation.navigate('CreatePost'),
+  },
+  {
+    id: "notifications",
+    icon: "notifications-outline",
+    label: "Alerts",
+    onPress: () => navigation.navigate('NotificationForum'),
+  },
+  {
+    id: "profile",
+    icon: "person-outline",
+    label: "Profile",
+    onPress: () => navigation.navigate('ForumProfile'),
+  },
+]
 
   const addCategory = () => {
     if (currentCategory.trim() && categories.length < 10 && !categories.includes(currentCategory.trim())) {
@@ -148,7 +187,7 @@ const CreatePost = () => {
         icon="back"
         name="Create Post"
         image=""
-        onIconPress={() => console.log('Cancel pressed')}
+        onIconPress={() => navigation.navigate('Home')}
         rightComponent={
           <TouchableOpacity onPress={handleSaveDraft}>
             <Text style={styles.draftButton}>Save Draft</Text>
@@ -308,6 +347,11 @@ const CreatePost = () => {
       <View style={styles.scheduleContainer}>
         <Button label="Publish" onPress={() => {}} />
       </View>
+      <BottomNavigation
+        navItems={navItems}
+        activeTab={activeTab}
+        onTabPress={() => {}}
+      />  
     </SafeAreaView>
   );
 };
@@ -591,7 +635,7 @@ const styles = StyleSheet.create({
   scheduleContainer: {
     paddingHorizontal: 16,
     paddingVertical: 16,
-    paddingBottom: 34,
+    paddingBottom: 10,
     borderTopWidth: 1,
     borderTopColor: Colors.neutral100,
   },

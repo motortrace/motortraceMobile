@@ -11,7 +11,7 @@ const BottomNavigation = ({ navItems, activeTab, onTabPress }) => {
           <TouchableOpacity
             key={item.id}
             style={styles.navItem}
-            onPress={() => onTabPress(index, item.onPress)}
+            onPress={() => item.onPress()}
             activeOpacity={0.7}
           >
             <View

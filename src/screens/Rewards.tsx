@@ -6,6 +6,9 @@ import Button from '../components/Button'
 import Header from '../components/Header'
 import SearchBar from '../components/SearchBar'
 import RewardCard from '../components/RewardCard'
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface RewardsScreenProps {
   onBack?: () => void
@@ -75,6 +78,8 @@ const RewardsScreen: React.FC<RewardsScreenProps> = ({
     }
   ]
 
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
   const handleRewardRedeem = (rewardTitle: string, pointsRequired: number) => {
     console.log(`Redeeming: ${rewardTitle} for ${pointsRequired} points`)
     // Handle reward redemption logic here
@@ -97,7 +102,7 @@ const RewardsScreen: React.FC<RewardsScreenProps> = ({
         </View>
         <TouchableOpacity 
           style={styles.historyButton}
-          onPress={onViewHistory}
+          onPress={() => navigation.navigate('RewardHistory')}
         >
           <Icon name="time-outline" size={18} color={Colors.primary} />
           <Text style={styles.historyText}>History</Text>

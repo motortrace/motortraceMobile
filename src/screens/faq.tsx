@@ -13,8 +13,12 @@ import Colors from '../constants/colors';
 import FormBox from '../components/FormBox';
 import Header from '../components/Header';
 import SearchBar from '../components/SearchBar';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 const FAQScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [expandedItems, setExpandedItems] = useState({});
@@ -187,6 +191,7 @@ const FAQScreen = () => {
       <Header 
         icon="back"
         name="Frequently Asked Questions"
+        onIconPress={() => {navigation.navigate('Help')}}
       />
 
       <SearchBar 
