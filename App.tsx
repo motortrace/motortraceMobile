@@ -83,6 +83,12 @@ import Rewards from './src/screens/Rewards';
 import RewardHistory from './src/screens/RewardHistory';
 import InspectionCar from './src/screens/InspectionsCar';
 
+import TechnicianHome from './src/screens/Technician/Home';
+import AssignedWork from './src/screens/Technician/AssignedWork';
+import WorkOrderDetails from './src/screens/Technician/WorkOrderDetails';
+import TechnicianInspection from './src/screens/Technician/Inspection'
+import TechnicianPartsSelection from './src/screens/Technician/PartsSelection'
+
 export type RootStackParamList = {
   Splash: undefined;
   Onboarding: undefined;
@@ -163,6 +169,12 @@ export type RootStackParamList = {
 
   Rewards: undefined;
   RewardHistory: undefined;
+
+  TechnicianHome: undefined;
+  AssignedWork: undefined;
+  WorkOrderDetails: undefined;
+  TechnicianInspection: undefined;
+  TechnicianPartsSelection: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -171,7 +183,7 @@ function App(): React.ReactElement {
   return (
     <NavigationContainer>
       <Stack.Navigator 
-        initialRouteName="Splash"
+        initialRouteName="TechnicianHome"
         screenOptions={{ 
           headerShown: false,
           gestureEnabled: true,
@@ -266,6 +278,12 @@ function App(): React.ReactElement {
 
         <Stack.Screen name="Rewards" component={Rewards} />
         <Stack.Screen name="RewardHistory" component={RewardHistory} />
+
+        <Stack.Screen name="TechnicianHome" component={TechnicianHome} />
+        <Stack.Screen name="AssignedWork" component={AssignedWork} />
+        <Stack.Screen name="WorkOrderDetails" component={WorkOrderDetails} />
+        <Stack.Screen name="TechnicianInspection" component={TechnicianInspection} />
+        <Stack.Screen name="TechnicianPartsSelection" component={TechnicianPartsSelection} />
 
       </Stack.Navigator>
     </NavigationContainer>
