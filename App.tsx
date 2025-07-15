@@ -86,8 +86,18 @@ import InspectionCar from './src/screens/InspectionsCar';
 import TechnicianHome from './src/screens/Technician/Home';
 import AssignedWork from './src/screens/Technician/AssignedWork';
 import WorkOrderDetails from './src/screens/Technician/WorkOrderDetails';
-import TechnicianInspection from './src/screens/Technician/Inspection'
+import TechnicianInspection from './src/screens/Technician/InspectionResults'
 import TechnicianPartsSelection from './src/screens/Technician/PartsSelection'
+import Work from './src/screens/Technician/Work';
+import Inventory from './src/screens/Technician/Inventory';
+import CreatingWroks from './src/screens/Technician/InspectionResults';
+import ChangeWorks from './src/screens/Technician/AddParts';
+import WorkProgress from './src/screens/Technician/Progress';
+import TestDrive from './src/screens/Technician/TestDrive';
+import Search from './src/screens/Technician/Search';
+import TechnicianPofile from './src/screens/Technician/Profile';
+import TechnicianEditPofile from './src/screens/Technician/EditPofile';
+import WorkHistory from './src/screens/Technician/WorkHistory';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -175,6 +185,16 @@ export type RootStackParamList = {
   WorkOrderDetails: undefined;
   TechnicianInspection: undefined;
   TechnicianPartsSelection: undefined;
+  Work: undefined;
+  Inventory: undefined;
+  CreatingWroks: undefined;
+  ChangeWorks: undefined;
+  WorkProgress: undefined;
+  TestDrive: undefined;
+  Search: undefined;
+  TechnicianPofile: undefined;
+  TechnicianEditPofile: undefined;
+  WorkHistory: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -279,11 +299,21 @@ function App(): React.ReactElement {
         <Stack.Screen name="Rewards" component={Rewards} />
         <Stack.Screen name="RewardHistory" component={RewardHistory} />
 
-        <Stack.Screen name="TechnicianHome" component={TechnicianHome} />
-        <Stack.Screen name="AssignedWork" component={AssignedWork} />
-        <Stack.Screen name="WorkOrderDetails" component={WorkOrderDetails} />
-        <Stack.Screen name="TechnicianInspection" component={TechnicianInspection} />
-        <Stack.Screen name="TechnicianPartsSelection" component={TechnicianPartsSelection} />
+        <Stack.Screen name="TechnicianHome" component={TechnicianHome}/>
+        <Stack.Screen name="AssignedWork" component={AssignedWork}/>
+        <Stack.Screen name="WorkOrderDetails" component={WorkOrderDetails}/>
+        <Stack.Screen name="TechnicianInspection" component={TechnicianInspection}/>
+        <Stack.Screen name="TechnicianPartsSelection" component={TechnicianPartsSelection}/>
+        <Stack.Screen name="Work" component={Work}/>
+        <Stack.Screen name="Inventory" component={Inventory}/>
+        <Stack.Screen name="CreatingWroks" component={CreatingWroks}/>
+        <Stack.Screen name="ChangeWorks" component={ChangeWorks}/>
+        <Stack.Screen name="WorkProgress" component={WorkProgress}/>
+        <Stack.Screen name="TestDrive" component={TestDrive}/>
+        <Stack.Screen name="Search" component={Search}/>
+        <Stack.Screen name="TechnicianPofile" component={TechnicianPofile}/>
+        <Stack.Screen name="TechnicianEditPofile" component={TechnicianEditPofile}/>
+        <Stack.Screen name="WorkHistory" component={WorkHistory}/>
 
       </Stack.Navigator>
     </NavigationContainer>

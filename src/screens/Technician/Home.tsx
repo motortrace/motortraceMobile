@@ -161,31 +161,31 @@ const TechnicianHomeScreen = () => {
       id: "home",
       icon: "home",
       label: "Home",
-      onPress: () => setActiveTab(0)
+      onPress: () => navigation.navigate('TechnicianHome')
     },
     {
       id: "work",
       icon: "clipboard",
       label: "Work Orders",
-    //   onPress: () => navigation.navigate('AssignedWorkScreen')
+      onPress: () => navigation.navigate('Work')
     },
     {
       id: "inspection",
       icon: "search",
       label: "Inspect",
-    //   onPress: () => navigation.navigate('InspectionScreen')
+      onPress: () => navigation.navigate('Search')
     },
     {
       id: "inventory",
       icon: "cube",
       label: "Inventory",
-    //   onPress: () => navigation.navigate('InventorySearchScreen')
+      onPress: () => navigation.navigate('Inventory')
     },
     {
       id: "profile",
       icon: "person",
       label: "Profile",
-    //   onPress: () => navigation.navigate('ProfileScreen')
+      onPress: () => navigation.navigate('TechnicianPofile')
     }
   ];
 
