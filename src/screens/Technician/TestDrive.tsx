@@ -106,11 +106,11 @@ const TestDriveResultModal = ({
                   <Icon 
                     name="close-circle-outline" 
                     size={24} 
-                    color={result === 'failed' ? Colors.error : Colors.neutral400} 
+                    color={result === 'failed' ? Colors.danger : Colors.neutral400} 
                   />
                   <Text style={[
                     styles.resultOptionText,
-                    result === 'failed' && { color: Colors.error }
+                    result === 'failed' && { color: Colors.danger }
                   ]}>
                     Failed
                   </Text>

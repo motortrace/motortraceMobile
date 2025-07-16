@@ -20,22 +20,85 @@ import type { RootStackParamList } from '../../../App';
 
 const { width: screenWidth } = Dimensions.get('window');
 
+// Progress Flow Configuration
+const PROGRESS_FLOW = [
+  { 
+    id: 0, 
+    phase: 'details', 
+    title: 'Work Details', 
+    buttonText: 'Start Inspection',
+    nextScreen: null
+  },
+  { 
+    id: 1, 
+    phase: 'inspection', 
+    title: 'Inspection', 
+    buttonText: 'Complete Inspection',
+    nextScreen: 'TechnicianInspection'
+  },
+  { 
+    id: 2, 
+    phase: 'diagnosis', 
+    title: 'inspection', 
+    buttonText: 'View Works',
+    nextScreen: 'SelectedWork'
+  },
+  { 
+    id: 3, 
+    phase: 'diagnosis', 
+    title: 'inspection', 
+    buttonText: 'Select Parts',
+    nextScreen: 'ChangeWorks'
+  },
+  { 
+    id: 4, 
+    phase: 'diagnosis', 
+    title: 'inspection', 
+    buttonText: 'View Parts',
+    nextScreen: 'SelectedProduct'
+  },
+  { 
+    id: 5, 
+    phase: 'Repair', 
+    title: 'Repair',
+    buttonText: 'Update Progress',
+    nextScreen: 'WorkProgress'
+  },
+  { 
+    id: 6, 
+    phase: 'testing', 
+    title: 'Test Drive',
+    buttonText: 'Test Drive',
+    nextScreen: 'TestDrive'
+  },
+  { 
+    id: 7, 
+    phase: 'completion', 
+    title: 'Complete',
+    buttonText: 'Complete',
+    nextScreen: 'CompleteWork'
+  }
+];
+
 // Current Work Progress Component
-const CurrentWorkProgress = ({ currentWork, onUpdateProgress }) => {
+const CurrentWorkProgress = ({ currentWork, onUpdateProgress, currentProgressStep }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  
   const getPhaseColor = (phase) => {
     switch (phase) {
+      case 'details': return '#6B7280';
       case 'inspection': return '#3B82F6';
       case 'diagnosis': return '#F59E0B';
       case 'repair': return '#EF4444';
       case 'testing': return '#8B5CF6';
-      case 'completion': return '#10B981';
+      case 'complete': return '#10B981';
       default: return '#6B7280';
     }
   };
 
   const getPhaseIcon = (phase) => {
     switch (phase) {
+      case 'details': return 'document-text-outline';
       case 'inspection': return 'search-outline';
       case 'diagnosis': return 'analytics-outline';
       case 'repair': return 'build-outline';
@@ -45,9 +108,37 @@ const CurrentWorkProgress = ({ currentWork, onUpdateProgress }) => {
     }
   };
 
-  const phases = ['inspection', 'diagnosis', 'repair', 'testing', 'completion'];
-  const currentPhaseIndex = phases.indexOf(currentWork.currentPhase);
-  const progressPercentage = ((currentPhaseIndex + 1) / phases.length) * 100;
+  // Define phases that match the PROGRESS_FLOW
+  const phases = ['details', 'inspection', 'diagnosis', 'repair', 'testing', 'completion'];
+  
+  // Map progress steps to phases
+  const getPhaseFromStep = (step) => {
+    if (step === 0) return 'details';
+    if (step === 1) return 'inspection';
+    if (step >= 2 && step <=4 ) return 'diagnosis';
+    if (step === 5 ) return 'repair';
+    if (step === 6) return 'testing';
+    if (step === 7) return 'completion';
+    return 'details';
+  };
+
+  const currentPhase = getPhaseFromStep(currentProgressStep);
+  const currentPhaseIndex = phases.indexOf(currentPhase);
+  const progressPercentage = (currentProgressStep / PROGRESS_FLOW.length) * 100;
+
+  const currentFlowStep = PROGRESS_FLOW[currentProgressStep] || PROGRESS_FLOW[PROGRESS_FLOW.length - 1];
+
+  const handleUpdateProgress = () => {
+    // First increment the progress step
+    const nextStep = currentProgressStep + 1;
+    onUpdateProgress();
+    
+    // Then navigate if there's a next screen
+    const currentFlowStep = PROGRESS_FLOW[currentProgressStep];
+    if (currentFlowStep && currentFlowStep.nextScreen) {
+      navigation.navigate(currentFlowStep.nextScreen);
+    }
+  };
 
   return (
     <View style={styles.currentWorkContainer}>
@@ -70,7 +161,7 @@ const CurrentWorkProgress = ({ currentWork, onUpdateProgress }) => {
 
       <View style={styles.progressSection}>
         <View style={styles.progressHeader}>
-          <Text style={styles.progressTitle}>Progress</Text>
+          <Text style={styles.progressTitle}>Progress - {currentFlowStep.title}</Text>
           <Text style={styles.progressPercentage}>{Math.round(progressPercentage)}%</Text>
         </View>
         
@@ -79,43 +170,49 @@ const CurrentWorkProgress = ({ currentWork, onUpdateProgress }) => {
         </View>
         
         <View style={styles.phasesContainer}>
-          {phases.map((phase, index) => (
-            <View key={phase} style={styles.phaseItem}>
-              <View style={[
-                styles.phaseIcon,
-                { 
-                  backgroundColor: index <= currentPhaseIndex ? getPhaseColor(phase) : Colors.neutral200,
-                  borderColor: index === currentPhaseIndex ? getPhaseColor(phase) : 'transparent',
-                  borderWidth: index === currentPhaseIndex ? 2 : 0
-                }
-              ]}>
-                <Icon 
-                  name={getPhaseIcon(phase)} 
-                  size={16} 
-                  color={index <= currentPhaseIndex ? Colors.neutral0 : Colors.neutral600} 
-                />
+          {phases.map((phase, index) => {
+            const isCompleted = index < currentPhaseIndex;
+            const isCurrent = index === currentPhaseIndex;
+            const isUpcoming = index > currentPhaseIndex;
+            
+            return (
+              <View key={phase} style={styles.phaseItem}>
+                <View style={[
+                  styles.phaseIcon,
+                  { 
+                    backgroundColor: isCompleted || isCurrent ? getPhaseColor(phase) : Colors.neutral200,
+                    borderColor: isCurrent ? getPhaseColor(phase) : 'transparent',
+                    borderWidth: isCurrent ? 2 : 0
+                  }
+                ]}>
+                  <Icon 
+                    name={getPhaseIcon(phase)} 
+                    size={16} 
+                    color={isCompleted || isCurrent ? Colors.neutral0 : Colors.neutral600} 
+                  />
+                </View>
+                <Text style={[
+                  styles.phaseLabel,
+                  { 
+                    color: isCompleted || isCurrent ? Colors.neutral1000 : Colors.neutral600,
+                    fontWeight: isCurrent ? '600' : '400'
+                  }
+                ]}>
+                  {phase.charAt(0).toUpperCase() + phase.slice(1)}
+                </Text>
               </View>
-              <Text style={[
-                styles.phaseLabel,
-                { 
-                  color: index <= currentPhaseIndex ? Colors.neutral1000 : Colors.neutral600,
-                  fontWeight: index === currentPhaseIndex ? '600' : '400'
-                }
-              ]}>
-                {phase.charAt(0).toUpperCase() + phase.slice(1)}
-              </Text>
-            </View>
-          ))}
+            );
+          })}
         </View>
       </View>
 
       <View style={styles.actionButtons}>
         <TouchableOpacity 
           style={styles.updateButton}
-          onPress={() => navigation.navigate('TestDrive')}
+          onPress={handleUpdateProgress}
         >
           <Icon name="refresh-outline" size={18} color={Colors.neutral0} />
-          <Text style={styles.updateButtonText}>Update Progress</Text>
+          <Text style={styles.updateButtonText}>{currentFlowStep.buttonText}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -221,6 +318,7 @@ const AssignedWorkScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentProgressStep, setCurrentProgressStep] = useState(0); // Progress flow state
 
   // Mock current work data
   const currentWork = {
@@ -232,7 +330,7 @@ const AssignedWorkScreen = () => {
       model: 'Civic'
     },
     serviceType: 'Brake Inspection & Replacement',
-    currentPhase: 'diagnosis',
+    currentPhase: 'details',
     elapsedTime: '1h 23m',
     startTime: '10:30 AM',
     estimatedCompletion: '2:00 PM'
@@ -305,15 +403,13 @@ const AssignedWorkScreen = () => {
     }
   ];
 
-  const handleUpdateProgress = (workOrderId) => {
-    Alert.alert(
-      'Update Progress',
-      'Move to next phase?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Yes', onPress: () => console.log('Progress updated') }
-      ]
-    );
+  const handleUpdateProgress = () => {
+    if (currentProgressStep < PROGRESS_FLOW.length - 1) {
+      setCurrentProgressStep(currentProgressStep + 1);
+    } else {
+      // Work completed
+      setCurrentProgressStep(currentProgressStep + 1);
+    }
   };
 
   const handleStartWork = (workOrder) => {
@@ -322,7 +418,10 @@ const AssignedWorkScreen = () => {
       `Start working on ${workOrder.customerName}'s ${workOrder.vehicle.year} ${workOrder.vehicle.make} ${workOrder.vehicle.model}?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Start', onPress: () => console.log('Work started') }
+        { text: 'Start', onPress: () => {
+          setCurrentProgressStep(0); // Reset progress for new work
+          console.log('Work started');
+        }}
       ]
     );
   };
@@ -362,6 +461,7 @@ const AssignedWorkScreen = () => {
         <CurrentWorkProgress 
           currentWork={currentWork}
           onUpdateProgress={handleUpdateProgress}
+          currentProgressStep={currentProgressStep}
         />
         
         <View style={styles.queueSection}>

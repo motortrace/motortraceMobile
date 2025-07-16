@@ -98,6 +98,9 @@ import Search from './src/screens/Technician/Search';
 import TechnicianPofile from './src/screens/Technician/Profile';
 import TechnicianEditPofile from './src/screens/Technician/EditPofile';
 import WorkHistory from './src/screens/Technician/WorkHistory';
+import SelectedProduct from './src/screens/Technician/SelectedProduct'
+import SelectedWork from './src/screens/Technician/SelectedWork';
+import CompleteWork from './src/screens/Technician/CompleteWork';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -195,6 +198,9 @@ export type RootStackParamList = {
   TechnicianPofile: undefined;
   TechnicianEditPofile: undefined;
   WorkHistory: undefined;
+  SelectedProduct: undefined;
+  SelectedWork: undefined;
+  CompleteWork: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -314,6 +320,9 @@ function App(): React.ReactElement {
         <Stack.Screen name="TechnicianPofile" component={TechnicianPofile}/>
         <Stack.Screen name="TechnicianEditPofile" component={TechnicianEditPofile}/>
         <Stack.Screen name="WorkHistory" component={WorkHistory}/>
+        <Stack.Screen name="SelectedProduct" component={SelectedProduct}/>
+        <Stack.Screen name="SelectedWork" component={SelectedWork}/>
+        <Stack.Screen name="CompleteWork" component={CompleteWork}/>
 
       </Stack.Navigator>
     </NavigationContainer>
