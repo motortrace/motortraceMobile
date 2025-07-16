@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,14 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
-import CategoryBadge from '../components/CategoryBadge';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
+import CategoryBadge from '../../components/CategoryBadge';
+import Button from '../../components/Button';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const repairs = [
   {
@@ -25,6 +25,7 @@ const repairs = [
     description: 'Brake pads are severely worn and require immediate replacement for safety.',
     price: 150,
     estimatedTime: '2 hours',
+    isSelected: true,
   },
   {
     id: 2,
@@ -35,6 +36,7 @@ const repairs = [
     description: 'Oil is due for replacement to maintain optimal engine performance.',
     price: 45,
     estimatedTime: '30 minutes',
+    isSelected: false,
   },
   {
     id: 3,
@@ -45,6 +47,7 @@ const repairs = [
     description: 'Tire tread is below safe limits and poses a safety risk.',
     price: 120,
     estimatedTime: '45 minutes',
+    isSelected: true,
   },
   {
     id: 4,
@@ -55,6 +58,7 @@ const repairs = [
     description: 'Air filter is slightly dirty but can improve fuel efficiency when replaced.',
     price: 25,
     estimatedTime: '15 minutes',
+    isSelected: false,
   },
   {
     id: 5,
@@ -65,26 +69,15 @@ const repairs = [
     description: 'Battery terminals show corrosion and should be cleaned for better performance.',
     price: 30,
     estimatedTime: '20 minutes',
+    isSelected: false,
   },
 ];
 
-const ReviewRepairsScreen = () => {
-  const [selected, setSelected] = useState<{ [id: number]: boolean }>({
-    1: true,
-    3: true,
-  });
-
+const TechnicianRepairsScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  const toggleRepair = (id: number) => {
-    setSelected(prev => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
-
-  const selectedRepairs = repairs.filter(r => selected[r.id]);
-  const unselectedRepairs = repairs.filter(r => !selected[r.id]);
+  const selectedRepairs = repairs.filter(r => r.isSelected);
+  const unselectedRepairs = repairs.filter(r => !r.isSelected);
 
   const getSelectedRepairsTotal = () => {
     return selectedRepairs.reduce((total, repair) => total + repair.price, 0);
@@ -94,31 +87,14 @@ const ReviewRepairsScreen = () => {
     return selectedRepairs.length;
   };
 
-  const handleSubmit = () => {
-    const selectedCount = getSelectedRepairsCount();
-    const total = getSelectedRepairsTotal();
-
-    if (selectedCount === 0) {
-      Alert.alert('No Repairs Selected', 'Please select at least one repair to proceed.');
-      return;
-    }
-
-    Alert.alert(
-      'Submit Repairs',
-      `You selected ${selectedCount} repair(s) totaling $${total}. Submit?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Submit', onPress: () => console.log('Repairs submitted:', selectedRepairs) },
-      ]
-    );
-  };
-
   const renderRepairCard = (repair, isSelected) => {
     return (
-      <TouchableOpacity
+      <View
         key={repair.id}
-        style={[styles.repairCard, isSelected && styles.repairCardSelected]}
-        onPress={() => toggleRepair(repair.id)}
+        style={[
+          styles.repairCard, 
+          isSelected ? styles.repairCardSelected : styles.repairCardNotSelected
+        ]}
       >
         <View style={styles.repairHeader}>
           <CategoryBadge 
@@ -135,22 +111,27 @@ const ReviewRepairsScreen = () => {
         <Text style={styles.repairTitle}>{repair.title}</Text>
         <Text style={styles.repairDescription}>{repair.description}</Text>
         
-        <View style={styles.selectionContainer}>
-          <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-            {isSelected && <Text style={styles.checkmark}>✓</Text>}
+        <View style={styles.statusContainer}>
+          <View style={[
+            styles.statusIndicator, 
+            isSelected ? styles.statusIndicatorSelected : styles.statusIndicatorNotSelected
+          ]}>
+            <Text style={[
+              styles.statusText,
+              isSelected ? styles.statusTextSelected : styles.statusTextNotSelected
+            ]}>
+              {isSelected ? '✓ APPROVED' : '✗ NOT APPROVED'}
+            </Text>
           </View>
-          <Text style={styles.selectionText}>
-            {isSelected ? 'Selected for repair' : 'Tap to select'}
-          </Text>
         </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <Header 
-        name="Review Repairs" 
+        name="Repair Work Order" 
         icon="back" 
         onIconPress={() => navigation.goBack()} 
       />
@@ -158,10 +139,22 @@ const ReviewRepairsScreen = () => {
       <ScrollView style={styles.scrollView}>
         {/* Summary Card */}
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Review Your Selection</Text>
+          <Text style={styles.summaryTitle}>Work Order Summary</Text>
           <Text style={styles.summarySubtitle}>
-            Review and modify your repair selections before submitting
+            Customer approved repairs and maintenance items
           </Text>
+          
+          <View style={styles.workOrderStats}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{getSelectedRepairsCount()}</Text>
+              <Text style={styles.statLabel}>Approved Repairs</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>${getSelectedRepairsTotal()}</Text>
+              <Text style={styles.statLabel}>Total Value</Text>
+            </View>
+          </View>
           
           <View style={styles.legendContainer}>
             <View style={styles.legendItem}>
@@ -179,26 +172,28 @@ const ReviewRepairsScreen = () => {
           </View>
         </View>
 
-        {/* Selected Repairs Section */}
+        {/* Approved Repairs Section */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>✅ Selected Repairs</Text>
+          <Text style={styles.sectionTitle}>✅ Approved Repairs</Text>
+          <Text style={styles.sectionSubtitle}>Proceed with these repairs</Text>
           {selectedRepairs.length > 0 ? (
             selectedRepairs.map(repair => renderRepairCard(repair, true))
           ) : (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>No repairs selected.</Text>
+              <Text style={styles.emptyText}>No repairs approved by customer.</Text>
             </View>
           )}
         </View>
 
-        {/* Unselected Repairs Section */}
+        {/* Not Approved Repairs Section */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>🛠️ Available Repairs</Text>
+          <Text style={styles.sectionTitle}>❌ Not Approved</Text>
+          <Text style={styles.sectionSubtitle}>Customer declined these repairs</Text>
           {unselectedRepairs.length > 0 ? (
             unselectedRepairs.map(repair => renderRepairCard(repair, false))
           ) : (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>All repairs selected.</Text>
+              <Text style={styles.emptyText}>All recommended repairs approved.</Text>
             </View>
           )}
         </View>
@@ -208,25 +203,17 @@ const ReviewRepairsScreen = () => {
       <View style={styles.bottomActionBar}>
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>
-            {getSelectedRepairsCount()} repair(s) selected
+            Work Order Total
           </Text>
           <Text style={styles.totalAmount}>
-            Total: ${getSelectedRepairsTotal()}
+            ${getSelectedRepairsTotal()} ({getSelectedRepairsCount()} items)
           </Text>
         </View>
-        
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            getSelectedRepairsCount() === 0 && styles.submitButtonDisabled
-          ]}
-          onPress={handleSubmit}
-          disabled={getSelectedRepairsCount() === 0}
-        >
-          <Text style={styles.submitButtonText}>
-            Submit Selected Repairs
-          </Text>
-        </TouchableOpacity>
+
+        <Button 
+          label = "Start Work on Approved Repairs"
+          onPress={() => navigation.goBack()}
+        />
       </View>
     </SafeAreaView>
   );
@@ -235,7 +222,7 @@ const ReviewRepairsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primarybg,
+    backgroundColor: Colors.neutral50,
   },
   scrollView: {
     flex: 1,
@@ -265,6 +252,36 @@ const styles = StyleSheet.create({
     color: Colors.neutral600,
     marginBottom: 20,
   },
+  workOrderStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: Colors.neutral50,
+    borderRadius: 8,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.primary,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: Colors.neutral600,
+    textAlign: 'center',
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: Colors.neutral200,
+    marginHorizontal: 20,
+  },
   legendContainer: {
     gap: 12,
   },
@@ -290,6 +307,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: Colors.neutral900,
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: Colors.neutral600,
     marginBottom: 16,
   },
   repairCard: {
@@ -298,7 +320,6 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 2,
-    borderColor: Colors.neutral200,
     shadowColor: Colors.shadowMd,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -307,7 +328,11 @@ const styles = StyleSheet.create({
   },
   repairCardSelected: {
     borderColor: Colors.primary,
-    backgroundColor: Colors.primaryLighter,
+    backgroundColor: Colors.primarybg,
+  },
+  repairCardNotSelected: {
+    borderColor: Colors.neutral300,
+    backgroundColor: Colors.neutral50,
   },
   repairHeader: {
     flexDirection: 'row',
@@ -339,31 +364,31 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 12,
   },
-  selectionContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  statusContainer: {
+    alignItems: 'flex-start',
   },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
+  statusIndicator: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  statusIndicatorSelected: {
+    backgroundColor: Colors.infoLight,
+    borderColor: Colors.success,
+  },
+  statusIndicatorNotSelected: {
+    backgroundColor: Colors.neutral100,
     borderColor: Colors.neutral400,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
   },
-  checkboxSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  checkmark: {
-    color: Colors.neutral0,
+  statusText: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  selectionText: {
-    fontSize: 14,
+  statusTextSelected: {
+    color: Colors.success,
+  },
+  statusTextNotSelected: {
     color: Colors.neutral600,
   },
   emptyCard: {
@@ -381,7 +406,7 @@ const styles = StyleSheet.create({
     color: Colors.neutral500,
   },
   bottomActionBar: {
-    bottom: 0,
+    bottom: 15,
     left: 0,
     right: 0,
     backgroundColor: Colors.neutral0,
@@ -407,21 +432,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.neutral900,
   },
-  submitButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  submitButtonDisabled: {
-    backgroundColor: Colors.neutral300,
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.neutral0,
-  },
 });
 
-export default ReviewRepairsScreen;
+export default TechnicianRepairsScreen;
