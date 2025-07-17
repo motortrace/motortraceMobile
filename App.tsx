@@ -8,80 +8,80 @@ import Home from './src/screens/Dashboard';
 import LogIn from './src/screens/LogIn'
 import SignUp from './src/screens/SignUp';
 import ForgotPassword from './src/screens/ForgotPassword';
-import Onbording from './src/screens/Onboarding';
+import Onbording from './src/screens/User/Onboarding';
 import Verification from './src/screens/Verification'
 import LoadingScreen from './src/screens/LoadingScreen'
 import Success from './src/screens/Success';
 import Confirm from './src/screens/Confirm';
 import RecoverPassword from './src/screens/RecoverPassword';
 
-import AllPackages from  './src/screens/AllPackages'
-import AllServices from  './src/screens/AllServices'
-import AllReviews from  './src/screens/AllReviews'
-import Locations from './src/screens/Locations'
-import GarageRecommendations from './src/screens/GarageRecommendations'
-import GarageHistory from './src/screens/GarageHistory'
-import GarageExplore from './src/screens/GarageExplore'
-import GarageFavourites from './src/screens/GarageFavourites'
-import GarageInfo from './src/screens/GarageInfo'
-import GaragePackage from './src/screens/GaragePackages'
-import GarageReview from './src/screens/GarageReview'
-import GarageServices from './src/screens/GarageServices'
-import GarageServiceDetails from './src/screens/GarageServiceDetails'
-import DetailedBill from './src/screens/DetailedBill';
-import PaidServiceBillSummary from './src/screens/PaidServiceBillSummary';
-import Appointment from './src/screens/Appointment'
+import AllPackages from  './src/screens/User/AllPackages'
+import AllServices from  './src/screens/User/AllServices'
+import AllReviews from  './src/screens/User/AllReviews'
+import Locations from './src/screens/User/Locations'
+import GarageRecommendations from './src/screens/User/GarageRecommendations'
+import GarageHistory from './src/screens/User/GarageHistory'
+import GarageExplore from './src/screens/User/GarageExplore'
+import GarageFavourites from './src/screens/User/GarageFavourites'
+import GarageInfo from './src/screens/User/GarageInfo'
+import GaragePackage from './src/screens/User/GaragePackages'
+import GarageReview from './src/screens/User/GarageReview'
+import GarageServices from './src/screens/User/GarageServices'
+import GarageServiceDetails from './src/screens/User/GarageServiceDetails'
+import DetailedBill from './src/screens/User/DetailedBill';
+import PaidServiceBillSummary from './src/screens/User/PaidServiceBillSummary';
+import Appointment from './src/screens/User/Appointment'
 
-import Forum from './src/screens/Forum'
-import SearchPosts from './src/screens/SearchPost';
-import CreatePost from './src/screens/CreatePost';
-import ForumDetail from './src/screens/ForumDetail';
-import ForumProfile from './src/screens/ForumProfile'
-import NotificationForum from './src/screens/ForumNotification'
-import ForumNotificationDetails from './src/screens/ForumNotificationDetails'
-import ForumViewProfile from './src/screens/ForumViewProfile'
+import Forum from './src/screens/User/Forum'
+import SearchPosts from './src/screens/User/SearchPost';
+import CreatePost from './src/screens/User/CreatePost';
+import ForumDetail from './src/screens/User/ForumDetail';
+import ForumProfile from './src/screens/User/ForumProfile'
+import NotificationForum from './src/screens/User/ForumNotification'
+import ForumNotificationDetails from './src/screens/User/ForumNotificationDetails'
+import ForumViewProfile from './src/screens/User/ForumViewProfile'
 
-import Profile from './src/screens/Profile'
-import EditProfile from './src/screens/EditProfile'
+import Profile from './src/screens/User/Profile'
+import EditProfile from './src/screens/User/EditProfile'
 import ResetPassword from './src/screens/ResetPassword';
 import PrivacySettings from './src/screens/PrivacySettings';
 import Help from './src/screens/Help'
 import PrivacyPolicy from './src/screens/PrivacyPolicy'
 import DeleteAccount from './src/screens/DeleteAccount';
 import LoginActivity from './src/screens/LoginActivity';
-import ActiveSession from './src/screens/ActiveSession';
-import SupportChat from './src/screens/SupportChat';
+import ActiveSession from './src/screens/User/ActiveSession';
+import SupportChat from './src/screens/User/SupportChat';
 import faq from './src/screens/faq'
 import FaqAnswer from './src/screens/FaqAnswer';
 
-import MarketPlace from './src/screens/MarketPlace'
-import OrderDetails from './src/screens/OrderDetails';
+import MarketPlace from './src/screens/User/MarketPlace'
+import OrderDetails from './src/screens/User/OrderDetails';
 import ProductDetails from './src/screens/ProductDetails';
-import PurchaseHistory from './src/screens/PurchaseHistory';
-import RecommendedProduct from './src/screens/RecommendedProduct';
-import Carts from './src/screens/Cart'
-import FavouriteProducts from './src/screens/FavouriteProducts';
-import TrackOrder from './src/screens/TrackOrder';
+import PurchaseHistory from './src/screens/User/PurchaseHistory';
+import RecommendedProduct from './src/screens/User/RecommendedProduct';
+import Carts from './src/screens/User/Cart'
+import FavouriteProducts from './src/screens/User/FavouriteProducts';
+import TrackOrder from './src/screens/User/TrackOrder';
 
-import Cars from './src/screens/Cars'
-import CarDetails from './src/screens/CarDetails';
-import EditCarDetails from './src/screens/EditCarDetails';
-import CarOnboarding from './src/screens/CarOnboarding';
-import CarProducts from './src/screens/CarProducts';
-import CarServices from './src/screens/CarServices';
-import MileageTracking from './src/screens/MilageTracking';
+import Cars from './src/screens/User/Cars'
+import CarDetails from './src/screens/User/CarDetails';
+import EditCarDetails from './src/screens/User/EditCarDetails';
+import CarOnboarding from './src/screens/User/CarOnboarding';
+import CarProducts from './src/screens/User/CarProducts';
+import CarServices from './src/screens/User/CarServices';
+import MileageTracking from './src/screens/User/MilageTracking';
 
-import InspectionResults from './src/screens/InspectionResult';
-import PartsSelection from './src/screens/PartsSelection';
-import Reservations from './src/screens/Reservations';
+import InspectionResults from './src/screens/User/InspectionResult';
+import PartsSelection from './src/screens/User/PartsSelection';
+import Reservations from './src/screens/User/Reservations';
 import ChatBox from './src/screens/Chatbox'
-import InspectionResultSelected from './src/screens/InspectionResultSelected';
-import SelectedParts from './src/screens/SelectedParts'
-import ServiceProgress from './src/screens/ServiceProgress';
+import InspectionResultSelected from './src/screens/User/InspectionResultSelected';
+import SelectedParts from './src/screens/User/SelectedParts'
+import ServiceProgress from './src/screens/User/ServiceProgress';
 
-import Rewards from './src/screens/Rewards';
-import RewardHistory from './src/screens/RewardHistory';
-import InspectionCar from './src/screens/InspectionsCar';
+import Rewards from './src/screens/User/Rewards';
+import RewardHistory from './src/screens/User/RewardHistory';
+import InspectionCar from './src/screens/User/InspectionsCar';
 
 import TechnicianHome from './src/screens/Technician/Home';
 import AssignedWork from './src/screens/Technician/AssignedWork';
@@ -229,7 +229,7 @@ function App(): React.ReactElement {
         <Stack.Screen name="Confirm" component={Confirm} />
         <Stack.Screen name="RecoverPassword" component={RecoverPassword} />
 
-        {/* Main App screens */}
+        {/* User Home */}
         <Stack.Screen name="Home" component={Home} />
 
         {/* Garages and Locations */}
@@ -293,6 +293,7 @@ function App(): React.ReactElement {
         <Stack.Screen name="CarServices" component={CarServices} />
         <Stack.Screen name="MileageTracking" component={MileageTracking} />
 
+        {/* Appintments */} 
         <Stack.Screen name="Reservations" component={Reservations} />
         <Stack.Screen name="InspectionResults" component={InspectionResults} />
         <Stack.Screen name="PartsSelection" component={PartsSelection} />
@@ -302,9 +303,11 @@ function App(): React.ReactElement {
         <Stack.Screen name="SelectedParts" component={SelectedParts} />
         <Stack.Screen name="ServiceProgress" component={ServiceProgress} />
 
+        {/* Rewards */}
         <Stack.Screen name="Rewards" component={Rewards} />
         <Stack.Screen name="RewardHistory" component={RewardHistory} />
 
+        {/* Technician */}
         <Stack.Screen name="TechnicianHome" component={TechnicianHome}/>
         <Stack.Screen name="AssignedWork" component={AssignedWork}/>
         <Stack.Screen name="WorkOrderDetails" component={WorkOrderDetails}/>
