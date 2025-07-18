@@ -12,6 +12,7 @@ import Colors from '../constants/colors';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
+import { useUser } from '../store/UserContext';
 
 interface HeaderProps {
   icon?: 'back' | 'menu' | '';

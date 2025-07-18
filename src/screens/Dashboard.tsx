@@ -7,6 +7,7 @@ import Header from '../components/Header'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
+import { useUser } from '../store/UserContext';
 
 interface Vehicle {
   id: string;
@@ -25,10 +26,11 @@ interface DashboardScreenProps {
 }
 
 const DashboardScreen: React.FC<DashboardScreenProps> = ({
-  userName = "John Doe",
   onMenuPress,
   onNotificationPress,
 }) => {
+  const { user } = useUser();
+  const userName = user?.name || "John Doe";
   const [selectedVehicle, setSelectedVehicle] = useState(0)
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -166,7 +168,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     <SafeAreaView style={styles.container}>
         <Header
           icon=""
-          name="John Doe"
+          name={userName}
           image=""
           onIconPress={() => navigation.navigate('Home')}
         />
