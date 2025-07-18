@@ -10,12 +10,12 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import Colors from '../constants/colors';
+import Colors from '../../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Header from '../components/Header'
+import Header from '../../components/Header'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 interface Message {
   id: string;

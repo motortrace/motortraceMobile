@@ -9,14 +9,14 @@ import {
   FlatList,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Colors from '../constants/colors';
-import PostCard from '../components/PostCard';
-import Header from '../components/Header';
-import SearchBar from '../components/SearchBar';
-import BottomNavigation from '../components/BottomNav';
+import Colors from '../../constants/colors';
+import PostCard from '../../components/PostCard';
+import Header from '../../components/Header';
+import SearchBar from '../../components/SearchBar';
+import BottomNavigation from '../../components/BottomNav';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const SearchDiscover = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();

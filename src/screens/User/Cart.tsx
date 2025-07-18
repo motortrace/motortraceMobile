@@ -10,14 +10,14 @@ import {
   TextInput,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Header from '../components/Header';
-import Colors from '../constants/colors';
-import Button from '../components/Button';
-import BorderButton from '../components/BorderButton';
+import Header from '../../components/Header';
+import Colors from '../../constants/colors';
+import Button from '../../components/Button';
+import BorderButton from '../../components/BorderButton';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
-import BottomNav from '../components/BottomNav';
+import type { RootStackParamList } from '../../../App';
+import BottomNav from '../../components/BottomNav';
 
 const initialCartData = {
   items: [

@@ -42,13 +42,13 @@ import {
   Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
-import Button from '../components/Button';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
+import Button from '../../components/Button';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
-import BottomNavigation from '../components/BottomNav';
+import type { RootStackParamList } from '../../../App';
+import BottomNavigation from '../../components/BottomNav';
 
 const CreatePost = () => {
   const [title, setTitle] = useState('');

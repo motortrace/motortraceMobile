@@ -10,14 +10,14 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
-import FormInput from '../components/FormInput';
-import Colors from '../constants/colors';
+import FormInput from '../../components/FormInput';
+import Colors from '../../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Header from '../components/Header'
-import Button from '../components/Button'
+import Header from '../../components/Header'
+import Button from '../../components/Button'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const CarOnboardingForm = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();

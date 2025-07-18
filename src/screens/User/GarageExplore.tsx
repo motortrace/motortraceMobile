@@ -9,15 +9,15 @@ import {
   Text,
   FlatList
 } from 'react-native';
-import Colors from '../constants/colors';
+import Colors from '../../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
-import BottomNavigation from '../components/BottomNav';
-import GarageCard from '../components/GarageCard';
-import Header from '../components/Header'
-import SearchBar from '../components/SearchBar';
+import BottomNavigation from '../../components/BottomNav';
+import GarageCard from '../../components/GarageCard';
+import Header from '../../components/Header'
+import SearchBar from '../../components/SearchBar';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 interface NearbyGaragesScreenProps {
   onBack?: () => void;
@@ -79,7 +79,7 @@ const NearbyGaragesScreen: React.FC<NearbyGaragesScreenProps> = ({
       distance: '1.2km',
       rating: '4.5',
       status: 'Open',
-      image: require('../assets/images/Garage.jpg'),
+      image: require('../../assets/images/Garage.jpg'),
       services: ['Oil Change', 'Brake Service'],
     },
     {
@@ -89,7 +89,7 @@ const NearbyGaragesScreen: React.FC<NearbyGaragesScreenProps> = ({
       distance: '2.8km',
       rating: '4.2',
       status: 'Busy',
-      image: require('../assets/images/Garage.jpg'),
+      image: require('../../assets/images/Garage.jpg'),
       services: ['Engine Repair', 'Tire Service'],
     },
     {
@@ -99,7 +99,7 @@ const NearbyGaragesScreen: React.FC<NearbyGaragesScreenProps> = ({
       distance: '3.5km',
       rating: '4.7',
       status: 'Open',
-      image: require('../assets/images/Garage.jpg'),
+      image: require('../../assets/images/Garage.jpg'),
       services: ['Car Wash', 'Oil Change'],
     },
     {
@@ -109,7 +109,7 @@ const NearbyGaragesScreen: React.FC<NearbyGaragesScreenProps> = ({
       distance: '4.1km',
       rating: '4.1',
       status: 'Closed',
-      image: require('../assets/images/Garage.jpg'),
+      image: require('../../assets/images/Garage.jpg'),
       services: ['Brake Service', 'Engine Repair'],
     },
     {
@@ -119,7 +119,7 @@ const NearbyGaragesScreen: React.FC<NearbyGaragesScreenProps> = ({
       distance: '6.2km',
       rating: '4.8',
       status: 'Open',
-      image: require('../assets/images/Garage.jpg'),
+      image: require('../../assets/images/Garage.jpg'),
       services: ['Tire Service', 'Oil Change'],
     },
     {
@@ -129,7 +129,7 @@ const NearbyGaragesScreen: React.FC<NearbyGaragesScreenProps> = ({
       distance: '7.5km',
       rating: '4.3',
       status: 'Open',
-      image: require('../assets/images/Garage.jpg'),
+      image: require('../../assets/images/Garage.jpg'),
       services: ['Engine Repair', 'Car Wash'],
     },
   ];

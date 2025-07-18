@@ -5,17 +5,15 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  TouchableOpacity,
   Alert,
 } from 'react-native';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
-import Button from '../components/Button'
-import CategoryBadge from '../components/CategoryBadge';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
+import Button from '../../components/Button'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
-import PartCard from '../components/PartCard'
+import type { RootStackParamList } from '../../../App';
+import PartCard from '../../components/PartCard'
 
 const PartsSelectionScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();

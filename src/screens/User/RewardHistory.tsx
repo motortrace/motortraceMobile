@@ -1,8 +1,8 @@
 import React, { useState } from "react"
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native"
 import Icon from 'react-native-vector-icons/Ionicons'
-import Colors from "../constants/colors"
-import Header from '../components/Header'
+import Colors from "../../constants/colors"
+import Header from '../../components/Header'
 
 interface HistoryItemProps {
   id: string

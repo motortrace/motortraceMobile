@@ -10,15 +10,15 @@ import {
   Text,
   FlatList
 } from 'react-native';
-import Colors from '../constants/colors';
+import Colors from '../../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
-import BottomNavigation from '../components/BottomNav';
-import HistoryCard, { VisitHistory } from '../components/GarageHistoryCard';
-import Header from '../components/Header'
-import SearchBar from '../components/SearchBar';
+import BottomNavigation from '../../components/BottomNav';
+import HistoryCard, { VisitHistory } from '../../components/GarageHistoryCard';
+import Header from '../../components/Header'
+import SearchBar from '../../components/SearchBar';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 interface HistoryScreenProps {
   onBack?: () => void;
@@ -80,7 +80,7 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
       totalCost: 'LKR 4,500',
       rating: 5,
       status: 'completed',
-      image: require('../assets/images/Garage.jpg'),
+      image: require('../../assets/images/Garage.jpg'),
       duration: '45 min',
       paymentMethod: 'Card'
     },
@@ -95,7 +95,7 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
       totalCost: 'LKR 7,200',
       rating: 4,
       status: 'completed',
-      image: require('../assets/images/Garage.jpg'),
+      image: require('../../assets/images/Garage.jpg'),
       duration: '1h 20min',
       paymentMethod: 'Cash'
     },
@@ -110,7 +110,7 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
       totalCost: 'LKR 12,800',
       rating: 5,
       status: 'completed',
-      image: require('../assets/images/Garage.jpg'),
+      image: require('../../assets/images/Garage.jpg'),
       duration: '2h 15min',
       paymentMethod: 'Card'
     },
@@ -125,7 +125,7 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
       totalCost: 'LKR 3,600',
       rating: 3,
       status: 'cancelled',
-      image: require('../assets/images/Garage.jpg'),
+      image: require('../../assets/images/Garage.jpg'),
       duration: '30 min',
       paymentMethod: 'N/A'
     },
@@ -140,7 +140,7 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
       totalCost: 'LKR 18,500',
       rating: 5,
       status: 'completed',
-      image: require('../assets/images/Garage.jpg'),
+      image: require('../../assets/images/Garage.jpg'),
       duration: '1h 45min',
       paymentMethod: 'Card'
     },
@@ -155,7 +155,7 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
       totalCost: 'LKR 15,400',
       rating: 4,
       status: 'completed',
-      image: require('../assets/images/Garage.jpg'),
+      image: require('../../assets/images/Garage.jpg'),
       duration: '3h 10min',
       paymentMethod: 'Bank Transfer'
     }

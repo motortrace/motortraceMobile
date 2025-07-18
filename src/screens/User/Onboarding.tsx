@@ -1,14 +1,15 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { View, Text, StyleSheet, SafeAreaView, Alert, TouchableOpacity, Image } from "react-native"
-import Colors from "../constants/colors"
-import FormBox from "../components/FormBox"
-import FormInput from "../components/FormInput"
-import AnimatedButton from "../components/AnimatedButton"
-import VerificationRow from "../components/Verification"
+import Colors from "../../constants/colors"
+import FormBox from "../../components/FormBox"
+import FormInput from "../../components/FormInput"
+import AnimatedButton from "../../components/AnimatedButton"
+import VerificationRow from "../../components/Verification"
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
+import Success from '../Success';
 
 interface OnboardingScreenProps {
   onContinue?: (name: string, email: string, contact: string) => void
@@ -17,6 +18,8 @@ interface OnboardingScreenProps {
 interface VerificationStatus {
   email: boolean
   contact: boolean
+  name: string
+  loading: boolean
 }
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
@@ -24,6 +27,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [contact, setContact] = useState("")
+  const [loading, setLoading] = useState("")
+  const [error, setError] = useState("")
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({
     email: false,
     contact: false,
@@ -43,30 +48,57 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
     }
   }, [contact])
 
-  const handleEmailVerify = () => {
+  const handleEmailVerify = async () => {
+    setLoading(true);
+    setError('');
+
     // If already verified, reset verification status to allow change
     if (verificationStatus.email) {
       setVerificationStatus((prev) => ({ ...prev, email: false }))
       Alert.alert("Email Reset", "You can now enter a new email address and verify it.")
+      setLoading(false);
       return
     }
 
     if (!email.trim()) {
       Alert.alert("Email Required", "Please enter your email address first.")
+      setLoading(false);
       return
     }
 
     if (!email.includes("@") || !email.includes(".")) {
       Alert.alert("Invalid Email", "Please enter a valid email address.")
+      setLoading(false);
       return
     }
-
-    // Mock email verification process
-    setTimeout(() => {
+    
+    try {
+      const res = await fetch('http://localhost:3000/auth/welcome-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          username: "abdulla",
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Email verification failed');
+      }
+      
+      // Success - update verification status
       setVerificationStatus((prev) => ({ ...prev, email: true }))
       Alert.alert("Email Verified", "Your email has been successfully verified.")
-    }, 1000)
-  }
+      
+    } catch (err: any) {
+      setError(err.message || 'Email verification failed. Please try again.');
+      Alert.alert("Verification Failed 2", err.message || 'Email verification failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleContactVerify = () => {
     // If already verified, reset verification status to allow change
@@ -111,7 +143,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Image source={require("../assets/images/Logo_white_no_bg.png")} style={styles.Logo} />
+          <Image source={require("../../assets/images/Logo_white_no_bg.png")} style={styles.Logo} />
         </View>
 
         <Text style={styles.welcomeTitle}>Welcome Back</Text>

@@ -8,8 +8,8 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 const TrackOrderScreen = ({ navigation }) => { // Add navigation prop
@@ -152,7 +152,7 @@ const TrackOrderScreen = ({ navigation }) => { // Add navigation prop
 
           <View style={styles.carImageContainer}>
             <Image
-            source={require('../assets/images/car.png')} 
+            source={require('../../assets/images/car.png')} 
               style={styles.carImage}
               resizeMode="contain"
             />

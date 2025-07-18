@@ -209,7 +209,7 @@ function App(): React.ReactElement {
   return (
     <NavigationContainer>
       <Stack.Navigator 
-        initialRouteName="TechnicianHome"
+        initialRouteName="Onboarding"
         screenOptions={{ 
           headerShown: false,
           gestureEnabled: true,

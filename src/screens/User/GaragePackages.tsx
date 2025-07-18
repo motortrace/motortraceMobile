@@ -1,13 +1,13 @@
 import React, { useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, ImageBackground } from "react-native"
 import Icon from 'react-native-vector-icons/Ionicons'
-import Colors from "../constants/colors"
-import PackageCard from '../components/PackageCard'
-import TabNavigator from "../components/TabNavigator"
-import Button from '../components/Button'
+import Colors from "../../constants/colors"
+import PackageCard from '../../components/PackageCard'
+import TabNavigator from "../../components/TabNavigator"
+import Button from '../../components/Button'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 interface ReviewsSectionProps {
   onViewMorePress?: () => void
@@ -58,7 +58,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
         {/* Garage Header Card */}
         <View style={styles.profileCard}>
           <ImageBackground
-            source={require('../assets/images/Garage.jpg')}
+            source={require('../../assets/images/Garage.jpg')}
             style={styles.profileImage}
             imageStyle={styles.profileImageStyle}
           >

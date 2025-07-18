@@ -5,14 +5,14 @@ import {
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
-import Colors from '../constants/colors';
-import BottomNavigation from '../components/BottomNav';
-import GarageCard from '../components/GarageCard';
-import Header from '../components/Header'
-import SearchBar from '../components/SearchBar';
+import Colors from '../../constants/colors';
+import BottomNavigation from '../../components/BottomNav';
+import GarageCard from '../../components/GarageCard';
+import Header from '../../components/Header'
+import SearchBar from '../../components/SearchBar';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 interface GarageLocatorScreenProps {
   onBack?: () => void;
@@ -67,7 +67,7 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({
         distance: '7km',
         rating: '4.0',
         status: 'Open',
-        image: require('../assets/images/Garage.jpg'),
+        image: require('../../assets/images/Garage.jpg'),
     },
     {
         id: 2,
@@ -76,7 +76,7 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({
         distance: '7km',
         rating: '4.0',
         status: 'Closed',
-        image: require('../assets/images/Garage.jpg'),
+        image: require('../../assets/images/Garage.jpg'),
     },
     {
         id: 3,
@@ -85,7 +85,7 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({
         distance: '7km',
         rating: '4.0',
         status: 'Open',
-        image: require('../assets/images/Garage.jpg'),
+        image: require('../../assets/images/Garage.jpg'),
     },
     {
         id: 4,
@@ -94,7 +94,7 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({
         distance: '7km',
         rating: '4.0',
         status: 'Open',
-        image: require('../assets/images/Garage.jpg'),
+        image: require('../../assets/images/Garage.jpg'),
     },
     {
         id: 5,
@@ -103,7 +103,7 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({
         distance: '7km',
         rating: '4.0',
         status: 'Open',
-        image: require('../assets/images/Garage.jpg'),
+        image: require('../../assets/images/Garage.jpg'),
     },
     {
         id: 6,
@@ -112,7 +112,7 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({
         distance: '7km',
         rating: '4.0',
         status: 'Open',
-        image: require('../assets/images/Garage.jpg'),
+        image: require('../../assets/images/Garage.jpg'),
     },
     ];
 

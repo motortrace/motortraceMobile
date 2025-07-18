@@ -1,13 +1,13 @@
 import type React from "react"
 import { View, StyleSheet, SafeAreaView, TouchableOpacity, ImageBackground } from "react-native"
-import Colors from "../constants/colors"
+import Colors from "../../constants/colors"
 import Icon from "react-native-vector-icons/Ionicons"
-import BottomNavigation from "../components/BottomNav"
-import Header from '../components/Header'
-import SearchBar from '../components/SearchBar'
+import BottomNavigation from "../../components/BottomNav"
+import Header from '../../components/Header'
+import SearchBar from '../../components/SearchBar'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 interface GarageLocatorScreenProps {
   onViewRecommended?: () => void
@@ -122,7 +122,7 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({handleTabPress
 
       {/* Map with Enhanced Markers */}
       <View style={styles.mapContainer}>
-        <ImageBackground source={require("../assets/images/Map.jpeg")} style={styles.mapBackground} resizeMode="cover">
+        <ImageBackground source={require("../../assets/images/Map.jpeg")} style={styles.mapBackground} resizeMode="cover">
           {/* Garage Markers */}
           {garageMarkers.map((marker) => (
             <MarkerPin key={marker.id} top={marker.top} left={marker.left} type={marker.type}  />

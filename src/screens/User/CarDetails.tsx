@@ -17,12 +17,12 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MapView, { Marker } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
-import BorderButton from '../components/BorderButton';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
+import BorderButton from '../../components/BorderButton';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const { width } = Dimensions.get('window');
 

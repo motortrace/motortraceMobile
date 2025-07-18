@@ -11,12 +11,12 @@ import {
   Dimensions
 } from "react-native"
 import Icon from 'react-native-vector-icons/Ionicons'
-import Colors from "../constants/colors"
-import Button from '../components/Button'
+import Colors from "../../constants/colors"
+import Button from '../../components/Button'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import type { RootStackParamList } from '../../App'
-import Header from '../components/Header'
+import type { RootStackParamList } from '../../../App'
+import Header from '../../components/Header'
 
 const { width } = Dimensions.get('window')
 
@@ -86,9 +86,9 @@ const ServiceDetailsPage: React.FC<ServiceDetailsProps> = ({
       "Digital inspection report sent to your phone"
     ],
     images: [
-      require('../assets/images/Garage.jpg'),
-      require('../assets/images/Google.png'),
-      require('../assets/images/car.png')
+      require('../../assets/images/Garage.jpg'),
+      require('../../assets/images/Google.png'),
+      require('../../assets/images/car.png')
     ]
   }
 

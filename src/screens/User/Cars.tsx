@@ -8,13 +8,13 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Header from '../components/Header';
-import SearchBar from '../components/SearchBar';
-import Colors from '../constants/colors'
-import CarCard from '../components/CarCard';
+import Header from '../../components/Header';
+import SearchBar from '../../components/SearchBar';
+import Colors from '../../constants/colors'
+import CarCard from '../../components/CarCard';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const Cars = () => {
   const [searchQuery, setSearchQuery] = useState('')

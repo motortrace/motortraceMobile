@@ -3,15 +3,15 @@
 import type React from "react"
 import { useState } from "react"
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ImageBackground } from "react-native"
-import Colors from "../constants/colors"
+import Colors from "../../constants/colors"
 import Icon from 'react-native-vector-icons/Ionicons';
-import Section from "../components/section"
-import Button from '../components/Button'
-import TabNavigator from '../components/TabNavigator'
-import RatingStars from '../components/RatingStars'
+import Section from "../../components/section"
+import Button from '../../components/Button'
+import TabNavigator from '../../components/TabNavigator'
+import RatingStars from '../../components/RatingStars'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 interface GarageProfileScreenProps {
   onBack?: () => void
@@ -51,7 +51,7 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
         {/* Garage Header Card */}
         <View style={styles.profileCard}>
           <ImageBackground
-            source={require('../assets/images/Garage.jpg')}
+            source={require('../../assets/images/Garage.jpg')}
             style={styles.profileImage}
             imageStyle={styles.profileImageStyle}
           >

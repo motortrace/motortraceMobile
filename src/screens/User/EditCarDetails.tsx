@@ -12,9 +12,9 @@ import {
   Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
-import FormInput from '../components/FormInput';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
+import FormInput from '../../components/FormInput';
 
 const EditCarDetailsPage = ({ route, navigation }) => {
   const { carData } = route?.params || {};
