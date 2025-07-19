@@ -130,7 +130,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         setUser(data.user);
       }
       // Handle navigation after successful login
-      navigation.navigate('Home');
+      if(data.isRegistrationComplete){
+        navigation.navigate('Home')
+      }else{
+        navigation.navigate('Onboarding')
+      }
       
       if (onLogin) {
         onLogin(email, password);
@@ -191,7 +195,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         setUser(data.user);
       }
       // Handle login success (store token, navigate, etc.)
-      navigation.navigate('Home');
+      if(data.user.isRegistrationComplete){
+        navigation.navigate('Home')
+      }else{
+        navigation.navigate('Onboarding')
+      }
+      
     } catch (error: any) {
       console.error('Google Login Error:', error);
       console.error('Error type:', error.name);

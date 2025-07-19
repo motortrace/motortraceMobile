@@ -212,7 +212,7 @@ function App(): React.ReactElement {
     <UserProvider>
       <NavigationContainer>
         <Stack.Navigator 
-          initialRouteName="LogIn"
+          initialRouteName="SignUp"
           screenOptions={{ 
             headerShown: false,
             gestureEnabled: true,

@@ -1,6 +1,7 @@
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { View, Text, StyleSheet, SafeAreaView, Alert, TouchableOpacity, Image } from "react-native"
+import { launchImageLibrary, launchCamera, ImagePickerResponse, MediaType } from 'react-native-image-picker'
 import Colors from "../../constants/colors"
 import FormBox from "../../components/FormBox"
 import FormInput from "../../components/FormInput"
@@ -9,99 +10,79 @@ import VerificationRow from "../../components/Verification"
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
-import Success from '../Success';
 
 interface OnboardingScreenProps {
-  onContinue?: (name: string, email: string, contact: string) => void
+  onContinue?: (name: string, contact: string, profileImage: string | null) => void
 }
 
 interface VerificationStatus {
-  email: boolean
   contact: boolean
-  name: string
   loading: boolean
 }
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
   const [contact, setContact] = useState("")
-  const [loading, setLoading] = useState("")
-  const [error, setError] = useState("")
+  const [profileImage, setProfileImage] = useState<string | null>(null)
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({
-    email: false,
     contact: false,
+    loading: false,
   })
 
-  useEffect(() => {
-    // Reset email verification if email changes
-    if (verificationStatus.email) {
-      setVerificationStatus((prev) => ({ ...prev, email: false }))
-    }
-  }, [email])
-
-  useEffect(() => {
-    // Reset contact verification if contact changes
-    if (verificationStatus.contact) {
-      setVerificationStatus((prev) => ({ ...prev, contact: false }))
-    }
-  }, [contact])
-
-  const handleEmailVerify = async () => {
-    setLoading(true);
-    setError('');
-
-    // If already verified, reset verification status to allow change
-    if (verificationStatus.email) {
-      setVerificationStatus((prev) => ({ ...prev, email: false }))
-      Alert.alert("Email Reset", "You can now enter a new email address and verify it.")
-      setLoading(false);
-      return
+  const pickImage = () => {
+    const options = {
+      mediaType: 'photo' as MediaType,
+      includeBase64: false,
+      maxHeight: 2000,
+      maxWidth: 2000,
+      quality: 0.8,
     }
 
-    if (!email.trim()) {
-      Alert.alert("Email Required", "Please enter your email address first.")
-      setLoading(false);
-      return
-    }
-
-    if (!email.includes("@") || !email.includes(".")) {
-      Alert.alert("Invalid Email", "Please enter a valid email address.")
-      setLoading(false);
-      return
-    }
-    
-    try {
-      const res = await fetch('http://localhost:3000/auth/welcome-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email,
-          username: "abdulla",
-        }),
-      });
-      
-      const data = await res.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Email verification failed');
+    launchImageLibrary(options, (response: ImagePickerResponse) => {
+      if (response.didCancel || response.errorMessage) {
+        return
       }
-      
-      // Success - update verification status
-      setVerificationStatus((prev) => ({ ...prev, email: true }))
-      Alert.alert("Email Verified", "Your email has been successfully verified.")
-      
-    } catch (err: any) {
-      setError(err.message || 'Email verification failed. Please try again.');
-      Alert.alert("Verification Failed 2", err.message || 'Email verification failed. Please try again.');
-    } finally {
-      setLoading(false);
+
+      if (response.assets && response.assets[0]) {
+        setProfileImage(response.assets[0].uri || null)
+      }
+    })
+  }
+
+  const takePhoto = () => {
+    const options = {
+      mediaType: 'photo' as MediaType,
+      includeBase64: false,
+      maxHeight: 2000,
+      maxWidth: 2000,
+      quality: 0.8,
     }
-  };
+
+    launchCamera(options, (response: ImagePickerResponse) => {
+      if (response.didCancel || response.errorMessage) {
+        return
+      }
+
+      if (response.assets && response.assets[0]) {
+        setProfileImage(response.assets[0].uri || null)
+      }
+    })
+  }
+
+  const showImageOptions = () => {
+    Alert.alert(
+      "Profile Picture",
+      "Choose an option",
+      [
+        { text: "Camera", onPress: takePhoto },
+        { text: "Gallery", onPress: pickImage },
+        { text: "Cancel", style: "cancel" },
+      ]
+    )
+  }
 
   const handleContactVerify = () => {
-    // If already verified, reset verification status to allow change
     if (verificationStatus.contact) {
       setVerificationStatus((prev) => ({ ...prev, contact: false }))
       Alert.alert("Contact Reset", "You can now enter a new contact number and verify it.")
@@ -118,7 +99,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
       return
     }
 
-    // Mock contact verification process
     setTimeout(() => {
       setVerificationStatus((prev) => ({ ...prev, contact: true }))
       Alert.alert("Contact Verified", "Your contact number has been successfully verified.")
@@ -126,17 +106,18 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
   }
 
   const handleContinue = () => {
-    if (!name.trim() || !email.trim() || !contact.trim()) {
+    if (!name.trim() || !contact.trim()) {
       Alert.alert("Incomplete", "Please fill in all fields")
       return
     }
 
-    if (!verificationStatus.email || !verificationStatus.contact) {
-      Alert.alert("Verification Required", "Please verify both your email and contact number")
+    if (!verificationStatus.contact) {
+      Alert.alert("Verification Required", "Please verify your contact number")
       return
     }
 
-    onContinue?.(name, email, contact)
+    onContinue?.(name, contact, profileImage)
+    navigation.navigate('Home')
   }
 
   return (
@@ -150,6 +131,25 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
         <Text style={styles.welcomeSubtitle}>Sign in to your car account</Text>
 
         <FormBox>
+          {/* Profile Image Section */}
+          <View style={styles.profileImageSection}>
+            <Text style={styles.profileImageLabel}>Profile Picture</Text>
+            <TouchableOpacity onPress={showImageOptions} style={styles.profileImageContainer}>
+              {profileImage ? (
+                <Image source={{ uri: profileImage }} style={styles.profileImage} />
+              ) : (
+                <View style={styles.profileImagePlaceholder}>
+                  <Text style={styles.profileImagePlaceholderText}>+</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={showImageOptions}>
+              <Text style={styles.changeImageText}>
+                {profileImage ? "Change Image" : "Add Profile Picture"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <FormInput
             label="Full Name"
             placeholder="Enter your name"
@@ -157,18 +157,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
             value={name}
             onChangeText={setName}
           />
-
-          <FormInput
-            label="Email"
-            placeholder="Enter your email"
-            iconName="mail-outline"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-
-          <VerificationRow type="email" isVerified={verificationStatus.email} onVerify={handleEmailVerify} />
 
           <FormInput
             label="Contact Number"
@@ -186,20 +174,19 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
               style={[
                 styles.overallStatusText,
                 {
-                  color:
-                    verificationStatus.email && verificationStatus.contact
-                      ? Colors.success || "#10B981"
-                      : Colors.neutral500 || "#6B7280",
+                  color: verificationStatus.contact
+                    ? Colors.success || "#10B981"
+                    : Colors.neutral500 || "#6B7280",
                 },
               ]}
             >
-              {verificationStatus.email && verificationStatus.contact
-                ? "✅ All verifications complete"
-                : `${Object.values(verificationStatus).filter(Boolean).length}/2 verifications complete`}
+              {verificationStatus.contact
+                ? "✅ Contact verified"
+                : "0/1 verifications complete"}
             </Text>
           </View>
 
-          <AnimatedButton title="Continue" onPress={() => navigation.navigate('Home')} />
+          <AnimatedButton title="Continue" onPress={handleContinue} />
         </FormBox>
       </View>
     </SafeAreaView>
@@ -244,36 +231,47 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 30,
   },
-  verificationRow: {
-    flexDirection: "row",
+  profileImageSection: {
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-    marginTop: -8,
+    marginBottom: 20,
   },
-  verificationStatus: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
+  profileImageLabel: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: Colors.neutral1000,
+    marginBottom: 12,
   },
-  statusIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  profileImageContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+  profileImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  profileImagePlaceholder: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: Colors.neutral200 || "#E5E7EB",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 8,
+    borderWidth: 2,
+    borderColor: Colors.neutral300 || "#D1D5DB",
+    borderStyle: "dashed",
   },
-  statusIconText: {
+  profileImagePlaceholderText: {
+    fontSize: 24,
+    color: Colors.neutral500 || "#6B7280",
+    fontWeight: "300",
+  },
+  changeImageText: {
     fontSize: 14,
-    fontWeight: "bold",
-  },
-  verificationText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  verifyButton: {
-    paddingHorizontal: 4,
+    color: Colors.primary,
+    textDecorationLine: "underline",
   },
   overallStatus: {
     backgroundColor: Colors.neutral50 || "#F9FAFB",

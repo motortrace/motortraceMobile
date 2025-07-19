@@ -130,8 +130,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
         setUser(data.user);
       }
 
-      // Navigate to dashboard or appropriate screen
-      navigation.navigate('Home');
+      navigation.navigate('LogIn');
       
       if (onRegister) {
         onRegister(email, password);
@@ -192,8 +191,11 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
         setUser(data.user);
       }
       
-      // Handle registration success (store token, navigate, etc.)
-      navigation.navigate('Home');
+      if(data.user.isRegistrationComplete){
+        navigation.navigate('Home')
+      }else{
+        navigation.navigate('Onboarding')
+      }
       
       if (onGoogleRegister) {
         onGoogleRegister();
