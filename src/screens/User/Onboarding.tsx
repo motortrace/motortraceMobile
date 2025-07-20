@@ -1,7 +1,7 @@
 import type React from "react"
 import { useState } from "react"
 import { View, Text, StyleSheet, SafeAreaView, Alert, TouchableOpacity, Image } from "react-native"
-import { launchImageLibrary, launchCamera, ImagePickerResponse, MediaType } from 'react-native-image-picker'
+import { launchImageLibrary, launchCamera, ImagePickerResponse, MediaType, PhotoQuality } from 'react-native-image-picker'
 import Colors from "../../constants/colors"
 import FormBox from "../../components/FormBox"
 import FormInput from "../../components/FormInput"
@@ -10,17 +10,20 @@ import VerificationRow from "../../components/Verification"
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
-
-interface OnboardingScreenProps {
-  onContinue?: (name: string, contact: string, profileImage: string | null) => void
-}
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface VerificationStatus {
   contact: boolean
   loading: boolean
 }
 
-const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
+interface OnboardingRequest {
+  name: string;
+  contact: string;
+  profileImage: string;
+}
+
+const OnboardingScreen: React.FC = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [name, setName] = useState("")
   const [contact, setContact] = useState("")
@@ -36,7 +39,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
       includeBase64: false,
       maxHeight: 2000,
       maxWidth: 2000,
-      quality: 0.8,
+      quality: 1 as PhotoQuality, // fix: use allowed PhotoQuality type
     }
 
     launchImageLibrary(options, (response: ImagePickerResponse) => {
@@ -50,13 +53,64 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
     })
   }
 
+  const handleContinue = async () => {
+    if (!name.trim() || !contact.trim()) {
+      Alert.alert("Incomplete", "Please fill in all fields");
+      return;
+    }
+  
+    if (!verificationStatus.contact) {
+      Alert.alert("Verification Required", "Please verify your contact number");
+      return;
+    }
+  
+    try {
+      // Retrieve only the token string from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'No authentication token found. Please log in again.');
+        return;
+      }
+
+      const payload: OnboardingRequest = {
+        name,
+        contact,
+        profileImage: profileImage || '', // fallback to empty string if null
+      };
+  
+      // Send onboarding data to backend
+      const response = await fetch('http://10.0.2.2:3000/auth/onboarding', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-Client-Type': 'mobile',
+        },
+        body: JSON.stringify(payload),
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.error || 'Onboarding failed');
+      }
+  
+      // Optionally, fetch the updated user profile and update context/storage
+      // For now, just show success and navigate
+      Alert.alert('Success', 'Onboarding completed!');
+      navigation.navigate('Home');
+    } catch (error: any) {
+      Alert.alert('Onboarding Error', error.message || 'Failed to complete onboarding');
+    }
+  };
+
   const takePhoto = () => {
     const options = {
       mediaType: 'photo' as MediaType,
       includeBase64: false,
       maxHeight: 2000,
       maxWidth: 2000,
-      quality: 0.8,
+      quality: 1 as PhotoQuality, // fix: use allowed PhotoQuality type
     }
 
     launchCamera(options, (response: ImagePickerResponse) => {
@@ -103,21 +157,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onContinue }) => {
       setVerificationStatus((prev) => ({ ...prev, contact: true }))
       Alert.alert("Contact Verified", "Your contact number has been successfully verified.")
     }, 1000)
-  }
-
-  const handleContinue = () => {
-    if (!name.trim() || !contact.trim()) {
-      Alert.alert("Incomplete", "Please fill in all fields")
-      return
-    }
-
-    if (!verificationStatus.contact) {
-      Alert.alert("Verification Required", "Please verify your contact number")
-      return
-    }
-
-    onContinue?.(name, contact, profileImage)
-    navigation.navigate('Home')
   }
 
   return (

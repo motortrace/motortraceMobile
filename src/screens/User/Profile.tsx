@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,28 +17,20 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
 import ProfileField from '../../components/ProfileField';
+import { useUser } from '../../store/UserContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const UserProfileScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [isLoading, setIsLoading] = useState(false);
+  const { setUser } = useUser();
   const [profileData, setProfileData] = useState({
-    username: 'john_doe',
-    email: 'johndoe@email.com',
-    fullName: 'John Doe',
-    phoneNumber: '+94 71 481 0928',
+    email: '',
+    fullName: '',
+    phoneNumber: '',
     profileImage: '', // Empty string means no image
-    joinDate: 'Member since March 2024'
+    joinDate: ''
   });
-
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive' },
-      ]
-    );
-  };
 
   const handleChangeProfilePicture = () => {
     Alert.alert(
@@ -48,6 +40,67 @@ const UserProfileScreen = () => {
         { text: 'Camera', onPress: () => console.log('Camera selected') },
         { text: 'Gallery', onPress: () => console.log('Gallery selected') },
         { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
+  const handleSignOut = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Sign Out', 
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoading(true);
+            
+            try {
+              // Get token from secure storage
+              const token = await AsyncStorage.getItem('token');
+              
+              if (token) {
+                // Call backend API to invalidate the token
+                await fetch('http://10.0.2.2:3000/auth/signout', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'X-Client-Type': 'mobile',
+                  },
+                });
+              }
+              
+              // Clear token from secure storage
+              await AsyncStorage.removeItem('token');
+              await AsyncStorage.removeItem('user');
+              setUser(null);
+              
+              // Navigate to login screen
+              navigation.navigate('LogIn');
+              
+              // Optional: Show success message
+              Alert.alert('Signed Out', 'You have been successfully signed out.');
+              
+            } catch (error: any) {
+              console.error('Sign out error:', error);
+              
+              // Even if the API call fails, still clear local data
+              try {
+                await AsyncStorage.removeItem('token');
+                await AsyncStorage.removeItem('user');
+                setUser(null);
+                navigation.navigate('LogIn');
+              } catch (localError) {
+                console.error('Error clearing local data:', localError);
+                Alert.alert('Sign Out Error', 'There was an issue signing out. Please try again.');
+              }
+            } finally {
+              setIsLoading(false);
+            }
+          }
+        },
       ]
     );
   };
@@ -73,6 +126,44 @@ const UserProfileScreen = () => {
       );
     }
   };
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        // Get user from AsyncStorage or context
+        const userStr = await AsyncStorage.getItem('user');
+        if (!userStr) return;
+        const user = JSON.parse(userStr);
+        const token = await AsyncStorage.getItem('token');
+        if (!token) return;
+  
+        const res = await fetch(`http://10.0.2.2:3000/profiles/${user.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await res.json();
+  
+        if (data.role === 'car_owner' && data.profile) {
+          setProfileData({
+            email: data.email,
+            fullName: data.profile.name,
+            phoneNumber: data.phone,
+            profileImage: data.profile.imageBase64, // If you store as base64, use: `data:image/png;base64,${data.profile.imageBase64}`
+            joinDate: data.profile.createdAt
+              ? `Member since ${new Date(data.profile.createdAt).toLocaleDateString()}`
+              : '',
+          });
+        }
+        // You can add logic for other roles here if needed
+      } catch (err) {
+        console.error('Failed to fetch profile:', err);
+      }
+    };
+  
+    fetchProfile();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -111,12 +202,6 @@ const UserProfileScreen = () => {
             label="Full Name"
             value={profileData.fullName}
             iconName="person-outline"
-          />
-
-          <ProfileField
-            label="Username"
-            value={`@${profileData.username}`}
-            iconName="at-outline"
           />
 
           <ProfileField
@@ -216,16 +301,17 @@ const UserProfileScreen = () => {
 
         {/* Logout Section */}
         <FormBox style={styles.logoutCard}>
-          <TouchableOpacity 
-            style={styles.logoutButton}
-            onPress={handleLogout}
-          >
-            <View style={styles.logoutIconContainer}>
-              <Icon name="log-out-outline" size={30} color={Colors.danger} />
-            </View>
-            <Text style={styles.logoutText}>Sign Out</Text>
-          </TouchableOpacity>
-        </FormBox>
+        <TouchableOpacity 
+          style={styles.logoutButton}
+          onPress={handleSignOut}
+          disabled={isLoading}
+        >
+          <Icon name="log-out-outline" size={30} color={Colors.danger} />
+          <Text style={styles.logoutText}>
+            {isLoading ? 'Signing Out...' : 'Sign Out'}
+          </Text>
+        </TouchableOpacity>
+      </FormBox>
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
@@ -377,21 +463,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 0,
+    paddingVertical: 14, // Increased padding for better touch area
+    paddingHorizontal: 24, // Added horizontal padding
+    backgroundColor: Colors.neutral0, // White background for contrast
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    marginTop: 8,
   },
   logoutIconContainer: {
-    width: 10,
-    height: 10,
-    borderRadius: 16,
+    width: 100,
+    height: 100,
+    borderRadius: 20,
     backgroundColor: `${Colors.danger}15`,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 16, // More space between icon and text
+    borderWidth: 1,
+    borderColor: Colors.danger,
   },
   logoutText: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: Colors.danger,
+    letterSpacing: 0.5,
   },
   bottomSpacing: {
     height: 10,

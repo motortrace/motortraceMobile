@@ -23,6 +23,8 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useUser } from '../store/UserContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 interface LoginScreenProps {
   onLogin?: (email: string, password: string) => void;
@@ -121,13 +123,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       
       // Store the token securely (you might want to use AsyncStorage or Keychain)
       if (data.token) {
-        // Store token in secure storage
-        // await AsyncStorage.setItem('token', data.token);
+
+        await AsyncStorage.setItem('token', data.token);
       }
       
       // Set user in context
       if (data.user) {
+        console.log('User data received:', data.user);
+        await AsyncStorage.setItem('user', JSON.stringify(data.user));
+        console.log('User data stored in AsyncStorage');
         setUser(data.user);
+        console.log('User state updated');
       }
       // Handle navigation after successful login
       if(data.isRegistrationComplete){
@@ -195,12 +201,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         setUser(data.user);
       }
       // Handle login success (store token, navigate, etc.)
+      if(data.user.role === 'technician'){
+        navigation.navigate('TechnicianHome')
+      }
       if(data.user.isRegistrationComplete){
         navigation.navigate('Home')
       }else{
         navigation.navigate('Onboarding')
       }
-      
+
     } catch (error: any) {
       console.error('Google Login Error:', error);
       console.error('Error type:', error.name);

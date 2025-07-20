@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AccountDelegationPage = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -27,18 +28,55 @@ const AccountDelegationPage = () => {
     setShowConfirmModal(true);
   };
 
-  const handleConfirmDelegation = () => {
+  const handleDeleteAccount = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'No authentication token found.');
+        return;
+      }
+  
+      const response = await fetch('http://10.0.2.2:3000/auth/delete-account', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-Client-Type': 'mobile',
+        },
+      });
+  
+      const data = await response.json();
+  
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to delete account');
+      }
+  
+      // Clear local storage and navigate to login
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
+      // ...clear any other keys as needed
+  
+      Alert.alert('Account Deleted', 'Your account has been deleted.');
+      navigation.navigate('LogIn');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to delete account');
+    }
+  };
+
+  const handleConfirmDelegation = async () => {
     if (confirmationText.toLowerCase() !== 'delegate my account') {
       Alert.alert('Error', 'Please type the exact confirmation phrase to proceed.');
       return;
     }
-
+  
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      await handleDeleteAccount(); // This will delete the account and navigate away
+      setShowConfirmModal(false);  // Hide the modal after deletion
+      setConfirmationText('');
+    } finally {
       setIsLoading(false);
-      setShowConfirmModal(false);
-      Alert.alert('Success', 'Account delegation process initiated successfully!');
-    }, 2000);
+    }
   };
 
   const consequences = [
