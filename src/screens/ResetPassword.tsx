@@ -1,12 +1,16 @@
 import type React from "react"
-import { useState } from "react"
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image } from "react-native"
+import { useState, useEffect } from "react"
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert } from "react-native"
 import Colors from "../constants/colors"
 import FormBox from "../components/FormBox"
 import FormInput from "../components/FormInput"
 import AnimatedButton from "../components/AnimatedButton"
 import Link from "../components/Link"
 import BackButton from "../components/Back"
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface ResetPasswordScreenProps {
   email?: string
@@ -15,12 +19,24 @@ interface ResetPasswordScreenProps {
 }
 
 const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
-  email = "user@example.com",
+  email: propEmail,
   onResetSuccess,
   onBack,
 }) => {
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [email, setEmail] = useState(propEmail || "");
+  
+  // Get email from AsyncStorage on mount if not provided
+  useEffect(() => {
+    if (!propEmail) {
+      AsyncStorage.getItem('resetEmail').then(storedEmail => {
+        if (storedEmail) setEmail(storedEmail);
+      });
+    }
+  }, [propEmail]);
 
   const getPasswordStrength = (password: string) => {
     if (password.length === 0) return { strength: "", color: "" }
@@ -31,6 +47,36 @@ const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
     }
     return { strength: "Good", color: "#3B82F6" }
   }
+
+  const handleResetPassword = async () => {
+    if (!passwordsMatch || newPassword.length < 8) return;
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('resetToken');
+      if (!token) {
+        Alert.alert('Error', 'Reset token missing. Please restart the reset process.');
+        return;
+      }
+      const res = await fetch('http://10.0.2.2:3000/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: newPassword, token }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        Alert.alert('Error', data.error || 'Failed to reset password');
+        return;
+      }
+      await AsyncStorage.removeItem('resetEmail');
+      Alert.alert('Success', 'Password reset! Please log in.', [
+        { text: 'OK', onPress: () => navigation.navigate('LogIn') }
+      ]);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to reset password');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const passwordStrength = getPasswordStrength(newPassword)
   const passwordsMatch = newPassword && confirmPassword && newPassword === confirmPassword
@@ -100,14 +146,6 @@ const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
               <Text
                 style={[
                   styles.requirementItem,
-                  { color: /(?=.*[a-z])(?=.*[A-Z])/.test(newPassword) ? "#10B981" : Colors.neutral500 },
-                ]}
-              >
-                {/(?=.*[a-z])(?=.*[A-Z])/.test(newPassword) ? "✓" : "•"} Upper and lowercase letters
-              </Text>
-              <Text
-                style={[
-                  styles.requirementItem,
                   { color: /(?=.*\d)/.test(newPassword) ? "#10B981" : Colors.neutral500 },
                 ]}
               >
@@ -119,7 +157,7 @@ const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
           {/* Reset Button */}
           <AnimatedButton
             title="Reset Password"
-            onPress={onResetSuccess}
+            onPress={handleResetPassword}
             disabled={!passwordsMatch || newPassword.length < 8}
           />
 
