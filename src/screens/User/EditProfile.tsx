@@ -10,14 +10,16 @@ import {
   ScrollView,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import Colors from "../constants/colors";
-import FormBox from "../components/FormBox";
-import Header from "../components/Header";
-import FormInput from "../components/FormInput";
-import VerificationRow from "../components/Verification";
+import Colors from "../../constants/colors";
+import FormBox from "../../components/FormBox";
+import Header from "../../components/Header";
+import FormInput from "../../components/FormInput";
+import VerificationRow from "../../components/Verification";
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 
 interface VerificationStatus {
   email: boolean;
@@ -27,14 +29,11 @@ interface VerificationStatus {
 const EditProfileScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [profileData, setProfileData] = useState({
-    username: "john_doe",
-    email: "johndoe@email.com",
-    fullName: "John Doe",
-    phoneNumber: "+94 71 481 0928",
+    fullName: "",
+    phoneNumber: "",
     profileImage: "",
-    bio: "Software developer passionate about mobile apps and user experience.",
+    email: "",
   });
-
   const [isLoading, setIsLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [email, setEmail] = useState(profileData.email);
@@ -43,6 +42,38 @@ const EditProfileScreen = () => {
     email: true,
     contact: true,
   });
+
+  // Fetch profile data on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem('user');
+        if (!userStr) return;
+        const user = JSON.parse(userStr);
+        const token = await AsyncStorage.getItem('token');
+        if (!token) return;
+
+        const res = await fetch(`http://10.0.2.2:3000/profiles/${user.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await res.json();
+        if (data.role === 'car_owner' && data.profile) {
+          setProfileData({
+            fullName: data.profile.name || "",
+            phoneNumber: data.phone || "",
+            profileImage: data.profile.imageBase64 || "",
+            email: data.email || "",
+          });
+        }
+      } catch (err) {
+        Alert.alert("Error", "Failed to fetch profile data.");
+      }
+    };
+    fetchProfile();
+  }, []);
 
   useEffect(() => {
     if (verificationStatus.email) {
@@ -55,29 +86,6 @@ const EditProfileScreen = () => {
       setVerificationStatus((prev) => ({ ...prev, contact: true }));
     }
   }, [contact]);
-
-  const handleEmailVerify = () => {
-    if (verificationStatus.email) {
-      setVerificationStatus((prev) => ({ ...prev, email: false }));
-      Alert.alert("Email Reset", "You can now enter a new email address and verify it.");
-      return;
-    }
-
-    if (!email.trim()) {
-      Alert.alert("Email Required", "Please enter your email address first.");
-      return;
-    }
-
-    if (!email.includes("@") || !email.includes(".")) {
-      Alert.alert("Invalid Email", "Please enter a valid email address.");
-      return;
-    }
-
-    setTimeout(() => {
-      setVerificationStatus((prev) => ({ ...prev, email: true }));
-      Alert.alert("Email Verified", "Your email has been successfully verified.");
-    }, 1000);
-  };
 
   const handleContactVerify = () => {
     if (verificationStatus.contact) {
@@ -115,15 +123,29 @@ const EditProfileScreen = () => {
       {
         text: "Camera",
         onPress: () => {
-          console.log("Camera selected");
-          handleInputChange("profileImage", "https://via.placeholder.com/150");
+          launchCamera(
+            { mediaType: 'photo', quality: 1 },
+            (response) => {
+              if (response.didCancel || response.errorMessage) return;
+              if (response.assets && response.assets[0]) {
+                handleInputChange("profileImage", response.assets[0].uri);
+              }
+            }
+          );
         },
       },
       {
         text: "Gallery",
         onPress: () => {
-          console.log("Gallery selected");
-          handleInputChange("profileImage", "https://via.placeholder.com/150/0000FF/FFFFFF");
+          launchImageLibrary(
+            { mediaType: 'photo', quality: 1 },
+            (response) => {
+              if (response.didCancel || response.errorMessage) return;
+              if (response.assets && response.assets[0]) {
+                handleInputChange("profileImage", response.assets[0].uri);
+              }
+            }
+          );
         },
       },
       {
@@ -140,41 +162,37 @@ const EditProfileScreen = () => {
       Alert.alert("No Changes", "No changes were made to save.");
       return;
     }
-
     if (!profileData.fullName.trim()) {
       Alert.alert("Error", "Full name is required.");
       return;
     }
-
-    if (!email.trim()) {
-      Alert.alert("Error", "Email is required.");
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert("Error", "Please enter a valid email address.");
-      return;
-    }
-
-    if (!verificationStatus.email || !verificationStatus.contact) {
-      Alert.alert("Verification Required", "Please verify both email and contact before saving.");
-      return;
-    }
-
     setIsLoading(true);
-
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      Alert.alert("Success", "Profile updated successfully!", [
-        {
-          text: "OK",
-          onPress: () => {
-            setHasChanges(false);
-            console.log("Navigate back to profile");
-          },
+      const userStr = await AsyncStorage.getItem('user');
+      if (!userStr) return;
+      const user = JSON.parse(userStr);
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+      // Only send allowed fields
+      const payload = {
+        name: profileData.fullName,
+        phone: profileData.phoneNumber,
+        image: profileData.profileImage,
+      };
+
+      const res = await fetch(`http://10.0.2.2:3000/profiles/${user.id}`, {
+        method: "PUT",
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-      ]);
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Failed to update profile");
+      Alert.alert("Success", "Profile updated successfully!");
+      setHasChanges(false);
+      navigation.navigate("Profile");
     } catch (error) {
       Alert.alert("Error", "Failed to update profile. Please try again.");
     } finally {
@@ -211,87 +229,68 @@ const EditProfileScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header icon="back" name="Edit Profile" onIconPress={() => navigation.navigate('Profile')} />
-
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          <View style={styles.imageSection}>
-            <TouchableOpacity style={styles.imageContainer} onPress={handleChangeProfilePicture} activeOpacity={0.8}>
-              {renderProfileImage()}
-              <View style={styles.changeImageOverlay}>
-                <Icon name="camera" size={20} color={Colors.neutral0} />
+      <Header icon="back" name="Edit Profile" onIconPress={() => navigation.goBack()} />
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.imageSection}>
+          <TouchableOpacity style={styles.imageContainer} onPress={handleChangeProfilePicture} activeOpacity={0.8}>
+            {profileData.profileImage ? (
+              <Image source={{ uri: profileData.profileImage }} style={styles.profileImage} />
+            ) : (
+              <View style={styles.profileImagePlaceholder}>
+                <Icon name="person" size={50} color={Colors.primary} />
               </View>
-            </TouchableOpacity>
-            <Text style={styles.imageHint}>Tap to change profile picture</Text>
-          </View>
-
-          <FormBox style={styles.formCard}>
-            <View style={styles.cardHeader}>
-              <Icon name="person-outline" size={20} color={Colors.primary} />
-              <Text style={styles.cardTitle}>Personal Information</Text>
+            )}
+            <View style={styles.changeImageOverlay}>
+              <Icon name="camera" size={20} color={Colors.neutral0} />
             </View>
-
-            <FormInput
-              label="Full Name"
-              placeholder="Enter your full name"
-              iconName="person-outline"
-              value={profileData.fullName}
-              onChangeText={(text) => handleInputChange("fullName", text)}
-            />
-
-            <FormInput
-              label="Username"
-              value={profileData.username}
-              onChangeText={(text) =>
-                handleInputChange("username", text.toLowerCase().replace(/[^a-z0-9_]/g, ""))
-              }
-              placeholder="Enter your username"
-              iconName="at-outline"
-              maxLength={30}
-            />
-
-            <FormInput
-              label="Email"
-              placeholder="Enter your email"
-              iconName="mail-outline"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            <VerificationRow type="email" isVerified={verificationStatus.email} onVerify={handleEmailVerify} />
-
-            <FormInput
-              label="Contact Number"
-              placeholder="Enter your contact"
-              iconName="call-outline"
-              value={contact}
-              onChangeText={setContact}
-              keyboardType="phone-pad"
-            />
-            <VerificationRow 
-              type="contact" 
-              isVerified={verificationStatus.contact} 
-              onVerify={handleContactVerify} 
-
-              style = {{marginBottom: -10}}
-            />
-          </FormBox>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleCancel} disabled={isLoading}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.saveButton, (!hasChanges || isLoading) && styles.disabledButton]}
-              onPress={handleSave}
-              disabled={!hasChanges || isLoading}
-            >
-              <Text style={styles.saveButtonText}>{isLoading ? "Saving..." : "Save Changes"}</Text>
-            </TouchableOpacity>
+          </TouchableOpacity>
+          <Text style={styles.imageHint}>Tap to change profile picture</Text>
+        </View>
+        <FormBox style={styles.formCard}>
+          <View style={styles.cardHeader}>
+            <Icon name="person-outline" size={20} color={Colors.primary} />
+            <Text style={styles.cardTitle}>Personal Information</Text>
           </View>
+          <FormInput
+            label="Full Name"
+            placeholder="Enter your full name"
+            iconName="person-outline"
+            value={profileData.fullName}
+            onChangeText={(text) => handleInputChange("fullName", text)}
+          />
+          <FormInput
+            label="Email"
+            placeholder="Email"
+            iconName="mail-outline"
+            value={profileData.email}
+            editable={false} // Make email read-only
+          />
+          <FormInput
+            label="Contact Number"
+            placeholder="Enter your contact"
+            iconName="call-outline"
+            value={profileData.phoneNumber}
+            onChangeText={(text) => handleInputChange("phoneNumber", text)}
+            keyboardType="phone-pad"
+          />
+          <VerificationRow 
+            type="contact" 
+            isVerified={verificationStatus.contact} 
+            onVerify={handleContactVerify} 
 
-        </ScrollView>
+            style = {{marginBottom: -10}}
+          />
+        </FormBox>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[styles.button, styles.saveButton, (!hasChanges || isLoading) && styles.disabledButton]}
+            onPress={handleSave}
+            disabled={!hasChanges || isLoading}
+          >
+            <Text style={styles.saveButtonText}>{isLoading ? "Saving..." : "Save Changes"}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };

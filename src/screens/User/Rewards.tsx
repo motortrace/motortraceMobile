@@ -1,14 +1,14 @@
 import React from "react"
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native"
 import Icon from 'react-native-vector-icons/Ionicons'
-import Colors from "../constants/colors"
-import Button from '../components/Button'
-import Header from '../components/Header'
-import SearchBar from '../components/SearchBar'
-import RewardCard from '../components/RewardCard'
+import Colors from "../../constants/colors"
+import Button from '../../components/Button'
+import Header from '../../components/Header'
+import SearchBar from '../../components/SearchBar'
+import RewardCard from '../../components/RewardCard'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 interface RewardsScreenProps {
   onBack?: () => void

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,10 @@ import {
   SafeAreaView,
   Alert,
   Image,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import Colors from '../constants/colors';
 import AnimatedButton from '../components/AnimatedButton';
@@ -17,116 +21,335 @@ import FormBox from '../components/FormBox';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { useUser } from '../store/UserContext';
 
-interface SignUpScreenProps {
-  onSignUp?: (name: string, username: string, password: string) => void;
-  onGoogleLogin?: () => void;
-  onAppleLogin?: () => void;
+interface RegisterScreenProps {
+  onRegister?: (email: string, password: string) => void;
+  onGoogleRegister?: () => void;
   onLoginRedirect?: () => void;
 }
 
-const SignUpScreen: React.FC<SignUpScreenProps> = ({
-  onSignUp,
-  onGoogleLogin,
-  onAppleLogin,
+const RegisterScreen: React.FC<RegisterScreenProps> = ({
+  onRegister,
+  onGoogleRegister,
   onLoginRedirect,
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const [name, setName] = useState('');
-  const [username, setUsername] = useState('');
+  const { setUser } = useUser();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [agree, setAgree] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    email: '',
+    password: '',
+  });
 
-  const handleSignUp = () => {
-    if (!name.trim() || !username.trim() || !password.trim() || !confirmPassword.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    onSignUp?.(name, username, password);
+  // Email validation
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
+
+  // Password validation
+  const validatePassword = (password: string): boolean => {
+    return password.length >= 8;
+  };
+
+  // Handle input validation
+  const validateInputs = (): boolean => {
+    const newErrors = {
+      email: '',
+      password: '',
+    };
+
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!validateEmail(email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!password.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (!validatePassword(password)) {
+      newErrors.password = 'Password must be at least 8 characters';
+    }
+
+    setErrors(newErrors);
+    return !newErrors.email && !newErrors.password;
+  };
+
+  // Configure Google Sign-In
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: '1023909066743-cn45jd8tj8ovoul1hmipinncg938d2ge.apps.googleusercontent.com',
+    });
+  }, []);
+
+  const handleRegister = async () => {
+    if (!validateInputs()) {
+      return;
+    }
+
+    if (!agree) {
+      Alert.alert('Error', 'Please agree to the Terms & Privacy');
+      return;
+    }
+
+    setLoading(true);
+    setErrors({ email: '', password: '' });
+
+    try {
+      const response = await fetch('http://10.0.2.2:3000/auth/register', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Client-Type': 'mobile',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+
+      // Store the token securely (you might want to use AsyncStorage or Keychain)
+      if (data.token) {
+        // Store token in secure storage
+        // await AsyncStorage.setItem('token', data.token);
+      }
+
+      // Set user in context
+      if (data.user) {
+        setUser(data.user);
+      }
+
+      navigation.navigate('LogIn');
+      
+      if (onRegister) {
+        onRegister(email, password);
+      }
+      
+    } catch (error: any) {
+      setErrors({
+        email: error.message.includes('email') ? error.message : '',
+        password: error.message.includes('password') ? error.message : '',
+      });
+      
+      if (!error.message.includes('email') && !error.message.includes('password')) {
+        Alert.alert('Registration Failed', error.message || 'Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleRegister = async () => {
+    setLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices();
+      const result = await GoogleSignin.signIn();
+      console.log('Google signIn result:', result);
+      
+      // Access idToken from the data object
+      const idToken = result.data?.idToken;
+      
+      if (!idToken) {
+        throw new Error('No idToken returned from Google');
+      }
+  
+      console.log('Sending idToken to backend:', idToken.substring(0, 50) + '...');
+  
+      // Send the token to your backend for registration
+      const response = await fetch('http://10.0.2.2:3000/auth/google/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Client-Type': 'mobile',
+        },
+        body: JSON.stringify({ idToken }),
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
+      const data = await response.json();
+      console.log('Response data:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Google registration failed');
+      }
+      
+      // Set user in context
+      if (data.user) {
+        setUser(data.user);
+      }
+      
+      if(data.user.isRegistrationComplete){
+        navigation.navigate('Home')
+      }else{
+        navigation.navigate('Onboarding')
+      }
+      
+      if (onGoogleRegister) {
+        onGoogleRegister();
+      }
+      
+    } catch (error: any) {
+      console.error('Google Registration Error:', error);
+      console.error('Error type:', error.name);
+      console.error('Error message:', error.message);
+      
+      // More specific error handling
+      if (error.message.includes('Network request failed')) {
+        Alert.alert('Network Error', 'Cannot connect to server. Please check your internet connection and try again.');
+      } else if (error.message.includes('fetch')) {
+        Alert.alert('Server Error', 'Unable to reach the authentication server. Please try again later.');
+      } else {
+        Alert.alert('Google Sign Up Failed', error.message || 'Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleAgree = () => {
+    setAgree(!agree);
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={styles.loadingText}>Creating Account...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Logo */}
-        <View style={styles.iconContainer}>
-          <Image source={require('../assets/images/Logo_white_no_bg.png')} style={styles.Logo} />
-        </View>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.content}>
+            {/* Logo */}
+            <View style={styles.logoContainer}>
+              <Image 
+                source={require('../assets/images/Logo_white_no_bg.png')} 
+                style={styles.logo} 
+                resizeMode="contain"
+              />
+            </View>
 
-        {/* Welcome Text */}
-        <Text style={styles.welcomeTitle}>Create Account</Text>
-        <Text style={styles.welcomeSubtitle}>Sign up for a new car account</Text>
+            {/* Welcome Text */}
+            <View style={styles.headerContainer}>
+              <Text style={styles.welcomeTitle}>Create your account</Text>
+              <Text style={styles.welcomeSubtitle}>Sign up to get started with MotorTrace</Text>
+            </View>
 
-        <FormBox>
-          {/* Username */}
-          <FormInput
-            label="Username"
-            placeholder="Choose a username"
-            iconName="person-outline"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-            autoCorrect={false}
-            error="Username already exists"
-          />
+            <FormBox>
+              {/* Email Input */}
+              <FormInput
+                label="Email address"
+                placeholder="Enter your email"
+                iconName="mail-outline"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) {
+                    setErrors(prev => ({ ...prev, email: '' }));
+                  }
+                }}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                error={errors.email}
+                autoComplete="email"
+              />
 
-          {/* Password */}
-          <FormInput
-            label="Password"
-            placeholder="Enter your password"
-            iconName="lock-closed-outline"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            error="Wrong password"
-          />
+              {/* Password Input */}
+              <FormInput
+                label="Password"
+                placeholder="Min 8 characters"
+                iconName="lock-closed-outline"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password) {
+                    setErrors(prev => ({ ...prev, password: '' }));
+                  }
+                }}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                error={errors.password}
+                autoComplete="password"
+              />
 
-          {/* Confirm Password */}
-          <FormInput
-            label="Confirm Password"
-            placeholder="Re-enter your password"
-            iconName="lock-closed-outline"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            error="password doesn't match" 
-          />
+              {/* Terms & Privacy Checkbox */}
+              <TouchableOpacity style={styles.checkboxContainer} onPress={toggleAgree}>
+                <View style={[styles.checkbox, agree && styles.checkboxChecked]}>
+                  {agree && <Text style={styles.checkboxTick}>✓</Text>}
+                </View>
+                <Text style={styles.checkboxLabel}>
+                  I agree to the <Text style={styles.linkText}>Terms & Privacy</Text>
+                </Text>
+              </TouchableOpacity>
 
-          {/* Sign Up Button */}
-          <AnimatedButton title="Sign up" onPress={()=> {navigation.navigate('LogIn')}} style={{ marginBottom: 24 }} />
+              {/* Register Button */}
+              <AnimatedButton 
+                title="Create Account" 
+                onPress={handleRegister}
+                style={[
+                  styles.registerButton,
+                  { opacity: (!agree || loading) ? 0.6 : 1 }
+                ]}
+                disabled={!agree || loading}
+              />
 
-          {/* Divider */}
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Or sign up with</Text>
-            <View style={styles.dividerLine} />
+              {/* Divider */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>Or continue with</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Social Login Buttons */}
+              <SocialLoginButtons
+                onGoogleLogin={handleGoogleRegister}
+                onAppleLogin={handleGoogleRegister} // You can implement Apple login separately
+              />
+
+              {/* Sign In Link */}
+              <View style={[styles.signInContainer, { marginTop: 32, alignItems: 'center' }]}>
+                <Text style={styles.signInText}>Already have an account? </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('LogIn')} activeOpacity={0.7}>
+                  <Text style={{ color: '#2563eb', textDecorationLine: 'underline', fontWeight: 'bold', fontSize: 16 }}>Sign in</Text>
+                </TouchableOpacity>
+              </View>
+            </FormBox>
+
+            {/* Footer */}
+            <View style={styles.footerContainer}>
+              <Text style={styles.footerText}>2024 MotorTrace, All rights reserved</Text>
+            </View>
           </View>
-
-          {/* Social Login */}
-          <SocialLoginButtons
-            onGoogleLogin={onGoogleLogin}
-            onAppleLogin={onAppleLogin}
-          />
-        </FormBox>
-
-        {/* Redirect to Login */}
-        <View style={styles.signUpContainer}>
-          <Text style={styles.signUpText}>Already have an account? </Text>
-          <TouchableOpacity onPress={()=> {navigation.navigate('LogIn')}}>
-            <Link link="Log In" style={{ marginTop: 10 }} />
-          </TouchableOpacity>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -136,65 +359,129 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.primarybg,
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 40,
+    paddingBottom: 20,
     justifyContent: 'center',
+    minHeight: '100%',
   },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    backgroundColor: Colors.primary,
-    borderRadius: 16,
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center',
-    marginBottom: 15,
   },
-  Logo: {
-    width: 70,
-    height: 70,
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: Colors.neutral500,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+  },
+  headerContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
   },
   welcomeTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: Colors.neutral1000,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   welcomeSubtitle: {
     fontSize: 16,
     color: Colors.neutral500,
     textAlign: 'center',
-    marginBottom: 20,
+    lineHeight: 24,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    marginTop: 4,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: Colors.neutral300,
+    borderRadius: 4,
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  checkboxTick: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  checkboxLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.neutral700,
+    fontWeight: '500',
+  },
+  linkText: {
+    color: Colors.primary,
+    textDecorationLine: 'underline',
+  },
+  registerButton: {
+    marginBottom: 24,
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: Colors.neutral500,
+    backgroundColor: Colors.neutral300,
   },
   dividerText: {
-    marginHorizontal: 14,
+    marginHorizontal: 16,
     fontSize: 14,
     color: Colors.neutral500,
-    marginTop: -2,
+    fontWeight: '500',
   },
-  signUpContainer: {
+  signInContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 24,
   },
-  signUpText: {
+  signInText: {
     fontSize: 16,
     color: Colors.neutral500,
-    marginTop: 10,
+  },
+  footerContainer: {
+    alignItems: 'center',
+    marginTop: 32,
+    paddingBottom: 20,
+  },
+  footerText: {
+    fontSize: 12,
+    color: Colors.neutral400,
+    textAlign: 'center',
   },
 });
 
-export default SignUpScreen;
+export default RegisterScreen;

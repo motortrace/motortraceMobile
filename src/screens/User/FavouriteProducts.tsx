@@ -9,13 +9,13 @@ import {
   Dimensions
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Header from '../components/Header';
-import ProductCard from '../components/ProductCard';
-import BottomNavigation from '../components/BottomNav';
-import Colors from '../constants/colors';
+import Header from '../../components/Header';
+import ProductCard from '../../components/ProductCard';
+import BottomNavigation from '../../components/BottomNav';
+import Colors from '../../constants/colors';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const { width: screenWidth } = Dimensions.get('window');
 

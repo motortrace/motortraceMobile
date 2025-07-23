@@ -1,13 +1,14 @@
 import React, { useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, ImageBackground } from "react-native"
 import Icon from 'react-native-vector-icons/Ionicons'
-import Colors from "../constants/colors"
-import PackageCard from '../components/PackageCard'
-import TabNavigator from "../components/TabNavigator"
-import Button from '../components/Button'
+import Colors from "../../constants/colors"
+import PackageCard from '../../components/PackageCard'
+import TabNavigator from "../../components/TabNavigator"
+import Button from '../../components/Button'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
+import AppointmentBottomSheet from '../../components/AppointmentSheet';
 
 interface ReviewsSectionProps {
   onViewMorePress?: () => void
@@ -24,11 +25,23 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [isFavorite, setIsFavorite] = useState(false)
+  const [showAppointmentSheet, setShowAppointmentSheet] = useState(false);
 
   const handleToggleFavorite = () => {
     setIsFavorite(!isFavorite)
     onToggleFavorite?.()
   }
+
+  const handleScheduleAppointment = () => {
+    setShowAppointmentSheet(true);
+  };
+  const handleCloseSheet = () => {
+    setShowAppointmentSheet(false);
+  };
+  const handleConfirmAppointment = (appointmentData: any) => {
+    console.log('Appointment confirmed:', appointmentData);
+    setShowAppointmentSheet(false);
+  };
 
   const tabToScreenMap = {
     About: 'GarageInfo',
@@ -58,7 +71,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
         {/* Garage Header Card */}
         <View style={styles.profileCard}>
           <ImageBackground
-            source={require('../assets/images/Garage.jpg')}
+            source={require('../../assets/images/Garage.jpg')}
             style={styles.profileImage}
             imageStyle={styles.profileImageStyle}
           >
@@ -125,8 +138,13 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 
       {/* Book Appointment Button */}
       <View style={styles.scheduleContainer}>
-        <Button onPress={onScheduleAppointment} />
+        <Button label="Schedule Appointment" onPress={handleScheduleAppointment} />
       </View>
+      <AppointmentBottomSheet
+        visible={showAppointmentSheet}
+        onClose={handleCloseSheet}
+        onConfirm={handleConfirmAppointment}
+      />
     </SafeAreaView>
   )
 }

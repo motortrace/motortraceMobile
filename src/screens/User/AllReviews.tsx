@@ -1,14 +1,15 @@
 import React, { useState } from "react"
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native"
 import Icon from 'react-native-vector-icons/Ionicons'
-import Colors from "../constants/colors"
-import RatingStars from '../components/RatingStars'
-import ReviewCard from '../components/ReviewCard'
-import Button from '../components/Button'
-import Header from '../components/Header'
+import Colors from "../../constants/colors"
+import RatingStars from '../../components/RatingStars'
+import ReviewCard from '../../components/ReviewCard'
+import Button from '../../components/Button'
+import Header from '../../components/Header'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
+import AppointmentBottomSheet from '../../components/AppointmentSheet';
 
 interface AllReviewsScreenProps {
   onBack?: () => void,
@@ -18,6 +19,18 @@ interface AllReviewsScreenProps {
 const AllReviewsScreen: React.FC<AllReviewsScreenProps> = ({ onBack, onScheduleAppointment }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [selectedFilter, setSelectedFilter] = useState('All')
+  const [showAppointmentSheet, setShowAppointmentSheet] = useState(false);
+
+  const handleScheduleAppointment = () => {
+    setShowAppointmentSheet(true);
+  };
+  const handleCloseSheet = () => {
+    setShowAppointmentSheet(false);
+  };
+  const handleConfirmAppointment = (appointmentData: any) => {
+    console.log('Appointment confirmed:', appointmentData);
+    setShowAppointmentSheet(false);
+  };
 
   // Extended review data - replace with your actual data
   const allReviews = [
@@ -161,8 +174,13 @@ const AllReviewsScreen: React.FC<AllReviewsScreenProps> = ({ onBack, onScheduleA
         <View style={styles.bottomSpacing} />
       </ScrollView>
       <View style={styles.scheduleContainer}>
-        <Button onPress={onScheduleAppointment} />
+        <Button label="Schedule Appointment" onPress={handleScheduleAppointment} />
       </View>
+      <AppointmentBottomSheet
+        visible={showAppointmentSheet}
+        onClose={handleCloseSheet}
+        onConfirm={handleConfirmAppointment}
+      />
     </SafeAreaView>
   )
 }

@@ -10,14 +10,16 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
-import FormInput from '../components/FormInput';
-import Colors from '../constants/colors';
+import FormInput from '../../components/FormInput';
+import Colors from '../../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Header from '../components/Header'
-import Button from '../components/Button'
+import Header from '../../components/Header'
+import Button from '../../components/Button'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
+import { Picker } from '@react-native-picker/picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CarOnboardingForm = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -27,49 +29,75 @@ const CarOnboardingForm = () => {
     year: '',
     number: '',
     image: '',
+    color: '',
   });
 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<any>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  const updateField = (field, value) => {
+  const updateField = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
+    if (errors[field]) setErrors((prev: any) => ({ ...prev, [field]: undefined }));
   };
 
   const validate = () => {
-    const newErrors = {};
+    const newErrors: any = {};
     if (!formData.name.trim()) newErrors.name = 'Car name is required';
     if (!formData.model.trim()) newErrors.model = 'Model is required';
     if (!formData.year.trim()) newErrors.year = 'Year is required';
     if (!formData.number.trim()) newErrors.number = 'License plate number is required';
     if (!formData.image.trim()) newErrors.image = 'Image URL is required';
-
+    if (!formData.color.trim()) newErrors.color = 'Color is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleRegisterCar = async () => {
     if (!validate()) {
       Alert.alert('Validation Error', 'Please fill all required fields');
       return;
     }
-
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const userStr = await AsyncStorage.getItem('user');
+      if (!userStr) throw new Error('User not found');
+      const user = JSON.parse(userStr);
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('No token found');
+      const response = await fetch(`http://10.0.2.2:3000/vehicles/${user.id}/vehicles`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          vehicleName: formData.name,
+          model: formData.model,
+          year: formData.year,
+          licensePlate: formData.number,
+          color: formData.color,
+          image: formData.image,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to add car');
+      Alert.alert('Success', 'Car onboarded successfully!', [
+        { text: 'OK', onPress: () => navigation.navigate('Cars') }
+      ]);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to add car');
+    } finally {
       setIsLoading(false);
-      Alert.alert('Success', 'Car onboarded successfully!');
-      onSubmit?.(formData);
-    }, 1500);
+    }
   };
 
   return (
     <SafeAreaView style={styles.wrapper}>
-        <Header 
-          icon = 'back'
-          name = 'Jhon Doe'
-          onIconPress={() => navigation.navigate('Cars')}
-        />
+      <Header 
+        icon = 'back'
+        name = 'Jhon Doe'
+        onIconPress={() => navigation.navigate('Cars')}
+      />
 
                <View style={styles.imageSection}>
           {formData.image ? (
@@ -146,12 +174,21 @@ const CarOnboardingForm = () => {
             onChangeText={text => updateField('number', text.toUpperCase())}
             autoCapitalize="characters"
           />
-      </ScrollView>
-
+          <FormInput
+            label="Color"
+            placeholder="e.g. White, Black, Red..."
+            iconName="color-palette-outline"
+            value={formData.color}
+            onChangeText={text => updateField('color', text)}
+            containerStyle={{marginBottom: -140}}
+          />
+        </ScrollView>
+        <View style={{ height: 20 }} /> {/* Spacer for button */}
       <Button
-        label='Register Car'
-        onPress={() => {}}
+        label={isLoading ? 'Registering...' : 'Register Car'}
+        onPress={handleRegisterCar}
         containerStyle= {{marginBottom: 30, marginHorizontal: 25}}
+        disabled={isLoading}
       />
 
     </SafeAreaView>
@@ -166,7 +203,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
     paddingTop: 0,
-    paddingBottom: 100,
+    paddingBottom: 150,
   },
 
   // Image Section
@@ -237,6 +274,24 @@ const styles = StyleSheet.create({
   },
   formSpacer: {
     width: 16,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.neutral900,
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: Colors.neutral200,
+    borderRadius: 8,
+    marginBottom: 8,
+    backgroundColor: Colors.neutral50,
+  },
+  picker: {
+    height: 44,
+    width: '100%',
   },
 });
 

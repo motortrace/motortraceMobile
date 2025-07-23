@@ -11,12 +11,13 @@ import {
   Dimensions
 } from "react-native"
 import Icon from 'react-native-vector-icons/Ionicons'
-import Colors from "../constants/colors"
-import Button from '../components/Button'
+import Colors from "../../constants/colors"
+import Button from '../../components/Button'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import type { RootStackParamList } from '../../App'
-import Header from '../components/Header'
+import type { RootStackParamList } from '../../../App'
+import Header from '../../components/Header'
+import AppointmentBottomSheet from '../../components/AppointmentSheet';
 
 const { width } = Dimensions.get('window')
 
@@ -49,6 +50,7 @@ const ServiceDetailsPage: React.FC<ServiceDetailsProps> = ({
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const route = useRoute()
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [showAppointmentSheet, setShowAppointmentSheet] = useState(false);
 
   // Sample service data - in a real app, this would come from props or API
   const serviceData: ServiceDetail = {
@@ -86,9 +88,9 @@ const ServiceDetailsPage: React.FC<ServiceDetailsProps> = ({
       "Digital inspection report sent to your phone"
     ],
     images: [
-      require('../assets/images/Garage.jpg'),
-      require('../assets/images/Google.png'),
-      require('../assets/images/car.png')
+      require('../../assets/images/Garage.jpg'),
+      require('../../assets/images/Google.png'),
+      require('../../assets/images/car.png')
     ]
   }
 
@@ -119,10 +121,19 @@ const ServiceDetailsPage: React.FC<ServiceDetailsProps> = ({
     return stars
   }
 
+  const handleScheduleAppointment = () => {
+    setShowAppointmentSheet(true);
+  };
+  const handleCloseSheet = () => {
+    setShowAppointmentSheet(false);
+  };
+  const handleConfirmAppointment = (appointmentData: any) => {
+    console.log('Appointment confirmed:', appointmentData);
+    setShowAppointmentSheet(false);
+  };
+
   const handleBookAppointment = () => {
-    // Navigate to booking screen or call the prop function
-    onBookAppointment?.()
-    // navigation.navigate('BookAppointment', { serviceId: serviceData.id })
+    handleScheduleAppointment();
   }
 
   return (
@@ -261,6 +272,11 @@ const ServiceDetailsPage: React.FC<ServiceDetailsProps> = ({
           onPress={handleBookAppointment}
         />
       </View>
+      <AppointmentBottomSheet
+        visible={showAppointmentSheet}
+        onClose={handleCloseSheet}
+        onConfirm={handleConfirmAppointment}
+      />
     </SafeAreaView>
   )
 }

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
-import Button from '../components/Button';
-import AppointmentBottomSheet from '../components/AppointmentSheet';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
+import Button from '../../components/Button';
+import AppointmentBottomSheet from '../../components/AppointmentSheet';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
 
 const ExampleScreen: React.FC = () => {
   const [showAppointmentSheet, setShowAppointmentSheet] = useState(false);

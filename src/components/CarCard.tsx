@@ -11,6 +11,7 @@ import Colors from '../constants/colors';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface CarCardProps {
   car: {
@@ -70,7 +71,11 @@ const CarCard: React.FC<CarCardProps> = ({
   return (
     <TouchableOpacity 
       style={styles.carCard} 
-      onPress={() => navigation.navigate('CarDetails')} 
+      onPress={(id) => {
+        console.log('Pressed car with id:', id);
+        AsyncStorage.setItem('selectedCarId', String(id));
+        navigation.navigate('CarDetails');
+      }}
       activeOpacity={0.8}
     >
       {/* Car Image */}

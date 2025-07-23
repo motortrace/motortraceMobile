@@ -9,13 +9,13 @@ import {
   Alert,
   FlatList,
 } from 'react-native';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
-import Button from '../components/Button';
-import BorderButton from '../components/BorderButton';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
+import Button from '../../components/Button';
+import BorderButton from '../../components/BorderButton';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const ReservationsScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();

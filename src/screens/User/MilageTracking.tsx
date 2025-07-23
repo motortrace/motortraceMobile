@@ -12,11 +12,11 @@ import {
   Dimensions,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const { width } = Dimensions.get('window');
 

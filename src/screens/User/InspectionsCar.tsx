@@ -8,12 +8,12 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const TrackOrderScreen = () => { // Add navigation prop
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -151,7 +151,7 @@ const TrackOrderScreen = () => { // Add navigation prop
 
           <View style={styles.carImageContainer}>
             <Image
-            source={require('../assets/images/car.png')} 
+            source={require('../../assets/images/car.png')} 
               style={styles.carImage}
               resizeMode="contain"
             />

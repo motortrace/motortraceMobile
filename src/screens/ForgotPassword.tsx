@@ -8,25 +8,49 @@ import AnimatedButton from "../components/AnimatedButton"
 import Link from "../components/Link"
 import CircularBackButton from "../components/Back"
 import Icon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../../App';
 
 interface ForgotPasswordScreenProps {
-  onSendOTP?: (email: string, method: "email" | "sms") => void
   onBack?: () => void
 }
 
-const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onSendOTP, onBack }) => {
+const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBack }) => {
   const [email, setEmail] = useState("")
   const [contact, setContact] = useState("")
   const [selectedMethod, setSelectedMethod] = useState<"email" | "sms">("email")
+  const [emailError, setEmailError] = useState("");
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  const handleSendOTP = () => {
-    const value = selectedMethod === "email" ? email : contact
-    onSendOTP?.(value, selectedMethod)
+  const handleSendOTP = async () => {
+    setEmailError(""); // Clear previous error
+    if (selectedMethod === "email") {
+      try {
+        const res = await fetch('http://10.0.2.2:3000/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          if (data.error === "User not found") {
+            setEmailError("This email does not exist in our records.");
+          } else {
+            alert(data.error || 'Failed to send OTP');
+          }
+          return;
+        }
+        await AsyncStorage.setItem('resetEmail', email);
+        navigation.navigate('Verification');
+      } catch (err: any) {
+        alert(err.message || 'Failed to send OTP');
+      }
+    } else {
+      alert('SMS verification is not implemented yet.');
+    }
   }
-
-  const isEmailValid = email.includes("@") && email.includes(".")
-  const isContactValid = contact.length >= 10
-  const canProceed = selectedMethod === "email" ? isEmailValid : isContactValid
 
   return (
     <SafeAreaView style={styles.container}>
@@ -79,6 +103,7 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onSendOTP, 
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
+              error={emailError}
             />
           )}
 
@@ -98,7 +123,6 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onSendOTP, 
           <AnimatedButton
             title={`Send ${selectedMethod === "email" ? "Email" : "SMS"} Code`}
             onPress={handleSendOTP}
-            disabled={!canProceed}
           />
 
           {/* Help Text */}

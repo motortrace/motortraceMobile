@@ -7,9 +7,9 @@ import {
   ScrollView,
 } from "react-native";
 import Icon from 'react-native-vector-icons/Ionicons';
-import Colors from "../constants/colors";
-import Button from '../components/Button';
-import Header from '../components/Header';
+import Colors from "../../constants/colors";
+import Button from '../../components/Button';
+import Header from '../../components/Header';
 
 interface SimpleServiceDetailScreenProps {
   onBack?: () => void;

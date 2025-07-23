@@ -7,6 +7,7 @@ import Header from '../components/Header'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
+import { useUser } from '../store/UserContext';
 
 interface Vehicle {
   id: string;
@@ -25,11 +26,13 @@ interface DashboardScreenProps {
 }
 
 const DashboardScreen: React.FC<DashboardScreenProps> = ({
-  userName = "John Doe",
-  onMenuPress,
-  onNotificationPress,
+  _onMenuPress,
+  _onNotificationPress,
 }) => {
+  const { user } = useUser();
+  const userName = user?.name || "John Doe";
   const [selectedVehicle, setSelectedVehicle] = useState(0)
+  const [trackedVehicleId, setTrackedVehicleId] = useState<string | null>(null);
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
@@ -153,6 +156,22 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <Text style={styles.vehicleName}>{item.name}</Text>
         <Text style={styles.vehicleYear}>{item.year}</Text>
         <Text style={styles.vehicleDetails}>{item.license}</Text>
+        {/* Start/Stop Tracking Button */}
+        <TouchableOpacity
+          style={[
+            styles.trackingButton,
+            trackedVehicleId === item.id ? styles.trackingButtonActive : styles.trackingButtonInactive
+          ]}
+          onPress={() => setTrackedVehicleId(trackedVehicleId === item.id ? null : item.id)}
+          activeOpacity={0.8}
+        >
+          <Text style={[
+            styles.trackingButtonText,
+            trackedVehicleId === item.id ? styles.trackingButtonTextActive : styles.trackingButtonTextInactive
+          ]}>
+            {trackedVehicleId === item.id ? 'Stop Tracking' : 'Start Tracking'}
+          </Text>
+        </TouchableOpacity>
       </View>
       {index === selectedVehicle && (
         <View style={styles.selectedIndicator}>
@@ -166,14 +185,14 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     <SafeAreaView style={styles.container}>
         <Header
           icon=""
-          name="John Doe"
+          name={userName}
           image=""
           onIconPress={() => navigation.navigate('Home')}
         />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
 
         {/* Vehicles Section */}
-        <View style={styles.section}>
+        <View style={[styles.section,{marginTop: -20}]}>
           <View style={[styles.sectionHeader, {marginTop: 40}]}>
             <Text style={styles.sectionTitle}>My Vehicles</Text>
           </View>
@@ -188,7 +207,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </View>
 
         {/* Quick Actions */}
-        <View style={styles.section}>
+        <View style={[styles.section,{marginTop: -10}]}>
           <View style={styles.sectionHeaderSimple}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
           </View>
@@ -529,6 +548,33 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 40,
+  },
+  trackingButton: {
+    alignSelf: 'flex-start',
+    marginTop: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 18,
+    borderRadius: 16,
+    minWidth: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+  },
+  trackingButtonActive: {
+    backgroundColor: Colors.danger,
+  },
+  trackingButtonInactive: {
+    backgroundColor: Colors.primary,
+  },
+  trackingButtonText: {
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  trackingButtonTextActive: {
+    color: Colors.neutral0,
+  },
+  trackingButtonTextInactive: {
+    color: Colors.neutral0,
   },
 })
 

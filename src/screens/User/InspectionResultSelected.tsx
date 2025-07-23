@@ -8,12 +8,12 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
-import CategoryBadge from '../components/CategoryBadge';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
+import CategoryBadge from '../../components/CategoryBadge';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const repairs = [
   {

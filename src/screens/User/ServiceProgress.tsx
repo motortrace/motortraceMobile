@@ -11,12 +11,12 @@ import {
   Modal,
   Dimensions,
 } from 'react-native';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
-import ServiceProgressCard from '../components/ServiceProgressCard'
+import type { RootStackParamList } from '../../../App';
+import ServiceProgressCard from '../../components/ServiceProgressCard'
 
 const { width } = Dimensions.get('window');
 

@@ -9,14 +9,14 @@ import {
   Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Colors from '../constants/colors';
-import PostCard from '../components/PostCard';
-import Header from '../components/Header';
-import BottomNavigation from '../components/BottomNav';
+import Colors from '../../constants/colors';
+import PostCard from '../../components/PostCard';
+import Header from '../../components/Header';
+import BottomNavigation from '../../components/BottomNav';
 import { useState } from "react";
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const Profile = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -40,8 +40,8 @@ const Profile = () => {
   const myPosts = [
     {
       id: '1',
-      title: 'Tips for Better Mobile App Development',
-      content: 'After 5 years of React Native development, here are my top tips for building better mobile apps. Performance optimization is key, and user experience should always come first...',
+      title: 'How I Fixed My Car’s Overheating Problem',
+      content: 'Sharing my experience fixing an overheating issue in my 2012 Honda Civic. It was the thermostat! Here’s how I diagnosed and replaced it...',
       author: 'John Doe',
       authorAvatar: userProfile.avatar,
       timeAgo: '6 hours ago',
@@ -51,13 +51,13 @@ const Profile = () => {
       isUpvoted: false,
       isDownvoted: false,
       isSaved: false,
-      tags: ['development', 'react-native', 'tips'],
+      tags: ['engine', 'overheating', 'repair'],
       images: ['https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=250&fit=crop'],
     },
     {
       id: '2',
-      title: 'My Journey Learning React Native',
-      content: 'Started my React Native journey 2 years ago. Here are the challenges I faced and how I overcame them. Hope this helps other beginners...',
+      title: 'Essential Tools for DIY Car Repairs',
+      content: 'Here’s my list of must-have tools for anyone starting with car repairs at home. From socket sets to OBD2 scanners, these made my life easier...',
       author: 'John Doe',
       authorAvatar: userProfile.avatar,
       timeAgo: '2 days ago',
@@ -67,13 +67,13 @@ const Profile = () => {
       isUpvoted: false,
       isDownvoted: false,
       isSaved: false,
-      tags: ['learning', 'experience', 'beginner'],
+      tags: ['tools', 'diy', 'repair'],
       images: [],
     },
     {
       id: '3',
-      title: 'Best VS Code Extensions for React Development',
-      content: 'Here are my favorite VS Code extensions that boost productivity when working with React and React Native projects...',
+      title: 'How Often Should You Change Engine Oil?',
+      content: 'Let’s discuss how often you change your engine oil and what brands you trust. I usually go for every 5,000 km with synthetic oil...',
       author: 'John Doe',
       authorAvatar: userProfile.avatar,
       timeAgo: '1 week ago',
@@ -83,7 +83,7 @@ const Profile = () => {
       isUpvoted: false,
       isDownvoted: false,
       isSaved: false,
-      tags: ['tools', 'productivity', 'vscode'],
+      tags: ['maintenance', 'oil', 'engine'],
       images: ['https://images.unsplash.com/photo-1551650975-87deedd944c3?w=400&h=250&fit=crop'],
     },
   ];
@@ -92,40 +92,40 @@ const Profile = () => {
   const myComments = [
     {
       id: '1',
-      postTitle: 'Beautiful UI Design Inspiration',
-      postAuthor: 'DesignGuru',
+      postTitle: 'How to Fix Engine Overheating in a Honda Civic?',
+      postAuthor: 'CarFixerJoe',
       postAuthorAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b830?w=150&h=150&fit=crop&crop=face',
-      myComment: 'Amazing designs! The gradient usage is really well done. I especially love the micro-interactions in the second example. Do you have any tutorials on how to implement similar effects?',
+      myComment: 'I had the same issue! Replacing the thermostat solved it for me. Good luck!',
       timeAgo: '3 hours ago',
       upvotes: 12,
       isUpvoted: true,
     },
     {
       id: '2',
-      postTitle: 'React Native Performance Optimization',
-      postAuthor: 'TechLead',
+      postTitle: 'Best Practices for Regular Car Maintenance',
+      postAuthor: 'AutoGuru',
       postAuthorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-      myComment: 'Great article! I would also add that using FlatList instead of ScrollView for large datasets can significantly improve performance. Also, consider using React.memo for components that don\'t need frequent re-renders.',
+      myComment: 'Don’t forget to check your tire pressure and oil level every month. Prevents a lot of issues!',
       timeAgo: '1 day ago',
       upvotes: 24,
       isUpvoted: false,
     },
     {
       id: '3',
-      postTitle: 'State Management in Large Apps',
-      postAuthor: 'CodeMaster',
+      postTitle: 'Share Your DIY Car Repair Success Stories',
+      postAuthor: 'DIYMechanic',
       postAuthorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      myComment: 'I\'ve been using Redux Toolkit for state management and it\'s been great. The slice pattern really simplifies the boilerplate code.',
+      myComment: 'Loved your story! My first DIY repair was changing brake pads. Felt so accomplished after.',
       timeAgo: '3 days ago',
       upvotes: 8,
       isUpvoted: false,
     },
     {
       id: '4',
-      postTitle: 'Best Practices for API Integration',
-      postAuthor: 'DevExpert',
+      postTitle: 'How Often Should You Change Engine Oil?',
+      postAuthor: 'OilExpert',
       postAuthorAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-      myComment: 'Don\'t forget about proper error handling and loading states. Users appreciate good feedback when things are processing or when something goes wrong.',
+      myComment: 'I recommend every 5,000 km for most cars, but always check your manual.',
       timeAgo: '1 week ago',
       upvotes: 15,
       isUpvoted: true,

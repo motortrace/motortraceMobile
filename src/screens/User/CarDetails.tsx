@@ -11,34 +11,34 @@ import {
   Alert,
   Linking,
   Platform,
-  Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MapView, { Marker } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
-import BorderButton from '../components/BorderButton';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
+import BorderButton from '../../components/BorderButton';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
-
-const { width } = Dimensions.get('window');
+import type { RootStackParamList } from '../../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ConfirmationPopup from '../../components/ConfirmationPopup';
 
 // Hardcoded car data
 const hardcodedCarData = {
   id: 1,
-  name: "Honda Civic",
+  name: "Honda Civic", // add name
   nickname: "Reliable Runner",
   model: "Honda Civic LX",
   year: 2020,
-  image: "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=600&h=400&fit=crop",
+  image: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=400',
   status: "active",
   statusText: "Active",
   mileage: "45,230 km",
   lastService: "Mar 15, 2024",
   number: "ABC-1234",
+  color: "white", // add color
   issues: [
     "Check engine light intermittent",
     "Minor oil leak under engine"
@@ -69,22 +69,102 @@ const hardcodedCarData = {
       cost: "220.00"
     }
   ],
-  // Location tracking data
-  location: null, // Will store {latitude, longitude, timestamp, address}
+  location: null,
   isTracking: false,
 };
+
+// Define a type for car details
+interface CarDetails {
+  id: number;
+  name: string;
+  nickname: string;
+  model: string;
+  year: number;
+  image: string;
+  status: string;
+  statusText: string;
+  mileage: string;
+  lastService: string;
+  number: string;
+  color?: string;
+  issues: string[];
+  services: any[];
+  location: any;
+  isTracking: boolean;
+}
 
 // Main Car Details Page
 const CarDetailsPage = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const [car, setCar] = useState(hardcodedCarData);
+  const [car, setCar] = useState<CarDetails | null>(null);
+  const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
   const [showMileageModal, setShowMileageModal] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState(null);
-  const [locationPermission, setLocationPermission] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState<any>(null);
+  const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const getCarIdAndFetch = async () => {
+      const storedCarId = await AsyncStorage.getItem('selectedCarId');
+      setSelectedCarId(storedCarId);
+      if (storedCarId) {
+        fetchCar(storedCarId);
+      }
+    };
+    getCarIdAndFetch();
+  }, []);
+
+  const fetchCar = async (carId: string) => {
+    try {
+      const userStr = await AsyncStorage.getItem('user');
+      if (!userStr) return;
+      const user = JSON.parse(userStr);
+      const token = await AsyncStorage.getItem('token');
+      console.log('Card ID is', carId)
+      if (!token) return;
+      console.log('Fetching from', `http://10.0.2.2:3000/vehicles/${user.id}/vehicles/${carId}`);
+      const res = await fetch(`http://10.0.2.2:3000/vehicles/${user.id}/vehicles/${carId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await res.json();
+      console.log('Data is', data)
+      if (res.ok && data.vehicle) {
+        setCar({
+          id: data.vehicle.id,
+          name: data.vehicle.vehicleName,
+          nickname: data.vehicle.nickname || hardcodedCarData.nickname,
+          model: data.vehicle.model,
+          year: data.vehicle.year,
+          image: hardcodedCarData.image,
+          status: hardcodedCarData.status,
+          statusText: hardcodedCarData.statusText,
+          mileage: hardcodedCarData.mileage,
+          lastService: hardcodedCarData.lastService,
+          number: data.vehicle.licensePlate || hardcodedCarData.number,
+          color: data.vehicle.color || hardcodedCarData.color,
+          issues: hardcodedCarData.issues,
+          services: hardcodedCarData.services,
+          location: hardcodedCarData.location,
+          isTracking: hardcodedCarData.isTracking,
+        });
+      } else {
+        // fallback to hardcoded data if backend fails
+        setCar({ ...hardcodedCarData });
+      }
+    } catch (err) {
+      console.error('Failed to fetch car details:', err);
+      setCar({ ...hardcodedCarData });
+    }
+  };
 
   // Request location permission on component mount
   useEffect(() => {
     requestLocationPermission();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const requestLocationPermission = async () => {
@@ -142,7 +222,7 @@ const CarDetailsPage = () => {
           const addressString = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
 
           setCar({
-            ...car,
+            ...car!,
             location: {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
@@ -181,7 +261,7 @@ const CarDetailsPage = () => {
           style: 'destructive',
           onPress: () => {
             setCar({
-              ...car,
+              ...car!,
               location: null,
               isTracking: false,
             });
@@ -192,16 +272,13 @@ const CarDetailsPage = () => {
   };
 
   const openInMaps = () => {
-    if (!car.location) return;
-
+    if (!car?.location) return;
     const { latitude, longitude } = car.location;
     const label = `${car.name} Location`;
-
     const url = Platform.select({
       ios: `maps:${latitude},${longitude}?q=${label}`,
       android: `geo:${latitude},${longitude}?q=${latitude},${longitude}(${label})`,
-    });
-
+    }) || '';
     Linking.canOpenURL(url)
       .then((supported) => {
         if (supported) {
@@ -219,17 +296,15 @@ const CarDetailsPage = () => {
   };
 
   const getDirections = () => {
-    if (!car.location || !currentLocation) {
+    if (!car?.location || !currentLocation) {
       Alert.alert('Error', 'Unable to get directions. Please ensure location services are enabled.');
       return;
     }
-
     const { latitude, longitude } = car.location;
     const url = Platform.select({
       ios: `maps:?saddr=${currentLocation.latitude},${currentLocation.longitude}&daddr=${latitude},${longitude}&dirflg=d`,
       android: `google.navigation:q=${latitude},${longitude}`,
-    });
-
+    }) || '';
     Linking.canOpenURL(url)
       .then((supported) => {
         if (supported) {
@@ -246,17 +321,49 @@ const CarDetailsPage = () => {
       });
   };
 
-  const getStatusConfig = (status) => {
-    const configs = {
+  // Add type to status param
+  const getStatusConfig = (status: string) => {
+    const configs: { [key: string]: { icon: string; backgroundColor: string; color: string; textColor: string } } = {
       active: { icon: 'checkmark-circle', backgroundColor: Colors.neutral100, color: Colors.success, textColor: Colors.success },
       maintenance: { icon: 'build', backgroundColor: Colors.neutral100, color: Colors.warning, textColor: Colors.danger },
       inactive: { icon: 'pause-circle', backgroundColor: Colors.neutral100 , color: Colors.Purple, textColor: '#4A148C' },
-      issues: { icon: 'warning', backgroundColor: Colors.neutral100, color: Colors.danger, textColor: Colors.dan },
+      issues: { icon: 'warning', backgroundColor: Colors.neutral100, color: Colors.danger, textColor: Colors.danger },
     };
     return configs[status] || configs.active;
   };
 
-  const statusConfig = getStatusConfig(car.status);
+  const statusConfig = getStatusConfig(car?.status || '');
+
+  // Delete car handler
+  const handleDeleteCar = async () => {
+    if (!car) return;
+    setIsDeleting(true);
+    try {
+      const userStr = await AsyncStorage.getItem('user');
+      if (!userStr) throw new Error('User not found');
+      const user = JSON.parse(userStr);
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('No token found');
+      const res = await fetch(`http://10.0.2.2:3000/vehicles/${user.id}/vehicles/${car.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete car');
+      setShowDeleteConfirm(false);
+      Alert.alert('Deleted', 'Car deleted successfully!', [
+        { text: 'OK', onPress: () => navigation.navigate('Cars') }
+      ]);
+    } catch (error: any) {
+      setShowDeleteConfirm(false);
+      Alert.alert('Error', error.message || 'Failed to delete car');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -271,21 +378,24 @@ const CarDetailsPage = () => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Car Image & Basic Info */}
         <View style={styles.carImageSection}>
-          <Image source={{ uri: car.image }} style={styles.carImage} />
+          <Image source={{ uri: hardcodedCarData.image }} style={styles.carImage} />
           <View style={[styles.statusBadge, { backgroundColor: statusConfig.backgroundColor }]}>
             <Icon name={statusConfig.icon} size={16} color={statusConfig.color} />
             <Text style={[styles.statusText, { color: statusConfig.textColor }]}>
-              {car.statusText}
+              {car?.statusText}
             </Text>
           </View>
         </View>
 
         {/* Car Info Card */}
         <View style={styles.infoCard}>
-          <Text style={styles.carName}>{car.name}</Text>
-          <Text style={styles.carNickname}>"{car.nickname}"</Text>
-          <Text style={styles.carModel}>{car.model} • {car.year}</Text>
-          <Text style={styles.carNumber}>{car.number}</Text>
+          <Text style={styles.carName}>{car?.name}</Text>
+          <Text style={styles.carNickname}>"{car?.nickname}"</Text>
+          <Text style={styles.carModel}>{car?.model} • {car?.year}</Text>
+          <Text style={styles.carNumber}>{car?.number}</Text>
+          {/* Add Car Name and Color */}
+          <Text style={styles.carDetail}>Car Name: {car?.name}</Text>
+          <Text style={styles.carDetail}>Color: {car?.color || 'white'}</Text>
         </View>
 
         {/* Quick Actions */}
@@ -328,22 +438,22 @@ const CarDetailsPage = () => {
             <View style={styles.statItem}>
               <Icon name="speedometer-outline" size={24} color={Colors.neutral600} />
               <Text style={styles.statLabel}>Current Mileage</Text>
-              <Text style={styles.statValue}>{car.mileage}</Text>
+              <Text style={styles.statValue}>{car?.mileage}</Text>
             </View>
             <View style={styles.statItem}>
               <Icon name="calendar-outline" size={24} color={Colors.neutral600} />
               <Text style={styles.statLabel}>Last Service</Text>
-              <Text style={styles.statValue}>{car.lastService}</Text>
+              <Text style={styles.statValue}>{car?.lastService}</Text>
             </View>
             <View style={styles.statItem}>
               <Icon name="car-outline" size={24} color={Colors.neutral600} />
               <Text style={styles.statLabel}>Total Services</Text>
-              <Text style={styles.statValue}>{car.services?.length || 0}</Text>
+              <Text style={styles.statValue}>{car?.services?.length || 0}</Text>
             </View>
             <View style={styles.statItem}>
               <Icon name="alert-circle-outline" size={24} color={Colors.neutral600} />
               <Text style={styles.statLabel}>Active Issues</Text>
-              <Text style={styles.statValue}>{car.issues.length}</Text>
+              <Text style={styles.statValue}>{car?.issues.length || 0}</Text>
             </View>
           </View>
         </View>
@@ -355,15 +465,15 @@ const CarDetailsPage = () => {
             <View style={styles.trackingStatus}>
               <View style={[
                 styles.trackingIndicator,
-                { backgroundColor: car.isTracking ? Colors.success : Colors.neutral300 }
+                { backgroundColor: car?.isTracking ? Colors.success : Colors.neutral300 }
               ]} />
               <Text style={styles.trackingStatusText}>
-                {car.isTracking ? 'Tracking' : 'Not Tracking'}
+                {car?.isTracking ? 'Tracking' : 'Not Tracking'}
               </Text>
             </View>
           </View>
 
-          {car.location && (
+          {car?.location && (
             <View style={styles.locationInfo}>
               <View style={styles.locationDetails}>
                 <Icon name="location-outline" size={20} color={Colors.neutral600} />
@@ -414,7 +524,7 @@ const CarDetailsPage = () => {
 
           {/* Location Actions */}
           <View style={styles.locationActions}>
-            {!car.isTracking ? (
+            {!car?.isTracking ? (
               <TouchableOpacity
                 style={[styles.locationButton, styles.trackButton]}
                 onPress={handleTrackLocation}
@@ -444,10 +554,10 @@ const CarDetailsPage = () => {
         </View>
 
         {/* Active Issues */}
-        {car.issues.length > 0 && (
+        {car && car.issues && car.issues.length > 0 && (
           <View style={styles.issuesCard}>
             <Text style={styles.cardTitle}>Active Issues</Text>
-            {car.issues.map((issue, index) => (
+            {car.issues?.map((issue, index) => (
               <View key={index} style={styles.issueItem}>
                 <Icon name="warning" size={16} color={Colors.danger} />
                 <Text style={styles.issueText}>{issue}</Text>
@@ -459,10 +569,11 @@ const CarDetailsPage = () => {
           <View style={styles.issuesCard}>
             <TouchableOpacity
               style={styles.deleteButton}
-              onPress={() => handleDeleteCar(car.id)} // Or however you're identifying the car
+              onPress={() => setShowDeleteConfirm(true)}
+              disabled={isDeleting}
             >
               <Icon name="trash-outline" size={18} color="#fff" />
-              <Text style={styles.deleteButtonText}>Delete Car</Text>
+              <Text style={styles.deleteButtonText}>{isDeleting ? 'Deleting...' : 'Delete Car'}</Text>
             </TouchableOpacity>
           </View>
       </ScrollView>
@@ -470,24 +581,40 @@ const CarDetailsPage = () => {
       {/* Update Mileage Modal */}
       <UpdateMileageModal
         visible={showMileageModal}
-        currentMileage={car.mileage}
+        currentMileage={car?.mileage || ''}
         onClose={() => setShowMileageModal(false)}
         onSave={(newMileage) => {
           setCar({
-            ...car,
+            ...car!,
             mileage: newMileage
           });
           setShowMileageModal(false);
         }}
+      />
+      <ConfirmationPopup
+        visible={showDeleteConfirm}
+        title="Delete Car"
+        message="Are you sure you want to delete this car? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonColor={Colors.danger}
+        onConfirm={handleDeleteCar}
+        onCancel={() => setShowDeleteConfirm(false)}
+        iconType="warning"
       />
     </View>
   );
 };
 
 // Update Mileage Modal Component
-const UpdateMileageModal = ({ visible, currentMileage, onClose, onSave }) => {
+type UpdateMileageModalProps = {
+  visible: boolean;
+  currentMileage: string;
+  onClose: () => void;
+  onSave: (newMileage: string) => void;
+};
+const UpdateMileageModal = ({ visible, currentMileage, onClose, onSave }: UpdateMileageModalProps) => {
   const [newMileage, setNewMileage] = useState('');
-
   const handleSave = () => {
     if (!newMileage.trim()) {
       Alert.alert('Error', 'Please enter the current mileage');
@@ -496,7 +623,6 @@ const UpdateMileageModal = ({ visible, currentMileage, onClose, onSave }) => {
     onSave(newMileage);
     setNewMileage('');
   };
-
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="formSheet">
       <View style={styles.modalContainer}>
@@ -509,12 +635,10 @@ const UpdateMileageModal = ({ visible, currentMileage, onClose, onSave }) => {
             <Text style={styles.modalSaveText}>Save</Text>
           </TouchableOpacity>
         </View>
-
         <View style={styles.modalContent}>
           <View style={styles.mileageUpdateContainer}>
             <Text style={styles.currentMileageLabel}>Current Mileage</Text>
             <Text style={styles.currentMileageValue}>{currentMileage}</Text>
-            
             <View style={styles.formGroup}>
               <Text style={styles.formLabel}>New Mileage *</Text>
               <TextInput
@@ -526,7 +650,6 @@ const UpdateMileageModal = ({ visible, currentMileage, onClose, onSave }) => {
                 autoFocus
               />
             </View>
-
             <Text style={styles.mileageNote}>
               Please enter the current odometer reading of your vehicle
             </Text>
@@ -943,6 +1066,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginLeft: 6,
     fontWeight: '600',
+  },
+  carDetail: {
+    fontSize: 14,
+    color: Colors.neutral700,
+    marginTop: 2,
+    marginBottom: 2,
   },
 });
 

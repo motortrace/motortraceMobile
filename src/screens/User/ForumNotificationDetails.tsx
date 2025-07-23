@@ -11,11 +11,11 @@ import {
   Share,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Colors from '../constants/colors';
-import Header from '../components/Header'
+import Colors from '../../constants/colors';
+import Header from '../../components/Header'
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const { width } = Dimensions.get('window');
 
@@ -58,20 +58,20 @@ const NotificationDetailsScreen: React.FC<NotificationDetailsProps> = ({
     id: '1',
     type: 'upvote',
     title: 'New upvote on your post',
-    message: 'DevMaster upvoted your post "Tips for Better Mobile App Development"',
-    fullContent: 'DevMaster and 23 others found your post "Tips for Better Mobile App Development" helpful and gave it an upvote. Your post is gaining traction in the Mobile Development community!',
+    message: 'AutoGuru upvoted your post "How to Fix Engine Overheating in a Honda Civic?"',
+    fullContent: 'AutoGuru and 23 others found your post "How to Fix Engine Overheating in a Honda Civic?" helpful and gave it an upvote. Your post is gaining traction in the Car Repairs community!',
     time: '2 minutes ago',
     isRead: false,
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
     actionIcon: 'arrow-up-circle',
     actionColor: Colors.success,
-    userName: 'DevMaster',
-    postTitle: 'Tips for Better Mobile App Development',
-    postContent: 'Here are some essential tips that every mobile developer should know to create better, more efficient applications...',
+    userName: 'AutoGuru',
+    postTitle: 'How to Fix Engine Overheating in a Honda Civic?',
+    postContent: 'My 2012 Honda Civic keeps overheating after short drives. I have checked the coolant and radiator. Has anyone experienced this? What was the fix?',
     postImage: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=200&fit=crop',
-    relatedUsers: ['DevMaster', 'CodeNinja', 'UIExpert', 'TechGuru'],
+    relatedUsers: ['AutoGuru', 'WrenchWizard', 'GarageGal', 'CoolantKing'],
     actionCount: 24,
-    category: 'Mobile Development',
+    category: 'Car Repairs',
     priority: 'medium'
   });
 

@@ -3,15 +3,16 @@
 import type React from "react"
 import { useState } from "react"
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ImageBackground } from "react-native"
-import Colors from "../constants/colors"
+import Colors from "../../constants/colors"
 import Icon from 'react-native-vector-icons/Ionicons';
-import Section from "../components/section"
-import Button from '../components/Button'
-import TabNavigator from '../components/TabNavigator'
-import RatingStars from '../components/RatingStars'
+import Section from "../../components/section"
+import Button from '../../components/Button'
+import TabNavigator from '../../components/TabNavigator'
+import RatingStars from '../../components/RatingStars'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
+import AppointmentBottomSheet from '../../components/AppointmentSheet';
 
 interface GarageProfileScreenProps {
   onBack?: () => void
@@ -26,11 +27,23 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [isFavorite, setIsFavorite] = useState(false)
+  const [showAppointmentSheet, setShowAppointmentSheet] = useState(false);
 
   const handleToggleFavorite = () => {
     setIsFavorite(!isFavorite)
     onToggleFavorite?.()
   }
+
+  const handleScheduleAppointment = () => {
+    setShowAppointmentSheet(true);
+  };
+  const handleCloseSheet = () => {
+    setShowAppointmentSheet(false);
+  };
+  const handleConfirmAppointment = (appointmentData: any) => {
+    console.log('Appointment confirmed:', appointmentData);
+    setShowAppointmentSheet(false);
+  };
 
   const garageServices = [
     { id: 1, icon: "key", title: "Key Change" },
@@ -51,7 +64,7 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
         {/* Garage Header Card */}
         <View style={styles.profileCard}>
           <ImageBackground
-            source={require('../assets/images/Garage.jpg')}
+            source={require('../../assets/images/Garage.jpg')}
             style={styles.profileImage}
             imageStyle={styles.profileImageStyle}
           >
@@ -153,8 +166,13 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
 
       {/* Book Appointment Button */}
         <View style={styles.scheduleContainer}>
-        <Button onPress={onScheduleAppointment} />
+        <Button label="Schedule Appointment" onPress={handleScheduleAppointment} />
         </View>
+     <AppointmentBottomSheet
+        visible={showAppointmentSheet}
+        onClose={handleCloseSheet}
+        onConfirm={handleConfirmAppointment}
+      />
     </SafeAreaView>
   )
 }

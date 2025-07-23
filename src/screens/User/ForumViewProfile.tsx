@@ -11,11 +11,11 @@ import {
   FlatList,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const { width } = Dimensions.get('window');
 
@@ -68,10 +68,10 @@ const ForumViewProfile: React.FC = () => {
   // Sample user data - in a real app, this would come from route params or API
   const [userProfile, setUserProfile] = useState<UserProfile>({
     id: 'user123',
-    username: 'DevMaster',
+    username: 'CarFixerJoe',
     displayName: 'Alex Johnson',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-    bio: 'Senior Mobile Developer with 8+ years of experience in React Native and Flutter. Passionate about clean code and user experience.',
+    bio: 'Car enthusiast and DIY mechanic. Love sharing tips and helping others with car repairs and maintenance.',
     joinDate: 'January 2022',
     totalPosts: 127,
     totalUpvotes: 2840,
@@ -79,73 +79,73 @@ const ForumViewProfile: React.FC = () => {
     followers: 892,
     following: 234,
     reputation: 4.8,
-    badges: ['Top Contributor', 'React Native Expert', 'Helpful Member'],
+    badges: ['Top Mechanic', 'Helpful Member', 'DIY Expert'],
     isFollowing: false,
     location: 'San Francisco, CA',
-    website: 'alexjohnson.dev',
-    expertise: ['React Native', 'Flutter', 'JavaScript', 'TypeScript', 'UI/UX', 'Mobile Architecture']
+    website: 'alexjohnson.cars',
+    expertise: ['Engine Repair', 'Diagnostics', 'DIY', 'Maintenance', 'Brakes', 'Electrical']
   });
 
   const [userPosts, setUserPosts] = useState<UserPost[]>([
     {
       id: '1',
-      title: 'Tips for Better Mobile App Development',
-      content: 'Here are some essential tips that every mobile developer should know to create better, more efficient applications...',
+      title: 'How I Fixed My Car’s Overheating Problem',
+      content: 'Sharing my experience fixing an overheating issue in my 2012 Honda Civic. It was the thermostat! Here’s how I diagnosed and replaced it...',
       image: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=200&fit=crop',
       upvotes: 124,
       comments: 23,
       timeAgo: '2 days ago',
-      category: 'Mobile Development'
+      category: 'Engine Repair'
     },
     {
       id: '2',
-      title: 'React Native vs Flutter: A Comprehensive Comparison',
-      content: 'Both frameworks have their strengths and weaknesses. Let me break down the key differences...',
+      title: 'DIY Brake Pad Replacement Guide',
+      content: 'Step-by-step guide on how I replaced the brake pads on my Toyota Corolla. Saved a lot on labor costs!',
       upvotes: 89,
       comments: 34,
       timeAgo: '1 week ago',
-      category: 'Framework Comparison'
+      category: 'Brakes'
     },
     {
       id: '3',
-      title: 'Optimizing Performance in React Native Apps',
-      content: 'Performance optimization is crucial for mobile apps. Here are the techniques I use...',
+      title: 'Essential Tools for Home Car Repairs',
+      content: 'A list of tools every DIY mechanic should have in their garage. From socket sets to OBD2 scanners.',
       upvotes: 156,
       comments: 28,
       timeAgo: '2 weeks ago',
-      category: 'Performance'
+      category: 'DIY Tools'
     }
   ]);
 
   const [achievements, setAchievements] = useState<Achievement[]>([
     {
       id: '1',
-      title: 'Top Contributor',
-      description: 'Earned 1000+ upvotes on posts',
-      icon: 'trophy',
+      title: 'Top Mechanic',
+      description: 'Earned 1000+ upvotes on car repair posts',
+      icon: 'car-sport',
       color: Colors.warning,
       unlockedDate: '2 months ago'
     },
     {
       id: '2',
-      title: 'React Native Expert',
-      description: 'Recognized expertise in React Native development',
-      icon: 'star',
+      title: 'Helpful Member',
+      description: 'Provided helpful answers to 100+ car repair questions',
+      icon: 'help-circle',
       color: Colors.primary,
       unlockedDate: '3 months ago'
     },
     {
       id: '3',
-      title: 'Helpful Member',
-      description: 'Provided helpful answers to 100+ questions',
-      icon: 'help-circle',
+      title: 'DIY Expert',
+      description: 'Shared 50+ DIY repair guides',
+      icon: 'construct',
       color: Colors.success,
       unlockedDate: '4 months ago'
     },
     {
       id: '4',
       title: 'Community Builder',
-      description: 'Gained 500+ followers',
+      description: 'Gained 500+ followers in the car repair community',
       icon: 'people',
       color: Colors.info,
       unlockedDate: '5 months ago'

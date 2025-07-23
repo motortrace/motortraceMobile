@@ -9,11 +9,11 @@ import {
   StatusBar,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Colors from '../constants/colors'
-import Header from '../components/Header'
+import Colors from '../../constants/colors'
+import Header from '../../components/Header'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 interface ServiceItem {
   name: string;

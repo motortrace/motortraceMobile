@@ -230,8 +230,10 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
                     style={styles.Picker}
                 >
                     <Picker.Item label="Select vehicle" value="" />
-                    <Picker.Item label="Car" value="car" />
-                    <Picker.Item label="Truck" value="truck" />
+                    <Picker.Item label="Toyota Camry 2019" value="Toyota Camry 2019" />
+                    <Picker.Item label="Honda Civic 2020" value="Honda Civic 2020" />
+                    <Picker.Item label="Ford F-150 2021" value="Ford F-150 2021" />
+                    <Picker.Item label="BMW X3 2022" value="BMW X3 2022" />
                 </Picker>
             <View style={styles.bottomSpacing} />
           </ScrollView>

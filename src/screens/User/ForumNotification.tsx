@@ -9,13 +9,13 @@ import {
   Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
-import BottomNavigation from '../components/BottomNav';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
+import BottomNavigation from '../../components/BottomNav';
 import { useState } from "react";
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 
 const Notifications = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -25,7 +25,7 @@ const Notifications = () => {
       id: '1',
       type: 'upvote',
       title: 'New upvote on your post',
-      message: 'DevMaster upvoted your post "Tips for Better Mobile App Development"',
+      message: 'AutoGuru upvoted your post "How to Fix Engine Overheating in a Honda Civic?"',
       time: '2 minutes ago',
       isRead: false,
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
@@ -36,7 +36,7 @@ const Notifications = () => {
       id: '2',
       type: 'comment',
       title: 'New comment on your post',
-      message: 'DesignGuru commented: "Great insights! Really helpful for beginners..."',
+      message: 'GarageGal commented: "Check your water pump, had the same issue last year!"',
       time: '15 minutes ago',
       isRead: false,
       avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b830?w=150&h=150&fit=crop&crop=face',
@@ -47,7 +47,7 @@ const Notifications = () => {
       id: '7',
       type: 'downvote',
       title: 'Post activity',
-      message: 'Your post "UI Design Trends 2024" received new feedback',
+      message: 'Your post "Best Practices for Regular Car Maintenance" received new feedback',
       time: '3 days ago',
       isRead: true,
       avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
