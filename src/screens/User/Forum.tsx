@@ -23,10 +23,10 @@ const Forum = () => {
   const samplePosts = [
     {
       id: '1',
-      title: 'Welcome to Our Community Forum! 🎉',
+      title: 'How to Fix Engine Overheating in a Honda Civic?',
       content:
-        'Hey everyone! Welcome to our amazing community forum. This is where we share ideas, ask questions, and help each other grow. Feel free to introduce yourself and start engaging with fellow members!',
-      author: 'Admin',
+        'My 2012 Honda Civic keeps overheating after short drives. I have checked the coolant and radiator. Has anyone experienced this? What was the fix?',
+      author: 'CarFixerJoe',
       authorAvatar:
         'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
       timeAgo: '2 hours ago',
@@ -36,17 +36,17 @@ const Forum = () => {
       isUpvoted: false,
       isDownvoted: false,
       isSaved: true,
-      tags: ['welcome', 'community', 'announcement'],
+      tags: ['engine', 'overheating', 'honda', 'repair'],
       images: [
         'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop',
       ],
     },
     {
       id: '2',
-      title: 'Tips for Better Mobile App Development',
+      title: 'Best Practices for Regular Car Maintenance',
       content:
-        'After 5 years of React Native development, here are my top tips for building better mobile apps. Performance optimization is key, and user experience should always come first...',
-      author: 'DevMaster',
+        'What are your go-to tips for keeping your car running smoothly? Share your maintenance routines and any must-do checks!',
+      author: 'AutoGuru',
       authorAvatar:
         'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
       timeAgo: '6 hours ago',
@@ -56,17 +56,17 @@ const Forum = () => {
       isUpvoted: true,
       isDownvoted: false,
       isSaved: false,
-      tags: ['development', 'react-native', 'tips'],
+      tags: ['maintenance', 'tips', 'routine', 'car'],
       images: [
         'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=250&fit=crop',
       ],
     },
     {
       id: '3',
-      title: 'Beautiful UI Design Inspiration',
+      title: 'Share Your DIY Car Repair Success Stories',
       content:
-        'Found some amazing UI designs that could inspire our next project. The use of gradients and micro-interactions really makes these interfaces stand out. What do you think?',
-      author: 'DesignGuru',
+        'Let’s inspire each other! What car repairs have you tackled yourself? Share your story, what tools you used, and any lessons learned.',
+      author: 'DIYMechanic',
       timeAgo: '1 day ago',
       upvotes: 89,
       downvotes: 3,
@@ -74,7 +74,7 @@ const Forum = () => {
       isUpvoted: false,
       isDownvoted: false,
       isSaved: true,
-      tags: ['design', 'ui', 'inspiration'],
+      tags: ['diy', 'repair', 'success', 'stories'],
       images: [
         'https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=400&h=250&fit=crop',
         'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=400&h=250&fit=crop',

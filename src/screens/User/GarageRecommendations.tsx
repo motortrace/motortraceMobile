@@ -13,6 +13,8 @@ import SearchBar from '../../components/SearchBar';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
+import AppointmentBottomSheet from '../../components/AppointmentSheet';
+import Button from '../../components/Button';
 
 interface GarageLocatorScreenProps {
   onBack?: () => void;
@@ -28,6 +30,18 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(1);
+  const [showAppointmentSheet, setShowAppointmentSheet] = useState(false);
+
+  const handleScheduleAppointment = () => {
+    setShowAppointmentSheet(true);
+  };
+  const handleCloseSheet = () => {
+    setShowAppointmentSheet(false);
+  };
+  const handleConfirmAppointment = (appointmentData: any) => {
+    console.log('Appointment confirmed:', appointmentData);
+    setShowAppointmentSheet(false);
+  };
 
     const navItems = [
     {
@@ -172,6 +186,9 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({
         activeTab={activeTab}
         onTabPress={handleTabPress}
       />
+      <View style={{paddingHorizontal: 16, paddingVertical: 16, paddingBottom: 34, borderTopWidth: 1, borderTopColor: Colors.neutral100}}>
+        <Button label="Schedule Appointment" onPress={handleScheduleAppointment} />
+      </View>
     </SafeAreaView>
   );
 };

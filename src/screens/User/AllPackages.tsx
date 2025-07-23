@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native"
 import Colors from "../../constants/colors"
 import PackageCard from "../../components/PackageCard"
@@ -8,6 +8,7 @@ import SearchBar from '../../components/SearchBar';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
+import AppointmentBottomSheet from '../../components/AppointmentSheet';
 
 interface AllServicesScreenProps {
   onBack?: () => void,
@@ -16,6 +17,18 @@ interface AllServicesScreenProps {
 
 const AllServicesScreen: React.FC<AllServicesScreenProps> = ({ onBack,   onScheduleAppointment }) => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const [showAppointmentSheet, setShowAppointmentSheet] = useState(false);
+
+    const handleScheduleAppointment = () => {
+      setShowAppointmentSheet(true);
+    };
+    const handleCloseSheet = () => {
+      setShowAppointmentSheet(false);
+    };
+    const handleConfirmAppointment = (appointmentData: any) => {
+      console.log('Appointment confirmed:', appointmentData);
+      setShowAppointmentSheet(false);
+    };
     const packages = [
     {
       title: "Basic Care Package",
@@ -78,8 +91,13 @@ const AllServicesScreen: React.FC<AllServicesScreenProps> = ({ onBack,   onSched
         <View style={styles.bottomSpacing} />
       </ScrollView>
       <View style={styles.scheduleContainer}>
-        <Button onPress={onScheduleAppointment} />
+        <Button label="Schedule Appointment" onPress={handleScheduleAppointment} />
       </View>
+      <AppointmentBottomSheet
+        visible={showAppointmentSheet}
+        onClose={handleCloseSheet}
+        onConfirm={handleConfirmAppointment}
+      />
     </SafeAreaView>
   )
 }

@@ -1,5 +1,6 @@
 import type React from "react"
-import { View, StyleSheet, SafeAreaView, TouchableOpacity, ImageBackground } from "react-native"
+import { View, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native"
+import MapView, { Marker } from 'react-native-maps';
 import Colors from "../../constants/colors"
 import Icon from "react-native-vector-icons/Ionicons"
 import BottomNavigation from "../../components/BottomNav"
@@ -17,15 +18,21 @@ interface GarageLocatorScreenProps {
 const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({handleTabPress }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
+  // Example coordinates (Colombo area)
   const garageMarkers = [
-    { id: 1, top: 180, left: 120, type: "recommended" },
-    { id: 2, top: 250, left: 200, type: "nearby" },
-    { id: 3, top: 320, left: 80, type: "history" },
-    { id: 4, top: 280, left: 280, type: "nearby" },
-    { id: 5, top: 400, left: 150, type: "recommended" },
-  ]
+    { id: 1, lat: 6.9271, lng: 79.8612, type: "recommended" },
+    { id: 2, lat: 6.9300, lng: 79.8600, type: "nearby" },
+    { id: 3, lat: 6.9250, lng: 79.8650, type: "history" },
+    { id: 4, lat: 6.9285, lng: 79.8700, type: "nearby" },
+    { id: 5, lat: 6.9320, lng: 79.8620, type: "recommended" },
+    { id: 6, lat: 6.9340, lng: 79.8680, type: "history" },
+    { id: 7, lat: 6.9290, lng: 79.8580, type: "nearby" },
+    { id: 8, lat: 6.9265, lng: 79.8640, type: "recommended" },
+    { id: 9, lat: 6.9310, lng: 79.8660, type: "history" },
+    { id: 10, lat: 6.9330, lng: 79.8605, type: "nearby" },
+  ];
 
-  const MarkerPin = ({ top, left, type }: { top: number; left: number; type: string }) => {
+  const MarkerPin = ({ type }: { type: string }) => {
     const getMarkerColor = () => {
       switch (type) {
         case "recommended":
@@ -39,12 +46,10 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({handleTabPress
     }
 
     return (
-      <TouchableOpacity
-        onPress={() => navigation.navigate('GarageInfo')}
-        style={[styles.markerPin, { top, left, backgroundColor: getMarkerColor() }]}>
+      <View style={[styles.markerPin, { backgroundColor: getMarkerColor() }]}> 
         <Icon name="build" size={16} color={Colors.neutral0} />
         <View style={[styles.markerShadow, { backgroundColor: getMarkerColor() }]} />
-      </TouchableOpacity>
+      </View>
     )
   }
 
@@ -120,24 +125,28 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({handleTabPress
         </View>
       </View> */}
 
-      {/* Map with Enhanced Markers */}
+      {/* Map with Google Maps and Markers */}
       <View style={styles.mapContainer}>
-        <ImageBackground source={require("../../assets/images/Map.jpeg")} style={styles.mapBackground} resizeMode="cover">
-          {/* Garage Markers */}
+        <MapView
+          style={styles.mapBackground}
+          initialRegion={{
+            latitude: 6.9271,
+            longitude: 79.8612,
+            latitudeDelta: 0.025,
+            longitudeDelta: 0.025,
+          }}
+          showsUserLocation
+        >
           {garageMarkers.map((marker) => (
-            <MarkerPin key={marker.id} top={marker.top} left={marker.left} type={marker.type}  />
+            <Marker
+              key={marker.id}
+              coordinate={{ latitude: marker.lat, longitude: marker.lng }}
+              onPress={() => navigation.navigate('GarageInfo')}
+            >
+              <MarkerPin type={marker.type} />
+            </Marker>
           ))}
-
-          {/* Enhanced Current Location Marker */}
-          <View style={[styles.currentLocationContainer, { top: 290, left: 170 }]}>
-            <View style={styles.currentLocationPulse} />
-            <View style={styles.currentLocationRing} />
-            <View style={styles.currentLocationDot}>
-              <View style={styles.currentLocationCenter} />
-            </View>
-          </View>
-        </ImageBackground>
-
+        </MapView>
         {/* Enhanced Floating Action Button */}
         <TouchableOpacity style={styles.centerLocationButton}>
           <View style={styles.centerLocationButtonInner}>
