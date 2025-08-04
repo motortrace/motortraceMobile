@@ -23,6 +23,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useUser } from '../store/UserContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface RegisterScreenProps {
   onRegister?: (email: string, password: string) => void;
@@ -101,15 +102,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
     setErrors({ email: '', password: '' });
 
     try {
-      const response = await fetch('http://10.0.2.2:3000/auth/register', {
+      // Use the correct endpoint for Supabase auth
+      const response = await fetch('http://10.0.2.2:3000/auth/signup', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Client-Type': 'mobile',
         },
         body: JSON.stringify({
           email: email.trim(),
-          password: password
+          password: password,
+          role: 'customer' // Set customer role for mobile app users
         }),
       });
 
@@ -119,17 +121,20 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
         throw new Error(data.error || 'Registration failed');
       }
 
-      // Store the token securely (you might want to use AsyncStorage or Keychain)
-      if (data.token) {
-        // Store token in secure storage
-        // await AsyncStorage.setItem('token', data.token);
+      // Store the token securely
+      if (data.data?.access_token) {
+        await AsyncStorage.setItem('token', data.data.access_token);
+        console.log('Token stored successfully');
       }
 
       // Set user in context
-      if (data.user) {
-        setUser(data.user);
+      if (data.data?.user) {
+        await AsyncStorage.setItem('user', JSON.stringify(data.data.user));
+        setUser(data.data.user);
+        console.log('User data stored and context updated');
       }
 
+      // Navigate to login after successful registration
       navigation.navigate('LogIn');
       
       if (onRegister) {
@@ -167,13 +172,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
       console.log('Sending idToken to backend:', idToken.substring(0, 50) + '...');
   
       // Send the token to your backend for registration
-      const response = await fetch('http://10.0.2.2:3000/auth/google/', {
+      const response = await fetch('http://10.0.2.2:3000/auth/google', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Client-Type': 'mobile',
         },
-        body: JSON.stringify({ idToken }),
+        body: JSON.stringify({ 
+          idToken,
+          role: 'customer' // Set customer role for Google signup
+        }),
       });
       
       console.log('Response status:', response.status);
@@ -186,15 +193,22 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
         throw new Error(data.error || 'Google registration failed');
       }
       
-      // Set user in context
-      if (data.user) {
-        setUser(data.user);
+      // Store token and user data
+      if (data.data?.access_token) {
+        await AsyncStorage.setItem('token', data.data.access_token);
       }
       
-      if(data.user.isRegistrationComplete){
-        navigation.navigate('Home')
-      }else{
-        navigation.navigate('Onboarding')
+      // Set user in context
+      if (data.data?.user) {
+        await AsyncStorage.setItem('user', JSON.stringify(data.data.user));
+        setUser(data.data.user);
+      }
+      
+      // Navigate based on registration completion
+      if (data.data?.user?.isRegistrationComplete) {
+        navigation.navigate('Home');
+      } else {
+        navigation.navigate('Onboarding');
       }
       
       if (onGoogleRegister) {
@@ -484,4 +498,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RegisterScreen;
+export default RegisterScreen; 

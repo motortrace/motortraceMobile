@@ -39,7 +39,7 @@ const OnboardingScreen: React.FC = () => {
       includeBase64: false,
       maxHeight: 2000,
       maxWidth: 2000,
-      quality: 1 as PhotoQuality, // fix: use allowed PhotoQuality type
+      quality: 1 as PhotoQuality,
     }
 
     launchImageLibrary(options, (response: ImagePickerResponse) => {
@@ -65,8 +65,15 @@ const OnboardingScreen: React.FC = () => {
     }
   
     try {
-      // Retrieve only the token string from AsyncStorage
+      // Debug: Check what's stored in AsyncStorage
+      console.log('🔍 Debugging onboarding...');
+      
       const token = await AsyncStorage.getItem('token');
+      const user = await AsyncStorage.getItem('user');
+      
+      console.log('🔑 Token from storage:', token ? 'Present' : 'Missing');
+      console.log('👤 User from storage:', user ? 'Present' : 'Missing');
+      
       if (!token) {
         Alert.alert('Error', 'No authentication token found. Please log in again.');
         return;
@@ -75,31 +82,46 @@ const OnboardingScreen: React.FC = () => {
       const payload: OnboardingRequest = {
         name,
         contact,
-        profileImage: profileImage || '', // fallback to empty string if null
+        profileImage: profileImage || '',
       };
-  
+
+      console.log('📤 Sending payload:', payload);
+      console.log('🔑 Using token:', token.substring(0, 20) + '...');
+
       // Send onboarding data to backend
       const response = await fetch('http://10.0.2.2:3000/auth/onboarding', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'X-Client-Type': 'mobile',
         },
         body: JSON.stringify(payload),
       });
-  
+
+      console.log('📥 Response status:', response.status);
+      console.log('📥 Response headers:', response.headers);
+
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      console.log('📥 Content-Type:', contentType);
+
+      if (!contentType || !contentType.includes('application/json')) {
+        const textResponse = await response.text();
+        console.log('📥 Non-JSON response:', textResponse);
+        throw new Error(`Server returned non-JSON response: ${textResponse}`);
+      }
+
       const data = await response.json();
-  
+      console.log('📥 JSON response:', data);
+
       if (!response.ok) {
         throw new Error(data.error || 'Onboarding failed');
       }
-  
-      // Optionally, fetch the updated user profile and update context/storage
-      // For now, just show success and navigate
+
       Alert.alert('Success', 'Onboarding completed!');
       navigation.navigate('Home');
     } catch (error: any) {
+      console.error('❌ Onboarding error:', error);
       Alert.alert('Onboarding Error', error.message || 'Failed to complete onboarding');
     }
   };
@@ -110,7 +132,7 @@ const OnboardingScreen: React.FC = () => {
       includeBase64: false,
       maxHeight: 2000,
       maxWidth: 2000,
-      quality: 1 as PhotoQuality, // fix: use allowed PhotoQuality type
+      quality: 1 as PhotoQuality,
     }
 
     launchCamera(options, (response: ImagePickerResponse) => {
@@ -326,4 +348,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default OnboardingScreen
+export default OnboardingScreen 
