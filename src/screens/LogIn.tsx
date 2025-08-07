@@ -25,7 +25,6 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useUser } from '../store/UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
 interface LoginScreenProps {
   onLogin?: (email: string, password: string) => void;
   onGoogleLogin?: () => void;
@@ -102,12 +101,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     setErrors({ email: '', password: '' });
     
     try {
-      // Call your backend API
+      // Call your backend API with correct endpoint
       const response = await fetch('http://10.0.2.2:3000/auth/login', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Client-Type': 'mobile',
         },
         body: JSON.stringify({
           email: email.trim(),
@@ -121,25 +119,28 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         throw new Error(data.error || 'Login failed');
       }
       
-      // Store the token securely (you might want to use AsyncStorage or Keychain)
-      if (data.token) {
-
-        await AsyncStorage.setItem('token', data.token);
+      // Store the token securely
+      if (data.data?.access_token) {
+        await AsyncStorage.setItem('token', data.data.access_token);
+        console.log('Token stored successfully');
       }
       
       // Set user in context
-      if (data.user) {
-        console.log('User data received:', data.user);
-        await AsyncStorage.setItem('user', JSON.stringify(data.user));
+      if (data.data?.user) {
+        console.log('User data received:', data.data.user);
+        await AsyncStorage.setItem('user', JSON.stringify(data.data.user));
         console.log('User data stored in AsyncStorage');
-        setUser(data.user);
+        setUser(data.data.user);
         console.log('User state updated');
       }
+
       // Handle navigation after successful login
-      if(data.isRegistrationComplete){
-        navigation.navigate('Home')
-      }else{
-        navigation.navigate('Onboarding')
+      if (data.data?.user?.role === 'technician') {
+        navigation.navigate('TechnicianHome');
+      } else if (data.data?.user?.isRegistrationComplete) {
+        navigation.navigate('Home');
+      } else {
+        navigation.navigate('Onboarding');
       }
       
       if (onLogin) {
@@ -181,7 +182,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Client-Type': 'mobile',
         },
         body: JSON.stringify({ idToken }),
       });
@@ -196,18 +196,24 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         throw new Error(data.error || 'Google login failed');
       }
       
+      // Store token and user data
+      if (data.data?.access_token) {
+        await AsyncStorage.setItem('token', data.data.access_token);
+      }
+      
       // Set user in context
-      if (data.user) {
-        setUser(data.user);
+      if (data.data?.user) {
+        await AsyncStorage.setItem('user', JSON.stringify(data.data.user));
+        setUser(data.data.user);
       }
-      // Handle login success (store token, navigate, etc.)
-      if(data.user.role === 'technician'){
-        navigation.navigate('TechnicianHome')
-      }
-      if(data.user.isRegistrationComplete){
-        navigation.navigate('Home')
-      }else{
-        navigation.navigate('Onboarding')
+
+      // Handle navigation based on user role and registration status
+      if (data.data?.user?.role === 'technician') {
+        navigation.navigate('TechnicianHome');
+      } else if (data.data?.user?.isRegistrationComplete) {
+        navigation.navigate('Home');
+      } else {
+        navigation.navigate('Onboarding');
       }
 
     } catch (error: any) {
@@ -496,4 +502,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen;
+export default LoginScreen; 
