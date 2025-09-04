@@ -43,6 +43,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { setUser } = useUser();
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -259,124 +260,101 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.content}>
-            {/* Logo */}
-            <View style={styles.logoContainer}>
-              <Image 
-                source={require('../assets/images/Logo_white_no_bg.png')} 
-                style={styles.logo} 
-                resizeMode="contain"
-              />
-            </View>
+      <View style={styles.content}>
+        {/* Car Icon */}
+        <View style={styles.iconContainer}>
+          <Image source={require('../assets/images/Logo_white_no_bg.png')} style={styles.Logo} />
+        </View>
 
-            {/* Welcome Text */}
-            <View style={styles.headerContainer}>
-              <Text style={styles.welcomeTitle}>Welcome Back</Text>
-              <Text style={styles.welcomeSubtitle}>Sign in to your car owner account</Text>
-            </View>
+        {/* Welcome Text */}
+        <Text style={styles.welcomeTitle}>Welcome Back</Text>
+        <Text style={styles.welcomeSubtitle}>Sign in to your car account</Text>
 
-            <FormBox>
-              {/* Email Input */}
-              <FormInput
-                label="Email"
-                placeholder="Enter your email"
-                iconName="mail-outline"
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  if (errors.email) {
-                    setErrors(prev => ({ ...prev, email: '' }));
-                  }
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                error={errors.email}
-                autoComplete="email"
-              />
+        <FormBox>
+          {/* Username Input */}
+          <FormInput
+            label="Email"
+            placeholder="Enter your email"
+            iconName="mail-outline"
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (errors.email) {
+                setErrors(prev => ({ ...prev, email: '' }));
+                }
+              }}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            error={errors.email}
+            autoComplete="email"
+          />
 
-              {/* Password Input */}
-              <FormInput
-                label="Password"
-                placeholder="Enter your password"
-                iconName="lock-closed-outline"
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (errors.password) {
-                    setErrors(prev => ({ ...prev, password: '' }));
-                  }
-                }}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-                error={errors.password}
-                autoComplete="password"
-              />
+          {/* Password Input */}
+          <FormInput
+            label="Password"
+            placeholder="Enter your password"
+            iconName="lock-closed-outline"
+            value={password}
+            onChangeText={(text) => {
+              setPassword(text);
+              if (errors.password) {
+                setErrors(prev => ({ ...prev, password: '' }));
+              }
+            }}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            error={errors.password}
+          />
 
-              {/* Remember Me & Forgot Password */}
-              <View style={styles.optionsRow}>
-                <TouchableOpacity
-                  style={styles.rememberMeContainer}
-                  onPress={() => setRememberMe(!rememberMe)}
-                  activeOpacity={0.7}
+          {/* Remember Me & Forgot Password */}
+          <View style={styles.optionsRow}>
+            <View style={{flexDirection: 'row'}}>
+              <TouchableOpacity
+                style={styles.rememberMeContainer}
+                onPress={() => setRememberMe(!rememberMe)}
+              >
+                <View
+                  style={[styles.checkbox, rememberMe && styles.checkboxChecked]}
                 >
-                  <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                    {rememberMe && <Icon name="checkmark" size={12} color="white" />}
-                  </View>
-                  <Text style={styles.rememberMeText}>Remember me</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7}>
-                  <Link link="Forgot password?" />
-                </TouchableOpacity>
-              </View>
-
-              {/* Sign In Button */}
-              <AnimatedButton 
-                title="Sign In" 
-                onPress={handleLogin} 
-                style={styles.signInButton}
-              />
-
-              {/* Divider */}
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>Or continue with</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              {/* Social Login Buttons */}
-              <SocialLoginButtons
-                onGoogleLogin={handleGoogleLogin}
-                onAppleLogin={handleAppleLogin}
-              />
-
-              {/* Sign Up Link - moved for visibility */}
-              <View style={[styles.signUpContainer, { marginTop: 32, alignItems: 'center' }]}> 
-                <Text style={styles.signUpText}>Don't have an account? </Text>
-                <TouchableOpacity onPress={handleSignUp} activeOpacity={0.7}>
-                  <Text style={{ color: '#2563eb', textDecorationLine: 'underline', fontWeight: 'bold', fontSize: 16 }}>Sign up</Text>
-                </TouchableOpacity>
-              </View>
-            </FormBox>
-
-            {/* Footer */}
-            <View style={styles.footerContainer}>
-              <Text style={styles.footerText}>2024 MotorTrace, All rights reserved</Text>
+                  {rememberMe && <Icon name="checkmark" size={12} color="white" />}
+                </View>
+              </TouchableOpacity>
+              <Text style={styles.rememberMeText}>Remember me</Text>
             </View>
+
+            <TouchableOpacity onPress={onForgotPassword}>
+              <Link link="Forgot password?" />
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+          {/* Sign In Button */}
+          <AnimatedButton title="Sign in" onPress={handleLogin} style={{ marginBottom: 24 }} />
+
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>Or continue with</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Social Login Buttons */}
+          <SocialLoginButtons
+            onGoogleLogin={handleGoogleLogin}
+            onAppleLogin={handleAppleLogin}
+          />
+
+        </FormBox>
+
+        {/* Sign Up Link */}
+        <View style={styles.signUpContainer}>
+          <Text style={styles.signUpText}>Don't have an account? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+            <Link link="Sign up" style={{ marginTop: 25 }} />
+          </TouchableOpacity>
+        </View>
+      </View>
     </SafeAreaView>
   );
 };
@@ -386,59 +364,53 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.primarybg,
   },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 20,
+    paddingTop: 60,
+    justifyContent: "center",
+  },
+  iconContainer: {
+    width: 64,
+    height: 64,
+    backgroundColor: Colors.primary,
+    borderRadius: 16,
     justifyContent: 'center',
-    minHeight: '100%',
-  },
-  logoContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    alignSelf: 'center',
+    marginBottom: 20,
   },
-  logo: {
-    width: 80,
-    height: 80,
-  },
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
+  Logo: {
+    width: 70,
+    height: 70,
   },
   welcomeTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: Colors.neutral1000,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   welcomeSubtitle: {
     fontSize: 16,
     color: Colors.neutral500,
     textAlign: 'center',
-    lineHeight: 24,
+    marginBottom: 30,
   },
   optionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 4,
+    marginBottom: 20,
+    marginTop: -2
   },
   rememberMeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   checkbox: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     borderRadius: 4,
     borderWidth: 2,
     borderColor: Colors.neutral300,
@@ -453,10 +425,6 @@ const styles = StyleSheet.create({
   rememberMeText: {
     fontSize: 14,
     color: Colors.neutral700,
-    fontWeight: '500',
-  },
-  signInButton: {
-    marginBottom: 24,
   },
   dividerContainer: {
     flexDirection: 'row',
@@ -466,34 +434,263 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: Colors.neutral300,
+    backgroundColor: Colors.neutral500,
   },
   dividerText: {
-    marginHorizontal: 16,
+    marginHorizontal: 14,
     fontSize: 14,
     color: Colors.neutral500,
-    fontWeight: '500',
+    marginTop: -2,
   },
   signUpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
   },
   signUpText: {
     fontSize: 16,
     color: Colors.neutral500,
-  },
-  footerContainer: {
-    alignItems: 'center',
-    marginTop: 32,
-    paddingBottom: 20,
-  },
-  footerText: {
-    fontSize: 12,
-    color: Colors.neutral400,
-    textAlign: 'center',
+    marginTop: 25
   },
 });
+
+//   return (
+//     <SafeAreaView style={styles.container}>
+//       <KeyboardAvoidingView
+//         style={styles.keyboardAvoidingView}
+//         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+//       >
+//         <ScrollView
+//           contentContainerStyle={styles.scrollContent}
+//           showsVerticalScrollIndicator={false}
+//           keyboardShouldPersistTaps="handled"
+//         >
+//           <View style={styles.content}>
+//             {/* Logo */}
+//             <View style={styles.logoContainer}>
+//               <Image 
+//                 source={require('../assets/images/Logo_white_no_bg.png')} 
+//                 style={styles.logo} 
+//                 resizeMode="contain"
+//               />
+//             </View>
+
+//             {/* Welcome Text */}
+//             <View style={styles.headerContainer}>
+//               <Text style={styles.welcomeTitle}>Welcome Back</Text>
+//               <Text style={styles.welcomeSubtitle}>Sign in to your car owner account</Text>
+//             </View>
+
+//             <FormBox>
+//               {/* Email Input */}
+//               <FormInput
+//                 label="Email"
+//                 placeholder="Enter your email"
+//                 iconName="mail-outline"
+//                 value={email}
+//                 onChangeText={(text) => {
+//                   setEmail(text);
+//                   if (errors.email) {
+//                     setErrors(prev => ({ ...prev, email: '' }));
+//                   }
+//                 }}
+//                 autoCapitalize="none"
+//                 autoCorrect={false}
+//                 keyboardType="email-address"
+//                 error={errors.email}
+//                 autoComplete="email"
+//               />
+
+//               {/* Password Input */}
+//               <FormInput
+//                 label="Password"
+//                 placeholder="Enter your password"
+//                 iconName="lock-closed-outline"
+//                 value={password}
+//                 onChangeText={(text) => {
+//                   setPassword(text);
+//                   if (errors.password) {
+//                     setErrors(prev => ({ ...prev, password: '' }));
+//                   }
+//                 }}
+//                 secureTextEntry
+//                 autoCapitalize="none"
+//                 autoCorrect={false}
+//                 error={errors.password}
+//                 autoComplete="password"
+//               />
+
+//               {/* Remember Me & Forgot Password */}
+//               <View style={styles.optionsRow}>
+//                 <TouchableOpacity
+//                   style={styles.rememberMeContainer}
+//                   onPress={() => setRememberMe(!rememberMe)}
+//                   activeOpacity={0.7}
+//                 >
+//                   <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+//                     {rememberMe && <Icon name="checkmark" size={12} color="white" />}
+//                   </View>
+//                   <Text style={styles.rememberMeText}>Remember me</Text>
+//                 </TouchableOpacity>
+
+//                 <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7}>
+//                   <Link link="Forgot password?" />
+//                 </TouchableOpacity>
+//               </View>
+
+//               {/* Sign In Button */}
+//               <AnimatedButton 
+//                 title="Sign In" 
+//                 onPress={handleLogin} 
+//                 style={styles.signInButton}
+//               />
+
+//               {/* Divider */}
+//               <View style={styles.dividerContainer}>
+//                 <View style={styles.dividerLine} />
+//                 <Text style={styles.dividerText}>Or continue with</Text>
+//                 <View style={styles.dividerLine} />
+//               </View>
+
+//               {/* Social Login Buttons */}
+//               <SocialLoginButtons
+//                 onGoogleLogin={handleGoogleLogin}
+//                 onAppleLogin={handleAppleLogin}
+//               />
+
+//               {/* Sign Up Link - moved for visibility */}
+//               <View style={[styles.signUpContainer, { marginTop: 32, alignItems: 'center' }]}> 
+//                 <Text style={styles.signUpText}>Don't have an account? </Text>
+//                 <TouchableOpacity onPress={handleSignUp} activeOpacity={0.7}>
+//                   <Text style={{ color: '#2563eb', textDecorationLine: 'underline', fontWeight: 'bold', fontSize: 16 }}>Sign up</Text>
+//                 </TouchableOpacity>
+//               </View>
+//             </FormBox>
+
+//             {/* Footer */}
+//             <View style={styles.footerContainer}>
+//               <Text style={styles.footerText}>2024 MotorTrace, All rights reserved</Text>
+//             </View>
+//           </View>
+//         </ScrollView>
+//       </KeyboardAvoidingView>
+//     </SafeAreaView>
+//   );
+// };
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: Colors.primarybg,
+//   },
+//   keyboardAvoidingView: {
+//     flex: 1,
+//   },
+//   scrollContent: {
+//     flexGrow: 1,
+//   },
+//   content: {
+//     flex: 1,
+//     paddingHorizontal: 24,
+//     paddingTop: 40,
+//     paddingBottom: 20,
+//     justifyContent: 'center',
+//     minHeight: '100%',
+//   },
+//   logoContainer: {
+//     alignItems: 'center',
+//     marginBottom: 32,
+//   },
+//   logo: {
+//     width: 80,
+//     height: 80,
+//   },
+//   headerContainer: {
+//     alignItems: 'center',
+//     marginBottom: 32,
+//   },
+//   welcomeTitle: {
+//     fontSize: 32,
+//     fontWeight: 'bold',
+//     color: Colors.neutral1000,
+//     textAlign: 'center',
+//     marginBottom: 8,
+//   },
+//   welcomeSubtitle: {
+//     fontSize: 16,
+//     color: Colors.neutral500,
+//     textAlign: 'center',
+//     lineHeight: 24,
+//   },
+//   optionsRow: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     alignItems: 'center',
+//     marginBottom: 24,
+//     marginTop: 4,
+//   },
+//   rememberMeContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//   },
+//   checkbox: {
+//     width: 20,
+//     height: 20,
+//     borderRadius: 4,
+//     borderWidth: 2,
+//     borderColor: Colors.neutral300,
+//     marginRight: 8,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   checkboxChecked: {
+//     backgroundColor: Colors.primary,
+//     borderColor: Colors.primary,
+//   },
+//   rememberMeText: {
+//     fontSize: 14,
+//     color: Colors.neutral700,
+//     fontWeight: '500',
+//   },
+//   signInButton: {
+//     marginBottom: 24,
+//   },
+//   dividerContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     marginBottom: 24,
+//   },
+//   dividerLine: {
+//     flex: 1,
+//     height: 1,
+//     backgroundColor: Colors.neutral300,
+//   },
+//   dividerText: {
+//     marginHorizontal: 16,
+//     fontSize: 14,
+//     color: Colors.neutral500,
+//     fontWeight: '500',
+//   },
+//   signUpContainer: {
+//     flexDirection: 'row',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginTop: 24,
+//   },
+//   signUpText: {
+//     fontSize: 16,
+//     color: Colors.neutral500,
+//   },
+//   footerContainer: {
+//     alignItems: 'center',
+//     marginTop: 32,
+//     paddingBottom: 20,
+//   },
+//   footerText: {
+//     fontSize: 12,
+//     color: Colors.neutral400,
+//     textAlign: 'center',
+//   },
+// });
 
 export default LoginScreen;

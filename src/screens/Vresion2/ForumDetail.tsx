@@ -31,12 +31,12 @@ const ForumDetail = () => {
   const [activeTab, setActiveTab] = useState(0)
 
   const postData = {
-    title: "Tips for Better Mobile App Development",
-    content: `After 5 years of React Native development, here are my top tips for building better mobile apps: What are your thoughts on these practices? Have you encountered any other important tips in your development journey?`,
-    author: "DevMaster",
+    title: "How to Fix Engine Overheating in a Honda Civic?",
+    content: `My 2012 Honda Civic keeps overheating after short drives. I have checked the coolant and radiator. Has anyone experienced this? What was the fix? Any advice on what else to check?`,
+    author: "CarFixerJoe",
     authorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
     timeAgo: "6 hours ago",
-    tags: ['development', 'react-native', 'tips', 'mobile'],
+    tags: ['engine', 'overheating', 'honda', 'repair'],
     images: [
       'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=250&fit=crop',
       'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=400&h=250&fit=crop'
@@ -47,17 +47,17 @@ const ForumDetail = () => {
   const sampleComments = [
     {
       id: '1',
-      author: 'ReactFan',
-      content: 'Great tips! I especially agree with the FlatList recommendation. Made a huge difference in my app performance.',
+      author: 'WrenchWizard',
+      content: 'I had a similar issue with my Toyota. Turned out to be a faulty thermostat. Try replacing it if you haven’t already.',
       timeAgo: '4 hours ago',
       upvotes: 12,
       downvotes: 0,
       replies: [
         {
           id: '1-1',
-          author: 'DevMaster',
+          author: 'CarFixerJoe',
           authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-          content: 'Exactly! FlatList is a game changer for performance. Glad it helped you too!',
+          content: 'Thanks! I’ll check the thermostat next.',
           timeAgo: '3 hours ago',
           upvotes: 8,
           downvotes: 0,
@@ -66,9 +66,9 @@ const ForumDetail = () => {
     },
     {
       id: '2',
-      author: 'MobileGuru',
+      author: 'CoolantKing',
       authorAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-      content: 'Would love to add: Always test on low-end devices! What works smoothly on flagship phones might struggle on budget devices.',
+      content: 'Don’t forget to check the coolant level and the radiator cap. Sometimes a bad cap can cause pressure loss and overheating.',
       timeAgo: '3 hours ago',
       upvotes: 18,
       downvotes: 1,
@@ -76,9 +76,9 @@ const ForumDetail = () => {
     },
     {
       id: '3',
-      author: 'UIDesigner',
+      author: 'GarageGal',
       authorAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
-      content: 'The design consistency point is so important! Too many apps ignore platform guidelines and end up feeling alien to users.',
+      content: 'If you see any leaks under the car, it could be a water pump issue. Happened to my Civic last year.',
       timeAgo: '2 hours ago',
       upvotes: 15,
       downvotes: 0,
@@ -86,9 +86,9 @@ const ForumDetail = () => {
     },
     {
       id: '4',
-      author: 'CodeNewbie',
+      author: 'NewbieDriver',
       authorAvatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop&crop=face',
-      content: 'As someone new to React Native, this is incredibly helpful! Any recommendations for learning resources?',
+      content: 'I’m new to car repairs, but I found YouTube tutorials super helpful for diagnosing overheating problems.',
       timeAgo: '1 hour ago',
       upvotes: 6,
       downvotes: 0,

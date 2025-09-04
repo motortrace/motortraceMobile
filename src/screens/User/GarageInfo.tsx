@@ -12,6 +12,7 @@ import RatingStars from '../../components/RatingStars'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
+import AppointmentBottomSheet from '../../components/AppointmentSheet';
 
 interface GarageProfileScreenProps {
   onBack?: () => void
@@ -26,11 +27,23 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [isFavorite, setIsFavorite] = useState(false)
+  const [showAppointmentSheet, setShowAppointmentSheet] = useState(false);
 
   const handleToggleFavorite = () => {
     setIsFavorite(!isFavorite)
     onToggleFavorite?.()
   }
+
+  const handleScheduleAppointment = () => {
+    setShowAppointmentSheet(true);
+  };
+  const handleCloseSheet = () => {
+    setShowAppointmentSheet(false);
+  };
+  const handleConfirmAppointment = (appointmentData: any) => {
+    console.log('Appointment confirmed:', appointmentData);
+    setShowAppointmentSheet(false);
+  };
 
   const garageServices = [
     { id: 1, icon: "key", title: "Key Change" },
@@ -153,8 +166,13 @@ const GarageProfileScreen: React.FC<GarageProfileScreenProps> = ({
 
       {/* Book Appointment Button */}
         <View style={styles.scheduleContainer}>
-        <Button onPress={onScheduleAppointment} />
+        <Button label="Schedule Appointment" onPress={handleScheduleAppointment} />
         </View>
+     <AppointmentBottomSheet
+        visible={showAppointmentSheet}
+        onClose={handleCloseSheet}
+        onConfirm={handleConfirmAppointment}
+      />
     </SafeAreaView>
   )
 }
