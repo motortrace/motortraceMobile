@@ -62,7 +62,7 @@ const GarageLocatorScreen: React.FC<GarageLocatorScreenProps> = ({handleTabPress
     {
       id: "recommended",
       icon: "star",
-      onPress: () => navigation.navigate('GarageRecommendations'),
+      onPress: () => navigation.navigate('RecommendedServices'),
     },
     {
       id: "history",

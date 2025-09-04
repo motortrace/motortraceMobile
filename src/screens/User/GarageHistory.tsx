@@ -45,7 +45,7 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({
     {
       id: "recommended",
       icon: "star",
-      onPress: () => navigation.navigate('GarageRecommendations'),
+      onPress: () => navigation.navigate('RecommendedServices'),
     },
     {
       id: "history",

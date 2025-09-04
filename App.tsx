@@ -4,7 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import 'react-native-gesture-handler';
 
 import SplashScreen from './src/screens/SplashScreen';
-import Home from './src/screens/Dashboard';
+import Home from './src/screens/User/Dashboard';
 import LogIn from './src/screens/LogIn'
 import SignUp from './src/screens/SignUp';
 import ForgotPassword from './src/screens/ForgotPassword';
@@ -19,7 +19,7 @@ import AllPackages from  './src/screens/User/AllPackages'
 import AllServices from  './src/screens/User/AllServices'
 import AllReviews from  './src/screens/User/AllReviews'
 import Locations from './src/screens/User/Locations'
-import GarageRecommendations from './src/screens/User/GarageRecommendations'
+import RecommendedServices from './src/screens/User/RecommendedServices'
 import GarageHistory from './src/screens/User/GarageHistory'
 import GarageExplore from './src/screens/User/GarageExplore'
 import GarageFavourites from './src/screens/User/GarageFavourites'
@@ -32,14 +32,14 @@ import DetailedBill from './src/screens/User/DetailedBill';
 import PaidServiceBillSummary from './src/screens/User/PaidServiceBillSummary';
 import Appointment from './src/screens/User/Appointment'
 
-import Forum from './src/screens/User/Forum'
-import SearchPosts from './src/screens/User/SearchPost';
-import CreatePost from './src/screens/User/CreatePost';
-import ForumDetail from './src/screens/User/ForumDetail';
-import ForumProfile from './src/screens/User/ForumProfile'
-import NotificationForum from './src/screens/User/ForumNotification'
-import ForumNotificationDetails from './src/screens/User/ForumNotificationDetails'
-import ForumViewProfile from './src/screens/User/ForumViewProfile'
+// import Forum from './src/screens/User/Forum'
+// import SearchPosts from './src/screens/User/SearchPost';
+// import CreatePost from './src/screens/User/CreatePost';
+// import ForumDetail from './src/screens/User/ForumDetail';
+// import ForumProfile from './src/screens/User/ForumProfile'
+// import NotificationForum from './src/screens/User/ForumNotification'
+// import ForumNotificationDetails from './src/screens/User/ForumNotificationDetails'
+// import ForumViewProfile from './src/screens/User/ForumViewProfile'
 
 import Profile from './src/screens/User/Profile'
 import EditProfile from './src/screens/User/EditProfile'
@@ -54,14 +54,14 @@ import SupportChat from './src/screens/User/SupportChat';
 import faq from './src/screens/faq'
 import FaqAnswer from './src/screens/FaqAnswer';
 
-import MarketPlace from './src/screens/User/MarketPlace'
-import OrderDetails from './src/screens/User/OrderDetails';
-import ProductDetails from './src/screens/ProductDetails';
-import PurchaseHistory from './src/screens/User/PurchaseHistory';
-import RecommendedProduct from './src/screens/User/RecommendedProduct';
-import Carts from './src/screens/User/Cart'
-import FavouriteProducts from './src/screens/User/FavouriteProducts';
-import TrackOrder from './src/screens/User/TrackOrder';
+// import MarketPlace from './src/screens/User/MarketPlace'
+// import OrderDetails from './src/screens/User/OrderDetails';
+// import ProductDetails from './src/screens/ProductDetails';
+// import PurchaseHistory from './src/screens/User/PurchaseHistory';
+// import RecommendedProduct from './src/screens/User/RecommendedProduct';
+// import Carts from './src/screens/User/Cart'
+// import FavouriteProducts from './src/screens/User/FavouriteProducts';
+// import TrackOrder from './src/screens/User/TrackOrder';
 
 import Cars from './src/screens/User/Cars'
 import CarDetails from './src/screens/User/CarDetails';
@@ -79,8 +79,8 @@ import InspectionResultSelected from './src/screens/User/InspectionResultSelecte
 import SelectedParts from './src/screens/User/SelectedParts'
 import ServiceProgress from './src/screens/User/ServiceProgress';
 
-import Rewards from './src/screens/User/Rewards';
-import RewardHistory from './src/screens/User/RewardHistory';
+// import Rewards from './src/screens/User/Rewards';
+// import RewardHistory from './src/screens/User/RewardHistory';
 import InspectionCar from './src/screens/User/InspectionsCar';
 
 import TechnicianHome from './src/screens/Technician/Home';
@@ -118,7 +118,7 @@ export type RootStackParamList = {
 
   Home: undefined;
   Locations: undefined;
-  GarageRecommendations: undefined;
+  RecommendedServices: undefined;
   GarageHistory: undefined;
   GarageExplore: undefined;
   GarageFavourites: undefined;
@@ -134,14 +134,14 @@ export type RootStackParamList = {
   PaidServiceBillSummary: undefined
   Appointment: undefined;
 
-  Forum: undefined;
-  SearchPosts: undefined;
-  CreatePost: undefined;
-  ForumDetail: undefined;
-  ForumProfile: undefined;
-  NotificationForum: undefined;
-  ForumNotificationDetails: undefined;
-  ForumViewProfile: undefined;
+  // Forum: undefined;
+  // SearchPosts: undefined;
+  // CreatePost: undefined;
+  // ForumDetail: undefined;
+  // ForumProfile: undefined;
+  // NotificationForum: undefined;
+  // ForumNotificationDetails: undefined;
+  // ForumViewProfile: undefined;
 
   Profile: undefined;
   EditProfile: undefined;
@@ -156,14 +156,14 @@ export type RootStackParamList = {
   faq: undefined;
   FaqAnswer: undefined;
 
-  Carts: undefined;
-  MarketPlace: undefined;
-  OrderDetails: undefined;
-  ProductDetails: undefined;
-  PurchaseHistory: undefined;
-  RecommendedProduct: undefined;
-  FavouriteProducts: undefined;
-  TrackOrder: undefined;
+  // Carts: undefined;
+  // MarketPlace: undefined;
+  // OrderDetails: undefined;
+  // ProductDetails: undefined;
+  // PurchaseHistory: undefined;
+  // RecommendedProduct: undefined;
+  // FavouriteProducts: undefined;
+  // TrackOrder: undefined;
 
   Cars: undefined;
   CarDetails: undefined;
@@ -182,8 +182,8 @@ export type RootStackParamList = {
   SelectedParts: undefined;
   ServiceProgress: undefined;
 
-  Rewards: undefined;
-  RewardHistory: undefined;
+  // Rewards: undefined;
+  // RewardHistory: undefined;
 
   TechnicianHome: undefined;
   AssignedWork: undefined;
@@ -237,7 +237,7 @@ function App(): React.ReactElement {
 
           {/* Garages and Locations */}
           <Stack.Screen name="Locations" component={Locations} />
-          <Stack.Screen name="GarageRecommendations" component={GarageRecommendations} />
+          <Stack.Screen name="RecommendedServices" component={RecommendedServices} />
           <Stack.Screen name="GarageHistory" component={GarageHistory} />
           <Stack.Screen name="GarageExplore" component={GarageExplore} />
           <Stack.Screen name="GarageFavourites" component={GarageFavourites} />
@@ -254,14 +254,14 @@ function App(): React.ReactElement {
           <Stack.Screen name="Appointment" component={Appointment} />
 
           {/* Forum */}
-          <Stack.Screen name="Forum" component={Forum} />
+          {/* <Stack.Screen name="Forum" component={Forum} />
           <Stack.Screen name="SearchPosts" component={SearchPosts} />
           <Stack.Screen name="CreatePost" component={CreatePost} />
           <Stack.Screen name="ForumDetail" component={ForumDetail} />
           <Stack.Screen name="ForumProfile" component={ForumProfile} />
           <Stack.Screen name="NotificationForum" component={NotificationForum} />
           <Stack.Screen name="ForumNotificationDetails" component={ForumNotificationDetails} />
-          <Stack.Screen name="ForumViewProfile" component={ForumViewProfile} />
+          <Stack.Screen name="ForumViewProfile" component={ForumViewProfile} /> */}
 
           {/* Profile */}
           <Stack.Screen name="Profile" component={Profile} />
@@ -278,14 +278,14 @@ function App(): React.ReactElement {
           <Stack.Screen name="FaqAnswer" component={FaqAnswer} />
 
           {/* Market Place */}
-          <Stack.Screen name="Carts" component={Carts} />
+          {/* <Stack.Screen name="Carts" component={Carts} />
           <Stack.Screen name="MarketPlace" component={MarketPlace} />
           <Stack.Screen name="OrderDetails" component={OrderDetails} />
           <Stack.Screen name="ProductDetails" component={ProductDetails} />
           <Stack.Screen name="PurchaseHistory" component={PurchaseHistory} />
           <Stack.Screen name="RecommendedProduct" component={RecommendedProduct} />
           <Stack.Screen name="FavouriteProducts" component={FavouriteProducts} />
-          <Stack.Screen name="TrackOrder" component={TrackOrder} />
+          <Stack.Screen name="TrackOrder" component={TrackOrder} /> */}
 
           {/* Cars */}
           <Stack.Screen name="Cars" component={Cars} />
@@ -307,8 +307,8 @@ function App(): React.ReactElement {
           <Stack.Screen name="ServiceProgress" component={ServiceProgress} />
 
           {/* Rewards */}
-          <Stack.Screen name="Rewards" component={Rewards} />
-          <Stack.Screen name="RewardHistory" component={RewardHistory} />
+          {/* <Stack.Screen name="Rewards" component={Rewards} />
+          <Stack.Screen name="RewardHistory" component={RewardHistory} /> */}
 
           {/* Technician */}
           <Stack.Screen name="TechnicianHome" component={TechnicianHome}/>

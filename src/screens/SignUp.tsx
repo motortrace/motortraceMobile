@@ -250,120 +250,79 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.content}>
-            {/* Logo */}
-            <View style={styles.logoContainer}>
-              <Image 
-                source={require('../assets/images/Logo_white_no_bg.png')} 
-                style={styles.logo} 
-                resizeMode="contain"
-              />
-            </View>
+      <View style={styles.content}>
+        {/* Logo */}
+        <View style={styles.iconContainer}>
+          <Image source={require('../assets/images/Logo_white_no_bg.png')} style={styles.Logo} />
+        </View>
 
-            {/* Welcome Text */}
-            <View style={styles.headerContainer}>
-              <Text style={styles.welcomeTitle}>Create your account</Text>
-              <Text style={styles.welcomeSubtitle}>Sign up to get started with MotorTrace</Text>
-            </View>
+        {/* Welcome Text */}
+        <Text style={styles.welcomeTitle}>Create Account</Text>
+        <Text style={styles.welcomeSubtitle}>Sign up for a new car account</Text>
 
-            <FormBox>
-              {/* Email Input */}
-              <FormInput
-                label="Email address"
-                placeholder="Enter your email"
-                iconName="mail-outline"
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  if (errors.email) {
-                    setErrors(prev => ({ ...prev, email: '' }));
-                  }
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                error={errors.email}
-                autoComplete="email"
-              />
+        <FormBox>
+          {/* Username */}
+          <FormInput
+            label="Email address"
+            placeholder="Enter your email"
+            iconName="mail-outline"
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (errors.email) {
+                setErrors(prev => ({ ...prev, email: '' }));
+              }
+            }}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            error={errors.email}
+            autoComplete="email"
+          />
 
-              {/* Password Input */}
-              <FormInput
-                label="Password"
-                placeholder="Min 8 characters"
-                iconName="lock-closed-outline"
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (errors.password) {
-                    setErrors(prev => ({ ...prev, password: '' }));
-                  }
-                }}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-                error={errors.password}
-                autoComplete="password"
-              />
+          <FormInput
+            label="Password"
+            placeholder="Min 8 characters"
+            iconName="lock-closed-outline"
+            value={password}
+            onChangeText={(text) => {
+              setPassword(text);
+              if (errors.password) {
+                setErrors(prev => ({ ...prev, password: '' }));
+              }
+            }}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            error={errors.password}
+            autoComplete="password"
+          />
 
-              {/* Terms & Privacy Checkbox */}
-              <TouchableOpacity style={styles.checkboxContainer} onPress={toggleAgree}>
-                <View style={[styles.checkbox, agree && styles.checkboxChecked]}>
-                  {agree && <Text style={styles.checkboxTick}>✓</Text>}
-                </View>
-                <Text style={styles.checkboxLabel}>
-                  I agree to the <Text style={styles.linkText}>Terms & Privacy</Text>
-                </Text>
-              </TouchableOpacity>
+          {/* Sign Up Button */}
+          <AnimatedButton title="Sign up" onPress={handleRegister} style={{ marginBottom: 24 }} />
 
-              {/* Register Button */}
-              <AnimatedButton 
-                title="Create Account" 
-                onPress={handleRegister}
-                style={[
-                  styles.registerButton,
-                  { opacity: (!agree || loading) ? 0.6 : 1 }
-                ]}
-                disabled={!agree || loading}
-              />
-
-              {/* Divider */}
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>Or continue with</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              {/* Social Login Buttons */}
-              <SocialLoginButtons
-                onGoogleLogin={handleGoogleRegister}
-                onAppleLogin={handleGoogleRegister} // You can implement Apple login separately
-              />
-
-              {/* Sign In Link */}
-              <View style={[styles.signInContainer, { marginTop: 32, alignItems: 'center' }]}>
-                <Text style={styles.signInText}>Already have an account? </Text>
-                <TouchableOpacity onPress={() => navigation.navigate('LogIn')} activeOpacity={0.7}>
-                  <Text style={{ color: '#2563eb', textDecorationLine: 'underline', fontWeight: 'bold', fontSize: 16 }}>Sign in</Text>
-                </TouchableOpacity>
-              </View>
-            </FormBox>
-
-            {/* Footer */}
-            <View style={styles.footerContainer}>
-              <Text style={styles.footerText}>2024 MotorTrace, All rights reserved</Text>
-            </View>
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>Or sign up with</Text>
+            <View style={styles.dividerLine} />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+          {/* Social Login */}
+          <SocialLoginButtons
+            onGoogleLogin={handleGoogleRegister}
+            onAppleLogin={handleGoogleRegister}
+          />
+        </FormBox>
+
+        {/* Redirect to Login */}
+        <View style={styles.signUpContainer}>
+          <Text style={styles.signUpText}>Already have an account? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('LogIn')}>
+            <Link link="Sign in" style={{ marginTop: 10 }} />
+          </TouchableOpacity>
+        </View>
+      </View>
     </SafeAreaView>
   );
 };
@@ -373,129 +332,70 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.primarybg,
   },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 20,
+    paddingTop: 60,
     justifyContent: 'center',
-    minHeight: '100%',
   },
-  loadingContainer: {
-    flex: 1,
+  iconContainer: {
+    width: 64,
+    height: 64,
+    backgroundColor: Colors.primary,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: 15,
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: Colors.neutral500,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-  },
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
+  Logo: {
+    width: 70,
+    height: 70,
   },
   welcomeTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: Colors.neutral1000,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   welcomeSubtitle: {
     fontSize: 16,
     color: Colors.neutral500,
     textAlign: 'center',
-    lineHeight: 24,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 4,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderColor: Colors.neutral300,
-    borderRadius: 4,
-    marginRight: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  checkboxTick: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  checkboxLabel: {
-    flex: 1,
-    fontSize: 14,
-    color: Colors.neutral700,
-    fontWeight: '500',
-  },
-  linkText: {
-    color: Colors.primary,
-    textDecorationLine: 'underline',
-  },
-  registerButton: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: Colors.neutral300,
+    backgroundColor: Colors.neutral500,
   },
   dividerText: {
-    marginHorizontal: 16,
+    marginHorizontal: 14,
     fontSize: 14,
     color: Colors.neutral500,
-    fontWeight: '500',
+    marginTop: -2,
   },
-  signInContainer: {
+  signUpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
   },
-  signInText: {
+  signUpText: {
     fontSize: 16,
     color: Colors.neutral500,
-  },
-  footerContainer: {
-    alignItems: 'center',
-    marginTop: 32,
-    paddingBottom: 20,
-  },
-  footerText: {
-    fontSize: 12,
-    color: Colors.neutral400,
-    textAlign: 'center',
+    marginTop: 10,
   },
 });
 
+<<<<<<< HEAD
+
+export default RegisterScreen;
+=======
 export default RegisterScreen; 
+>>>>>>> bd3d1bdaaefcbc06891fa469985abd6d6f27c9f1
