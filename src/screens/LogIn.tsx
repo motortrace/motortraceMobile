@@ -25,7 +25,6 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useUser } from '../store/UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
 interface LoginScreenProps {
   onLogin?: (email: string, password: string) => void;
   onGoogleLogin?: () => void;
@@ -103,12 +102,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     setErrors({ email: '', password: '' });
     
     try {
-      // Call your backend API
+      // Call your backend API with correct endpoint
       const response = await fetch('http://10.0.2.2:3000/auth/login', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Client-Type': 'mobile',
         },
         body: JSON.stringify({
           email: email.trim(),
@@ -122,25 +120,28 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         throw new Error(data.error || 'Login failed');
       }
       
-      // Store the token securely (you might want to use AsyncStorage or Keychain)
-      if (data.token) {
-
-        await AsyncStorage.setItem('token', data.token);
+      // Store the token securely
+      if (data.data?.access_token) {
+        await AsyncStorage.setItem('token', data.data.access_token);
+        console.log('Token stored successfully');
       }
       
       // Set user in context
-      if (data.user) {
-        console.log('User data received:', data.user);
-        await AsyncStorage.setItem('user', JSON.stringify(data.user));
+      if (data.data?.user) {
+        console.log('User data received:', data.data.user);
+        await AsyncStorage.setItem('user', JSON.stringify(data.data.user));
         console.log('User data stored in AsyncStorage');
-        setUser(data.user);
+        setUser(data.data.user);
         console.log('User state updated');
       }
+
       // Handle navigation after successful login
-      if(data.isRegistrationComplete){
-        navigation.navigate('Home')
-      }else{
-        navigation.navigate('Onboarding')
+      if (data.data?.user?.role === 'technician') {
+        navigation.navigate('TechnicianHome');
+      } else if (data.data?.user?.isRegistrationComplete) {
+        navigation.navigate('Home');
+      } else {
+        navigation.navigate('Onboarding');
       }
       
       if (onLogin) {
@@ -182,7 +183,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Client-Type': 'mobile',
         },
         body: JSON.stringify({ idToken }),
       });
@@ -197,18 +197,24 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         throw new Error(data.error || 'Google login failed');
       }
       
+      // Store token and user data
+      if (data.data?.access_token) {
+        await AsyncStorage.setItem('token', data.data.access_token);
+      }
+      
       // Set user in context
-      if (data.user) {
-        setUser(data.user);
+      if (data.data?.user) {
+        await AsyncStorage.setItem('user', JSON.stringify(data.data.user));
+        setUser(data.data.user);
       }
-      // Handle login success (store token, navigate, etc.)
-      if(data.user.role === 'technician'){
-        navigation.navigate('TechnicianHome')
-      }
-      if(data.user.isRegistrationComplete){
-        navigation.navigate('Home')
-      }else{
-        navigation.navigate('Onboarding')
+
+      // Handle navigation based on user role and registration status
+      if (data.data?.user?.role === 'technician') {
+        navigation.navigate('TechnicianHome');
+      } else if (data.data?.user?.isRegistrationComplete) {
+        navigation.navigate('Home');
+      } else {
+        navigation.navigate('Onboarding');
       }
 
     } catch (error: any) {
@@ -454,243 +460,4 @@ const styles = StyleSheet.create({
   },
 });
 
-//   return (
-//     <SafeAreaView style={styles.container}>
-//       <KeyboardAvoidingView
-//         style={styles.keyboardAvoidingView}
-//         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-//       >
-//         <ScrollView
-//           contentContainerStyle={styles.scrollContent}
-//           showsVerticalScrollIndicator={false}
-//           keyboardShouldPersistTaps="handled"
-//         >
-//           <View style={styles.content}>
-//             {/* Logo */}
-//             <View style={styles.logoContainer}>
-//               <Image 
-//                 source={require('../assets/images/Logo_white_no_bg.png')} 
-//                 style={styles.logo} 
-//                 resizeMode="contain"
-//               />
-//             </View>
-
-//             {/* Welcome Text */}
-//             <View style={styles.headerContainer}>
-//               <Text style={styles.welcomeTitle}>Welcome Back</Text>
-//               <Text style={styles.welcomeSubtitle}>Sign in to your car owner account</Text>
-//             </View>
-
-//             <FormBox>
-//               {/* Email Input */}
-//               <FormInput
-//                 label="Email"
-//                 placeholder="Enter your email"
-//                 iconName="mail-outline"
-//                 value={email}
-//                 onChangeText={(text) => {
-//                   setEmail(text);
-//                   if (errors.email) {
-//                     setErrors(prev => ({ ...prev, email: '' }));
-//                   }
-//                 }}
-//                 autoCapitalize="none"
-//                 autoCorrect={false}
-//                 keyboardType="email-address"
-//                 error={errors.email}
-//                 autoComplete="email"
-//               />
-
-//               {/* Password Input */}
-//               <FormInput
-//                 label="Password"
-//                 placeholder="Enter your password"
-//                 iconName="lock-closed-outline"
-//                 value={password}
-//                 onChangeText={(text) => {
-//                   setPassword(text);
-//                   if (errors.password) {
-//                     setErrors(prev => ({ ...prev, password: '' }));
-//                   }
-//                 }}
-//                 secureTextEntry
-//                 autoCapitalize="none"
-//                 autoCorrect={false}
-//                 error={errors.password}
-//                 autoComplete="password"
-//               />
-
-//               {/* Remember Me & Forgot Password */}
-//               <View style={styles.optionsRow}>
-//                 <TouchableOpacity
-//                   style={styles.rememberMeContainer}
-//                   onPress={() => setRememberMe(!rememberMe)}
-//                   activeOpacity={0.7}
-//                 >
-//                   <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-//                     {rememberMe && <Icon name="checkmark" size={12} color="white" />}
-//                   </View>
-//                   <Text style={styles.rememberMeText}>Remember me</Text>
-//                 </TouchableOpacity>
-
-//                 <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7}>
-//                   <Link link="Forgot password?" />
-//                 </TouchableOpacity>
-//               </View>
-
-//               {/* Sign In Button */}
-//               <AnimatedButton 
-//                 title="Sign In" 
-//                 onPress={handleLogin} 
-//                 style={styles.signInButton}
-//               />
-
-//               {/* Divider */}
-//               <View style={styles.dividerContainer}>
-//                 <View style={styles.dividerLine} />
-//                 <Text style={styles.dividerText}>Or continue with</Text>
-//                 <View style={styles.dividerLine} />
-//               </View>
-
-//               {/* Social Login Buttons */}
-//               <SocialLoginButtons
-//                 onGoogleLogin={handleGoogleLogin}
-//                 onAppleLogin={handleAppleLogin}
-//               />
-
-//               {/* Sign Up Link - moved for visibility */}
-//               <View style={[styles.signUpContainer, { marginTop: 32, alignItems: 'center' }]}> 
-//                 <Text style={styles.signUpText}>Don't have an account? </Text>
-//                 <TouchableOpacity onPress={handleSignUp} activeOpacity={0.7}>
-//                   <Text style={{ color: '#2563eb', textDecorationLine: 'underline', fontWeight: 'bold', fontSize: 16 }}>Sign up</Text>
-//                 </TouchableOpacity>
-//               </View>
-//             </FormBox>
-
-//             {/* Footer */}
-//             <View style={styles.footerContainer}>
-//               <Text style={styles.footerText}>2024 MotorTrace, All rights reserved</Text>
-//             </View>
-//           </View>
-//         </ScrollView>
-//       </KeyboardAvoidingView>
-//     </SafeAreaView>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: Colors.primarybg,
-//   },
-//   keyboardAvoidingView: {
-//     flex: 1,
-//   },
-//   scrollContent: {
-//     flexGrow: 1,
-//   },
-//   content: {
-//     flex: 1,
-//     paddingHorizontal: 24,
-//     paddingTop: 40,
-//     paddingBottom: 20,
-//     justifyContent: 'center',
-//     minHeight: '100%',
-//   },
-//   logoContainer: {
-//     alignItems: 'center',
-//     marginBottom: 32,
-//   },
-//   logo: {
-//     width: 80,
-//     height: 80,
-//   },
-//   headerContainer: {
-//     alignItems: 'center',
-//     marginBottom: 32,
-//   },
-//   welcomeTitle: {
-//     fontSize: 32,
-//     fontWeight: 'bold',
-//     color: Colors.neutral1000,
-//     textAlign: 'center',
-//     marginBottom: 8,
-//   },
-//   welcomeSubtitle: {
-//     fontSize: 16,
-//     color: Colors.neutral500,
-//     textAlign: 'center',
-//     lineHeight: 24,
-//   },
-//   optionsRow: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     marginBottom: 24,
-//     marginTop: 4,
-//   },
-//   rememberMeContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//   },
-//   checkbox: {
-//     width: 20,
-//     height: 20,
-//     borderRadius: 4,
-//     borderWidth: 2,
-//     borderColor: Colors.neutral300,
-//     marginRight: 8,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   checkboxChecked: {
-//     backgroundColor: Colors.primary,
-//     borderColor: Colors.primary,
-//   },
-//   rememberMeText: {
-//     fontSize: 14,
-//     color: Colors.neutral700,
-//     fontWeight: '500',
-//   },
-//   signInButton: {
-//     marginBottom: 24,
-//   },
-//   dividerContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginBottom: 24,
-//   },
-//   dividerLine: {
-//     flex: 1,
-//     height: 1,
-//     backgroundColor: Colors.neutral300,
-//   },
-//   dividerText: {
-//     marginHorizontal: 16,
-//     fontSize: 14,
-//     color: Colors.neutral500,
-//     fontWeight: '500',
-//   },
-//   signUpContainer: {
-//     flexDirection: 'row',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     marginTop: 24,
-//   },
-//   signUpText: {
-//     fontSize: 16,
-//     color: Colors.neutral500,
-//   },
-//   footerContainer: {
-//     alignItems: 'center',
-//     marginTop: 32,
-//     paddingBottom: 20,
-//   },
-//   footerText: {
-//     fontSize: 12,
-//     color: Colors.neutral400,
-//     textAlign: 'center',
-//   },
-// });
-
-export default LoginScreen;
+export default LoginScreen; 

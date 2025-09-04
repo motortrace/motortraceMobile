@@ -14,6 +14,7 @@ import Colors from '../constants/colors';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SplashScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -30,12 +31,42 @@ export default function SplashScreen() {
       useNativeDriver: true,
     }).start();
 
-    const timer = setTimeout(() => {
-      navigation.navigate('SignUp');
-    }, 3000);
+    // Check for existing authentication
+    const checkAuthStatus = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const userData = await AsyncStorage.getItem('user');
+        
+        if (token && userData) {
+          const user = JSON.parse(userData);
+          
+          // Navigate based on user role and registration status
+          if (user.role === 'technician') {
+            navigation.navigate('TechnicianHome');
+          } else if (user.isRegistrationComplete) {
+            navigation.navigate('Home');
+          } else {
+            navigation.navigate('Onboarding');
+          }
+        } else {
+          // No existing auth, go to signup
+          setTimeout(() => {
+            navigation.navigate('SignUp');
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        // Fallback to signup
+        setTimeout(() => {
+          navigation.navigate('SignUp');
+        }, 2000);
+      }
+    };
+
+    checkAuthStatus();
 
     return () => {
-      clearTimeout(timer);
+      // Cleanup if needed
     };
   }, [fadeAnim, navigation]);
 
@@ -181,9 +212,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 70
   },
-
   landscapeTextContainer: {
     marginLeft: 40,
     alignItems: 'center',
   },
-});
+}); 
