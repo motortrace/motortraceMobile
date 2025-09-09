@@ -1,5 +1,5 @@
 import React from "react"
-import { View, Text, StyleSheet } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
 import Colors from "../constants/colors"
 import Icon from 'react-native-vector-icons/Ionicons'
 import BorderButton from '../components/BorderButton'
@@ -8,13 +8,14 @@ interface PackageCardProps {
   title: string
   description: string
   services: string[]
-  price: string
-  onPurchase?: () => void
+  price: number
+  onPress?: () => void | Promise<void>
+  onPurchase?: () => void | Promise<void>
 }
 
-const PackageCard: React.FC<PackageCardProps> = ({ title, description, services, price, onPurchase }) => {
+const PackageCard: React.FC<PackageCardProps> = ({ title, description, services, price, onPress, onPurchase }) => {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress}>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
 
@@ -33,7 +34,7 @@ const PackageCard: React.FC<PackageCardProps> = ({ title, description, services,
           <BorderButton label="Purchase" onPress={onPurchase} style={styles.purchaseButton} />
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   )
 }
 

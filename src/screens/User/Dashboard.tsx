@@ -121,35 +121,35 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       subtitle: "Schedule appointment",
       icon: "calendar", 
       color: Colors.primary, 
-      screen: "Appointment",
-      bgColor: Colors.primaryLight
+      screen: "AllServices",
+      bgColor: "#EEF2FF"
     },
     { 
       id: 2, 
-      title: "Service History", 
-      subtitle: "View past services",
+      title: "Purchase Packages", 
+      subtitle: "Buy packages for your vehicles",
       icon: "time", 
-      color: Colors.info,
-      screen: "ServiceHistory",
-      bgColor: Colors.infoLight
+      color: "#3B82F6",
+      screen: "AllPackages",
+      bgColor: "#EFF6FF"
     },
     { 
       id: 3, 
       title: "Vehicle Details", 
       subtitle: "Manage your cars",
       icon: "car", 
-      color: Colors.success,
+      color: "#10B981",
       screen: "Cars",
-      bgColor: Colors.successLight
+      bgColor: "#ECFDF5"
     },
     { 
       id: 4, 
       title: "Track Service", 
       subtitle: "Real-time updates",
       icon: "location", 
-      color: Colors.warning,
+      color: "#F59E0B",
       screen: "ServiceProgress",
-      bgColor: Colors.warningLight
+      bgColor: "#FFFBEB"
     },
   ]
 
@@ -202,52 +202,48 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     <TouchableOpacity
       style={[
         styles.vehicleCard,
-        { marginLeft: index === 0 ? 24 : 0, marginRight: 16 },
+        { marginLeft: index === 0 ? 20 : 0, marginRight: 12 },
         index === selectedVehicle && styles.selectedVehicleCard
       ]}
       onPress={() => setSelectedVehicle(index)}
     >
       <View style={styles.vehicleHeader}>
-        <View style={[styles.vehicleIconContainer, { backgroundColor: item.color + '15' }]}>
-          <Icon name={getVehicleIcon(item.type)} size={28} color={item.color} />
+        <View>
         </View>
-        <View style={styles.vehicleStatus}>
-          <View style={[styles.statusDot, { backgroundColor: getServiceStatusColor(item.serviceStatus) }]} />
-        </View>
+        <View style={[styles.statusIndicator, { backgroundColor: getServiceStatusColor(item.serviceStatus) }]} />
       </View>
       <View style={styles.vehicleInfo}>
-        <Text style={styles.vehicleName}>{item.name}</Text>
-        <Text style={styles.vehicleYear}>{item.year} • {item.license}</Text>
-        <Text style={styles.vehicleMileage}>{item.mileage.toLocaleString()} km</Text>
-        <Text style={styles.nextService}>Next: {item.nextService}</Text>
-      </View>
-      {index === selectedVehicle && (
-        <View style={styles.selectedIndicator}>
-          <Icon name="checkmark-circle" size={20} color={Colors.success} />
+        <Text style={styles.vehicleName} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.vehicleDetails}>{item.year} • {item.license}</Text>
+        <View style={styles.vehicleMetrics}>
+          <Text style={styles.mileageText}>{item.mileage.toLocaleString()} km</Text>
+          <View style={styles.nextServiceContainer}>
+            <Icon name="time-outline" size={12} color={Colors.neutral500} />
+            <Text style={styles.nextServiceText}>{item.nextService}</Text>
+          </View>
         </View>
-      )}
+      </View>
     </TouchableOpacity>
   )
 
   const renderServiceStatus = ({ item }: { item: ServiceStatus }) => (
-    <TouchableOpacity style={styles.serviceStatusCard}>
-      <View style={styles.serviceStatusHeader}>
-        <View style={[styles.serviceIcon, { backgroundColor: item.color + '15' }]}>
-          <Icon name={item.icon} size={20} color={item.color} />
+    <TouchableOpacity style={[styles.serviceCard, { marginLeft: item.id === '1' ? 20 : 0 }]}>
+      <View style={styles.serviceHeader}>
+        <View style={[styles.serviceIconContainer, { backgroundColor: item.color + '15' }]}>
+          <Icon name={item.icon} size={18} color={item.color} />
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '15' }]}>
-          <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+        <View style={[styles.statusChip, { backgroundColor: getStatusColor(item.status) }]}>
+          <Text style={styles.statusChipText}>
             {getStatusText(item.status)}
           </Text>
         </View>
       </View>
-      <View style={styles.serviceStatusContent}>
-        <Text style={styles.serviceTitle}>{item.title}</Text>
-        <Text style={styles.serviceVehicle}>{item.vehicle}</Text>
-        <View style={styles.serviceTime}>
-          <Icon name="time-outline" size={14} color={Colors.neutral500} />
-          <Text style={styles.serviceTimeText}>{item.date} at {item.time}</Text>
-        </View>
+      <Text style={styles.serviceTitle} numberOfLines={2}>{item.title}</Text>
+      <Text style={styles.serviceVehicle} numberOfLines={1}>{item.vehicle}</Text>
+      <View style={styles.serviceDateTime}>
+        <Icon name="calendar-outline" size={12} color={Colors.neutral400} />
+        <Text style={styles.serviceDateTimeText}>{item.date}</Text>
+        <Text style={styles.serviceTimeText}>{item.time}</Text>
       </View>
     </TouchableOpacity>
   )
@@ -255,43 +251,66 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       <Header
-        icon=""
-        name={userName}
-        image=""
-        onIconPress={() => navigation.navigate('Home')}
+        icon="none"
+        showNotification={true}
       />
       
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <View style={styles.heroContent}>
-            <Text style={styles.heroTitle}>Welcome back, {userName.split(' ')[0]}!</Text>
-            <Text style={styles.heroSubtitle}>Your vehicles are ready for service</Text>
-          </View>
-          <View style={styles.heroStats}>
-            <View style={styles.statItem}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Welcome Section */}
+        <View style={styles.welcomeSection}>
+          <Text style={styles.welcomeTitle}>
+            Good morning, <Text style={styles.userName}>{userName.split(' ')[0]}</Text>
+          </Text>
+          <Text style={styles.welcomeSubtitle}>Let's keep your vehicles in perfect condition</Text>
+          
+          {/* Stats Cards */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
               <Text style={styles.statNumber}>2</Text>
               <Text style={styles.statLabel}>Vehicles</Text>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
+            <View style={styles.statCard}>
               <Text style={styles.statNumber}>1</Text>
-              <Text style={styles.statLabel}>Active Service</Text>
+              <Text style={styles.statLabel}>Active</Text>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
+            <View style={styles.statCard}>
               <Text style={styles.statNumber}>3</Text>
-              <Text style={styles.statLabel}>Upcoming</Text>
+              <Text style={styles.statLabel}>Scheduled</Text>
             </View>
           </View>
         </View>
 
-        {/* Vehicles Section */}
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, {marginLeft: 20}] }>Quick Actions</Text>
+          <View style={styles.quickActionsContainer}>
+            {quickActions.map((action) => (
+              <TouchableOpacity 
+                key={action.id} 
+                style={[styles.quickActionCard, { backgroundColor: action.bgColor }]}
+                onPress={() => navigation.navigate(action.screen)}
+              >
+                <View style={[styles.quickActionIconContainer, { backgroundColor: action.color + "15" }]}>
+                  <Icon name={action.icon} size={20} color={action.color} />
+                </View>
+                <Text style={styles.quickActionTitle}>{action.title}</Text>
+                <Text style={styles.quickActionSubtitle}>{action.subtitle}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* My Vehicles */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>My Vehicles</Text>
-            <TouchableOpacity style={styles.addButton}>
-              <Icon name="add" size={20} color={Colors.primary} />
+            <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('Cars')}>
+              <Icon name="add" size={18} color={Colors.primary} />
+              <Text style={styles.addButtonText}>Add</Text>
             </TouchableOpacity>
           </View>
           <FlatList
@@ -304,12 +323,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           />
         </View>
 
-        {/* Service Status */}
+        {/* Recent Services */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Service Status</Text>
+            <Text style={styles.sectionTitle}>Recent Services</Text>
             <TouchableOpacity onPress={() => navigation.navigate('ServiceProgress')}>
-              <Text style={styles.viewAllText}>View All</Text>
+              <Text style={styles.viewAllButton}>View All</Text>
             </TouchableOpacity>
           </View>
           <FlatList
@@ -318,67 +337,49 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
             keyExtractor={(item) => item.id}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.serviceStatusList}
+            contentContainerStyle={styles.servicesList}
           />
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsGrid}>
-            {quickActions.map((action) => (
-              <TouchableOpacity 
-                key={action.id} 
-                style={[styles.quickActionCard, { backgroundColor: action.bgColor }]}
-                onPress={() => navigation.navigate(action.screen)}
-              >
-                <View style={[styles.quickActionIcon, { backgroundColor: action.color + "20" }]}>
-                  <Icon name={action.icon} size={24} color={action.color} />
-                </View>
-                <Text style={styles.quickActionTitle}>{action.title}</Text>
-                <Text style={styles.quickActionSubtitle}>{action.subtitle}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
         {/* Upcoming Services */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.lastSection]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Upcoming Services</Text>
             <TouchableOpacity onPress={() => navigation.navigate('ServiceHistory')}>
-              <Text style={styles.viewAllText}>View All</Text>
+              <Text style={styles.viewAllButton}>View All</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.upcomingContainer}>
-            {upcomingServices.map((service) => (
-              <View key={service.id} style={styles.upcomingItem}>
-                <View style={styles.upcomingIcon}>
-                  <Icon name="construct-outline" size={20} color={Colors.primary} />
+          <View style={styles.upcomingList}>
+            {upcomingServices.map((service, index) => (
+              <TouchableOpacity key={service.id} style={styles.upcomingCard}>
+                <View style={styles.upcomingIconContainer}>
+                  <Icon name="construct-outline" size={18} color={Colors.primary} />
                 </View>
                 <View style={styles.upcomingContent}>
                   <Text style={styles.upcomingTitle}>{service.title}</Text>
                   <Text style={styles.upcomingVehicle}>{service.vehicle}</Text>
                 </View>
-                <View style={styles.upcomingDate}>
-                  <Text style={styles.upcomingDateText}>{service.dueDate}</Text>
+                <View style={styles.upcomingRight}>
+                  <Text style={styles.upcomingDate}>{service.dueDate}</Text>
                   <View style={[
-                    styles.priorityBadge,
-                    { backgroundColor: service.priority === 'high' ? Colors.danger + '15' : 
-                                     service.priority === 'medium' ? Colors.warning + '15' : 
-                                     Colors.success + '15' }
+                    styles.priorityIndicator,
+                    { 
+                      backgroundColor: service.priority === 'high' ? '#FEE2E2' : 
+                                     service.priority === 'medium' ? '#FEF3C7' : '#DCFCE7'
+                    }
                   ]}>
                     <Text style={[
                       styles.priorityText,
-                      { color: service.priority === 'high' ? Colors.danger : 
-                               service.priority === 'medium' ? Colors.warning : 
-                               Colors.success }
+                      { 
+                        color: service.priority === 'high' ? '#DC2626' : 
+                               service.priority === 'medium' ? '#D97706' : '#16A34A'
+                      }
                     ]}>
                       {service.priority.charAt(0).toUpperCase() + service.priority.slice(1)}
                     </Text>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         </View>
@@ -390,329 +391,343 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primarybg || "#F8FAFC",
+    backgroundColor: '#FAFAFA',
   },
   scrollView: {
     flex: 1,
   },
-  heroSection: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-    marginBottom: 24,
+  scrollContent: {
+    paddingBottom: 30,
   },
-  heroContent: {
-    marginBottom: 24,
+  
+  // Welcome Section
+  welcomeSection: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 25,
   },
-  heroTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: Colors.neutral0,
-    marginBottom: 8,
-    letterSpacing: -0.5,
+  welcomeTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#111827',
+    lineHeight: 32,
   },
-  heroSubtitle: {
-    fontSize: 16,
-    color: Colors.neutral0 + "CC",
-    fontWeight: "500",
+  userName: {
+    color: Colors.primary,
+    fontWeight: '700',
   },
-  heroStats: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: Colors.neutral0 + "20",
-    borderRadius: 16,
-    padding: 20,
+  welcomeSubtitle: {
+    fontSize: 15,
+    color: '#6B7280',
+    marginTop: 4,
+    fontWeight: '400',
   },
-  statItem: {
-    alignItems: "center",
+  statsContainer: {
+    flexDirection: 'row',
+    marginTop: 20,
+    gap: 12,
+  },
+  statCard: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   statNumber: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: Colors.neutral0,
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.primary,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: Colors.neutral0 + "CC",
-    fontWeight: "500",
+    color: '#6B7280',
+    fontWeight: '500',
   },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: Colors.neutral0 + "30",
-  },
+
+  // Section Styles
   section: {
-    marginBottom: 32,
+    marginBottom: 28,
+  },
+  lastSection: {
+    marginBottom: 0,
   },
   sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 24,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: Colors.neutral1000 || "#111827",
-    letterSpacing: -0.5,
-  },
-  viewAllText: {
-    fontSize: 14,
-    color: Colors.primary,
-    fontWeight: "600",
-  },
-  addButton: {
-    padding: 8,
-    borderRadius: 12,
-    backgroundColor: Colors.primary + "15",
-  },
-  vehiclesList: {
-    paddingRight: 24,
-  },
-  vehicleCard: {
-    width: 280,
-    backgroundColor: Colors.neutral0,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: Colors.shadowMd,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: Colors.neutral200,
-    position: "relative",
-  },
-  selectedVehicleCard: {
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + "05",
-  },
-  vehicleHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
     marginBottom: 16,
   },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  viewAllButton: {
+    fontSize: 14,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary + '10',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  addButtonText: {
+    fontSize: 14,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+
+  // Quick Actions
+  quickActionsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  quickActionCard: {
+    width: '47%',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    minHeight: 100,
+    justifyContent: 'center',
+  },
+  quickActionIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  quickActionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  quickActionSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+
+  // Vehicles List
+  vehiclesList: {
+    paddingRight: 20,
+  },
+  vehicleCard: {
+    width: 240,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  selectedVehicleCard: {
+    borderColor: Colors.primary,
+    borderWidth: 2,
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.15,
+  },
+  vehicleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   vehicleIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  vehicleStatus: {
-    alignItems: "flex-end",
-  },
-  statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  statusIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   vehicleInfo: {
     flex: 1,
   },
   vehicleName: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Colors.neutral1000 || "#111827",
-    marginBottom: 4,
-    letterSpacing: -0.3,
-  },
-  vehicleYear: {
-    fontSize: 14,
-    color: Colors.neutral600 || "#6B7280",
-    marginBottom: 8,
-    fontWeight: "500",
-  },
-  vehicleMileage: {
     fontSize: 16,
-    fontWeight: "600",
-    color: Colors.neutral800,
+    fontWeight: '600',
+    color: '#111827',
     marginBottom: 4,
   },
-  nextService: {
+  vehicleDetails: {
     fontSize: 13,
-    color: Colors.primary,
-    fontWeight: "600",
+    color: '#6B7280',
+    marginBottom: 8,
   },
-  selectedIndicator: {
-    position: "absolute",
-    top: 16,
-    right: 16,
-    backgroundColor: Colors.neutral0,
-    borderRadius: 10,
-    padding: 2,
-    shadowColor: Colors.shadowMd,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+  vehicleMetrics: {
+    gap: 6,
   },
-  serviceStatusList: {
-    paddingRight: 24,
+  mileageText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
   },
-  serviceStatusCard: {
-    width: 280,
-    backgroundColor: Colors.neutral0,
-    borderRadius: 16,
-    padding: 20,
-    marginRight: 16,
-    shadowColor: Colors.shadowMd,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: Colors.neutral200,
+  nextServiceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  serviceStatusHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  serviceIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  statusText: {
+  nextServiceText: {
     fontSize: 12,
-    fontWeight: "600",
+    color: Colors.primary,
+    fontWeight: '500',
   },
-  serviceStatusContent: {
-    flex: 1,
+
+  // Services List
+  servicesList: {
+    paddingRight: 20,
+  },
+  serviceCard: {
+    width: 200,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  serviceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  serviceIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  statusChipText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   serviceTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: Colors.neutral900,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
     marginBottom: 4,
+    lineHeight: 18,
   },
   serviceVehicle: {
-    fontSize: 14,
-    color: Colors.neutral600,
+    fontSize: 12,
+    color: '#6B7280',
     marginBottom: 8,
   },
-  serviceTime: {
-    flexDirection: "row",
-    alignItems: "center",
+  serviceDateTime: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  serviceDateTimeText: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   serviceTimeText: {
-    fontSize: 13,
-    color: Colors.neutral500,
-    marginLeft: 4,
+    fontSize: 11,
+    color: '#6B7280',
   },
-  quickActionsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 24,
-    gap: 16,
+
+  // Upcoming Services
+  upcomingList: {
+    paddingHorizontal: 20,
+    gap: 12,
   },
-  quickActionCard: {
-    width: "47%",
-    backgroundColor: Colors.neutral0,
+  upcomingCard: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
-    shadowColor: Colors.shadowMd,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: Colors.neutral200,
-    minHeight: 120,
-    justifyContent: "center",
-  },
-  quickActionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  quickActionTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.neutral700 || "#374151",
-    textAlign: "center",
-    marginBottom: 4,
-  },
-  quickActionSubtitle: {
-    fontSize: 12,
-    color: Colors.neutral500,
-    textAlign: "center",
-  },
-  upcomingContainer: {
-    paddingHorizontal: 24,
-  },
-  upcomingItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.neutral0,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 12,
-    shadowColor: Colors.shadowMd,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
     elevation: 2,
     borderWidth: 1,
-    borderColor: Colors.neutral100,
+    borderColor: '#F3F4F6',
   },
-  upcomingIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.primaryLight,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
+  upcomingIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   upcomingContent: {
     flex: 1,
   },
   upcomingTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: Colors.neutral900,
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
   },
   upcomingVehicle: {
-    fontSize: 14,
-    color: Colors.neutral600,
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  upcomingRight: {
+    alignItems: 'flex-end',
+    gap: 6,
   },
   upcomingDate: {
-    alignItems: "flex-end",
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
-  upcomingDateText: {
-    fontSize: 13,
-    color: Colors.neutral500,
-    marginBottom: 6,
-  },
-  priorityBadge: {
+  priorityIndicator: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   priorityText: {
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 10,
+    fontWeight: '600',
   },
 })
 

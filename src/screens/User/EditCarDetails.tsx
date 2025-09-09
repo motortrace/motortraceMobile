@@ -14,6 +14,10 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../../constants/colors';
 import Header from '../../components/Header';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import CustomAlert from '../../components/Alert';
+import LoadingComponent from '../../components/Loading';
+import { launchImageLibrary, launchCamera, ImagePickerResponse, MediaType, PhotoQuality } from 'react-native-image-picker';
 import FormInput from '../../components/FormInput';
 
 const EditCarDetailsPage = ({ route, navigation }) => {
@@ -31,6 +35,15 @@ const EditCarDetailsPage = ({ route, navigation }) => {
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    type: 'info' as 'success' | 'error' | 'warning' | 'info',
+    title: '',
+    message: '',
+    buttonType: 'single' as 'none' | 'single' | 'double' | 'triple',
+    confirmText: 'OK',
+    onConfirm: () => {},
+  });
 
   const statusOptions = [
     { value: 'active', label: 'Active', icon: 'checkmark-circle', color: Colors.success },
@@ -50,6 +63,54 @@ const EditCarDetailsPage = ({ route, navigation }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const showAlert = (c: typeof alertConfig) => { setAlertConfig(c); setAlertVisible(true); };
+  const hideAlert = () => setAlertVisible(false);
+
+  const uploadImageToStorage = async (uri: string): Promise<string | null> => {
+    try {
+      setIsLoading(true);
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('No token found');
+      const form = new FormData();
+      const name = uri.split('/').pop() || `image_${Date.now()}.jpg`;
+      const type = name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+      form.append('profileImage', { uri, name, type } as any);
+      const res = await fetch('http://10.0.2.2:3000/storage/profile-image', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) throw new Error(data?.error || 'Upload failed');
+      return data.data?.imageUrl || null;
+    } catch (e: any) {
+      showAlert({ type: 'error', title: 'Upload Failed', message: e.message || 'Try again', buttonType: 'single', confirmText: 'OK', onConfirm: () => {} });
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const pickImage = () => {
+    const options = { mediaType: 'photo' as MediaType, includeBase64: false, quality: 1 as PhotoQuality };
+    launchImageLibrary(options, async (response: ImagePickerResponse) => {
+      if (response.didCancel || response.errorMessage) return;
+      const uri = response.assets?.[0]?.uri; if (!uri) return;
+      const uploaded = await uploadImageToStorage(uri);
+      if (uploaded) setFormData(prev => ({ ...prev, image: uploaded }));
+    });
+  };
+
+  const takePhoto = () => {
+    const options = { mediaType: 'photo' as MediaType, includeBase64: false, quality: 1 as PhotoQuality, saveToPhotos: true };
+    launchCamera(options, async (response: ImagePickerResponse) => {
+      if (response.didCancel || response.errorMessage) return;
+      const uri = response.assets?.[0]?.uri; if (!uri) return;
+      const uploaded = await uploadImageToStorage(uri);
+      if (uploaded) setFormData(prev => ({ ...prev, image: uploaded }));
+    });
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -57,9 +118,7 @@ const EditCarDetailsPage = ({ route, navigation }) => {
     >
       <Header
         icon="back"
-        name="Edit Car Details"
-        image=""
-        onIconPress={() => navigation.goBack()}
+        onPress={() => navigation.goBack()}
       />
 
       <ScrollView
@@ -70,7 +129,11 @@ const EditCarDetailsPage = ({ route, navigation }) => {
         <View style={styles.imagePreviewSection}>
         <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => Alert.alert('Change Car Image', 'Image picker coming soon!')}
+            onPress={() => Alert.alert('Change Car Image', 'Choose source', [
+              { text: 'Gallery', onPress: pickImage },
+              { text: 'Camera', onPress: takePhoto },
+              { text: 'Cancel', style: 'cancel' },
+            ])}
             style={styles.imageWrapper}
         >
             {formData.image ? (
@@ -99,68 +162,19 @@ const EditCarDetailsPage = ({ route, navigation }) => {
         </View>
 
         <View style={styles.formCard}>
-          <Text style={styles.sectionTitle}>Basic Information</Text>
-
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            <View style={[styles.formGroup, { flex: 1 }]}>
-                <Text style={styles.formLabel}>Car Name</Text>
-                <Text style={styles.readOnlyText}>{formData.name || 'N/A'}</Text>
-            </View>
-
-            <View style={[styles.formGroup, { flex: 1 }]}>
-                <Text style={styles.formLabel}>Model</Text>
-                <Text style={styles.readOnlyText}>{formData.model || 'N/A'}</Text>
-            </View>
-          </View>
-                    
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            <View style={[styles.formGroup, { flex: 1 }]}>
-                <Text style={styles.formLabel}>Year</Text>
-                <Text style={styles.readOnlyText}>{formData.year || 'N/A'}</Text>
-            </View>
-
-            <View style={[styles.formGroup, { flex: 1 }]}>
-                <Text style={styles.formLabel}>License plate</Text>
-                <Text style={styles.readOnlyText}>{formData.number || 'N/A'}</Text>
-            </View>
-          </View>
-
-
+          <Text style={styles.sectionTitle}>Edit Car</Text>
           <FormInput 
             label='Nickname'
             value={formData.nickname}
+            onChangeText={(text: string) => setFormData(prev => ({ ...prev, nickname: text }))}
             inputWrapperStyle={{marginTop: 10, marginBottom: -15}}
           />
-
         </View>
 
         <View style={styles.formCard}>
           <Text style={styles.sectionTitle}>Car Status</Text>
           <View style={styles.statusGrid}>
-            {statusOptions.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.statusOption,
-                  formData.status === option.value && styles.statusOptionActive,
-                ]}
-                onPress={() => updateFormData('status', option.value)}
-              >
-                <Icon
-                  name={option.icon}
-                  size={20}
-                  color={formData.status === option.value ? Colors.neutral0 : option.color}
-                />
-                <Text
-                  style={[
-                    styles.statusOptionText,
-                    formData.status === option.value && styles.statusOptionTextActive,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            <Text style={{ color: Colors.neutral500 }}>Status cannot be edited here.</Text>
           </View>
         </View>
 
@@ -181,6 +195,20 @@ const EditCarDetailsPage = ({ route, navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      {isLoading && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+          <LoadingComponent loadingText="Uploading image" containerStyle={{}} textStyle={{}} />
+        </View>
+      )}
+      <CustomAlert
+        visible={alertVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttonType={alertConfig.buttonType}
+        confirmText={alertConfig.confirmText}
+        onClose={hideAlert}
+      />
     </KeyboardAvoidingView>
   );
 };

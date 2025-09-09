@@ -18,8 +18,21 @@ const Button: React.FC<ButtonProps> = ({
   textStyle,
   icon,
 }) => {
+  const handlePress = () => {
+    try {
+      const maybePromise = onPress?.();
+      if (maybePromise && typeof (maybePromise as any).then === 'function') {
+        (maybePromise as Promise<void>).catch((err) => {
+          console.error('Button onPress error:', err);
+        });
+      }
+    } catch (err) {
+      console.error('Button onPress error:', err);
+    }
+  };
+
   return (
-    <TouchableOpacity style={[styles.button, containerStyle]} onPress={onPress}>
+    <TouchableOpacity style={[styles.button, containerStyle]} onPress={handlePress} activeOpacity={0.8}>
       {icon && <Icon name={icon} size={20} color={Colors.neutral0} style={styles.icon} />}
       <Text style={[styles.buttonText, textStyle]}>{label}</Text>
     </TouchableOpacity>

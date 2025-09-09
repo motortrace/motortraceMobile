@@ -22,7 +22,7 @@ const AccountDelegationPage = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [userEmail, setEmail] = useState('Abdullaaurad@gmail.com')
+  const [userEmail, _setUserEmail] = useState('Abdullaaurad@gmail.com')
 
   const handleDelegateAccount = () => {
     setShowConfirmModal(true);
@@ -161,7 +161,7 @@ const AccountDelegationPage = () => {
               <View key={index} style={styles.consequenceItem}>
                 <View style={[
                   styles.consequenceIcon, 
-                  { backgroundColor: item.severity === 'high' ? '#FEE2E2' : '#FEF3C7' }
+                  item.severity === 'high' ? styles.consequenceIconHigh : styles.consequenceIconMedium
                 ]}>
                   <Icon 
                     name={item.icon} 
@@ -394,6 +394,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+  },
+  consequenceIconHigh: {
+    backgroundColor: '#FEE2E2',
+  },
+  consequenceIconMedium: {
+    backgroundColor: '#FEF3C7',
   },
   consequenceContent: {
     flex: 1,

@@ -123,8 +123,8 @@ const CarDetailsPage = () => {
       const token = await AsyncStorage.getItem('token');
       console.log('Card ID is', carId)
       if (!token) return;
-      console.log('Fetching from', `http://10.0.2.2:3000/vehicles/${user.id}/vehicles/${carId}`);
-      const res = await fetch(`http://10.0.2.2:3000/vehicles/${user.id}/vehicles/${carId}`, {
+      console.log('Fetching from', `http://10.0.2.2:3000/vehicles/${carId}`);
+      const res = await fetch(`http://10.0.2.2:3000/vehicles/${carId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -132,20 +132,20 @@ const CarDetailsPage = () => {
       });
       const data = await res.json();
       console.log('Data is', data)
-      if (res.ok && data.vehicle) {
+      if (res.ok && (data.vehicle || data.data)) {
         setCar({
-          id: data.vehicle.id,
-          name: data.vehicle.vehicleName,
-          nickname: data.vehicle.nickname || hardcodedCarData.nickname,
-          model: data.vehicle.model,
-          year: data.vehicle.year,
+          id: (data.vehicle || data.data).id,
+          name: (data.vehicle || data.data).vehicleName || (data.vehicle || data.data).make || hardcodedCarData.name,
+          nickname: (data.vehicle || data.data).nickname || hardcodedCarData.nickname,
+          model: (data.vehicle || data.data).model,
+          year: (data.vehicle || data.data).year,
           image: hardcodedCarData.image,
           status: hardcodedCarData.status,
           statusText: hardcodedCarData.statusText,
           mileage: hardcodedCarData.mileage,
           lastService: hardcodedCarData.lastService,
-          number: data.vehicle.licensePlate || hardcodedCarData.number,
-          color: data.vehicle.color || hardcodedCarData.color,
+          number: (data.vehicle || data.data).licensePlate || hardcodedCarData.number,
+          color: (data.vehicle || data.data).color || hardcodedCarData.color,
           issues: hardcodedCarData.issues,
           services: hardcodedCarData.services,
           location: hardcodedCarData.location,
@@ -344,7 +344,7 @@ const CarDetailsPage = () => {
       const user = JSON.parse(userStr);
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('No token found');
-      const res = await fetch(`http://10.0.2.2:3000/vehicles/${user.id}/vehicles/${car.id}`, {
+      const res = await fetch(`http://10.0.2.2:3000/vehicles/${car.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -411,7 +411,7 @@ const CarDetailsPage = () => {
           <BorderButton 
             label='Edit Details'
             icon = 'create-outline'
-            onPress={() => navigation.navigate('EditCarDetails')}
+            onPress={() => navigation.navigate('EditCarDetails', { carData: { id: car?.id, nickname: car?.nickname, image: car?.image } })}
             style={{width: '48%', height: 50}}
           />
 

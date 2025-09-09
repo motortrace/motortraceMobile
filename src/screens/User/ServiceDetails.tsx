@@ -12,22 +12,15 @@ import Button from '../../components/Button';
 import Header from '../../components/Header';
 
 interface SimpleServiceDetailScreenProps {
-  onBack?: () => void;
   onBookService?: () => void;
 }
 
-const SimpleServiceDetailScreen: React.FC<SimpleServiceDetailScreenProps> = ({ 
-  onBack, 
+const SimpleServiceDetailScreen: React.FC<SimpleServiceDetailScreenProps> = ({  
   onBookService 
 }) => {
   return (
     <SafeAreaView style={styles.container}>
-      <Header 
-        icon="back"
-        name="Jhon"
-        image=""
-        onIconPress={onBack}
-      />
+      <Header />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Service Icon & Title */}

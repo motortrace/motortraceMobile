@@ -5,9 +5,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,
   Image,
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -18,6 +18,7 @@ import FormInput from '../components/FormInput';
 import Link from '../components/Link';
 import SocialLoginButtons from '../components/SocialLoginButtons';
 import FormBox from '../components/FormBox';
+import CustomAlert from '../components/Alert';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
@@ -34,28 +35,53 @@ interface RegisterScreenProps {
 const RegisterScreen: React.FC<RegisterScreenProps> = ({
   onRegister,
   onGoogleRegister,
-  onLoginRedirect,
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { setUser } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [errors, setErrors] = useState({
     email: '',
     password: '',
   });
 
+  // Custom Alert states
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    type: 'info' as 'success' | 'error' | 'warning' | 'info',
+    title: '',
+    message: '',
+    buttonType: 'single' as 'none' | 'single' | 'double' | 'triple',
+    confirmText: 'OK',
+    onConfirm: () => {},
+  });
+
+  // Keyboard visibility listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      keyboardDidHideListener?.remove();
+      keyboardDidShowListener?.remove();
+    };
+  }, []);
+
   // Email validation
-  const validateEmail = (email: string): boolean => {
+  const validateEmail = (emailToValidate: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    return emailRegex.test(emailToValidate);
   };
 
   // Password validation
-  const validatePassword = (password: string): boolean => {
-    return password.length >= 8;
+  const validatePassword = (passwordToValidate: string): boolean => {
+    return passwordToValidate.length >= 8;
   };
 
   // Handle input validation
@@ -88,13 +114,23 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
     });
   }, []);
 
+  // Show custom alert helper
+  const showAlert = (config: typeof alertConfig) => {
+    setAlertConfig(config);
+    setAlertVisible(true);
+  };
+
+  // Hide custom alert
+  const hideAlert = () => {
+    setAlertVisible(false);
+    // Execute the onConfirm action after hiding
+    setTimeout(() => {
+      alertConfig.onConfirm();
+    }, 100);
+  };
+
   const handleRegister = async () => {
     if (!validateInputs()) {
-      return;
-    }
-
-    if (!agree) {
-      Alert.alert('Error', 'Please agree to the Terms & Privacy');
       return;
     }
 
@@ -121,7 +157,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
         throw new Error(data.error || 'Registration failed');
       }
 
-      // Store the token securely
+      // Store the token securely (if available)
       if (data.data?.access_token) {
         await AsyncStorage.setItem('token', data.data.access_token);
         console.log('Token stored successfully');
@@ -134,8 +170,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
         console.log('User data stored and context updated');
       }
 
-      // Navigate to login after successful registration
-      navigation.navigate('LogIn');
+      // Show success alert and navigate to login
+      showAlert({
+        type: 'success',
+        title: 'Registration Successful',
+        message: 'Please check your email to confirm your account before signing in.',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => navigation.navigate('LogIn')
+      });
       
       if (onRegister) {
         onRegister(email, password);
@@ -148,7 +191,14 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
       });
       
       if (!error.message.includes('email') && !error.message.includes('password')) {
-        Alert.alert('Registration Failed', error.message || 'Please try again.');
+        showAlert({
+          type: 'error',
+          title: 'Registration Failed',
+          message: error.message || 'Please try again.',
+          buttonType: 'single',
+          confirmText: 'OK',
+          onConfirm: () => {}
+        });
       }
     } finally {
       setLoading(false);
@@ -220,21 +270,29 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
       console.error('Error type:', error.name);
       console.error('Error message:', error.message);
       
+      let alertTitle = 'Google Sign Up Failed';
+      let alertMessage = error.message || 'Please try again.';
+      
       // More specific error handling
       if (error.message.includes('Network request failed')) {
-        Alert.alert('Network Error', 'Cannot connect to server. Please check your internet connection and try again.');
+        alertTitle = 'Network Error';
+        alertMessage = 'Cannot connect to server. Please check your internet connection and try again.';
       } else if (error.message.includes('fetch')) {
-        Alert.alert('Server Error', 'Unable to reach the authentication server. Please try again later.');
-      } else {
-        Alert.alert('Google Sign Up Failed', error.message || 'Please try again.');
+        alertTitle = 'Server Error';
+        alertMessage = 'Unable to reach the authentication server. Please try again later.';
       }
+      
+      showAlert({
+        type: 'error',
+        title: alertTitle,
+        message: alertMessage,
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
     } finally {
       setLoading(false);
     }
-  };
-
-  const toggleAgree = () => {
-    setAgree(!agree);
   };
 
   if (loading) {
@@ -250,79 +308,114 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Logo */}
-        <View style={styles.iconContainer}>
-          <Image source={require('../assets/images/Logo_white_no_bg.png')} style={styles.Logo} />
-        </View>
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+                 <ScrollView 
+           contentContainerStyle={[
+             styles.scrollContent,
+             isKeyboardVisible ? styles.scrollContentKeyboard : undefined
+           ]}
+           showsVerticalScrollIndicator={false}
+           keyboardShouldPersistTaps="handled"
+         >
+           <View style={[
+             styles.content,
+             isKeyboardVisible ? styles.contentKeyboard : undefined
+           ]}>
+            {/* Logo - Hide when keyboard is visible */}
+            {!isKeyboardVisible && (
+              <View style={styles.iconContainer}>
+                <Image source={require('../assets/images/Logo_white_no_bg.png')} style={styles.Logo} />
+              </View>
+            )}
 
-        {/* Welcome Text */}
-        <Text style={styles.welcomeTitle}>Create Account</Text>
-        <Text style={styles.welcomeSubtitle}>Sign up for a new car account</Text>
+            {/* Welcome Text - Hide when keyboard is visible */}
+            {!isKeyboardVisible && (
+              <>
+                <Text style={styles.welcomeTitle}>Create Account</Text>
+                <Text style={styles.welcomeSubtitle}>Sign up for a new car account</Text>
+              </>
+            )}
 
-        <FormBox>
-          {/* Username */}
-          <FormInput
-            label="Email address"
-            placeholder="Enter your email"
-            iconName="mail-outline"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              if (errors.email) {
-                setErrors(prev => ({ ...prev, email: '' }));
-              }
-            }}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            error={errors.email}
-            autoComplete="email"
-          />
+            <FormBox style={isKeyboardVisible ? styles.formBoxKeyboard : undefined}>
+              {/* Username */}
+              <FormInput
+                label="Email address"
+                placeholder="Enter your email"
+                iconName="mail-outline"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) {
+                    setErrors(prev => ({ ...prev, email: '' }));
+                  }
+                }}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                error={errors.email}
+                autoComplete="email"
+              />
 
-          <FormInput
-            label="Password"
-            placeholder="Min 8 characters"
-            iconName="lock-closed-outline"
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              if (errors.password) {
-                setErrors(prev => ({ ...prev, password: '' }));
-              }
-            }}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            error={errors.password}
-            autoComplete="password"
-          />
+              <FormInput
+                label="Password"
+                placeholder="Min 8 characters"
+                iconName="lock-closed-outline"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password) {
+                    setErrors(prev => ({ ...prev, password: '' }));
+                  }
+                }}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                error={errors.password}
+                autoComplete="password"
+              />
 
-          {/* Sign Up Button */}
-          <AnimatedButton title="Sign up" onPress={handleRegister} style={{ marginBottom: 24 }} />
+              {/* Sign Up Button */}
+              <AnimatedButton title="Sign up" onPress={handleRegister} style={styles.signUpButton} />
 
-          {/* Divider */}
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Or sign up with</Text>
-            <View style={styles.dividerLine} />
+              {/* Divider */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>Or sign up with</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Social Login */}
+              <SocialLoginButtons
+                onGoogleLogin={handleGoogleRegister}
+                onAppleLogin={handleGoogleRegister}
+              />
+            </FormBox>
+
+            {/* Redirect to Login */}
+            <View style={styles.signUpContainer}>
+              <Text style={styles.signUpText}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('LogIn')}>
+                <Link link="Sign in" style={styles.signInLink} />
+              </TouchableOpacity>
+            </View>
           </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-          {/* Social Login */}
-          <SocialLoginButtons
-            onGoogleLogin={handleGoogleRegister}
-            onAppleLogin={handleGoogleRegister}
-          />
-        </FormBox>
-
-        {/* Redirect to Login */}
-        <View style={styles.signUpContainer}>
-          <Text style={styles.signUpText}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('LogIn')}>
-            <Link link="Sign in" style={{ marginTop: 10 }} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={alertVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttonType={alertConfig.buttonType}
+        confirmText={alertConfig.confirmText}
+        onClose={hideAlert}
+      />
     </SafeAreaView>
   );
 };
@@ -332,11 +425,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.primarybg,
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+  },
+  scrollContentKeyboard: {
+    paddingTop: 35,
+  },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 100,
     justifyContent: 'center',
+  },
+  contentKeyboard: {
+    paddingTop: 20,
+    justifyContent: 'flex-start',
   },
   iconContainer: {
     width: 64,
@@ -365,6 +468,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
+  formBoxKeyboard: {
+    marginTop: 0,
+  },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -385,17 +491,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom: 20,
   },
   signUpText: {
     fontSize: 16,
     color: Colors.neutral500,
     marginTop: 10,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.primarybg,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: Colors.neutral500,
+    textAlign: 'center',
+  },
+  signUpButton: {
+    marginBottom: 24,
+  },
+  signInLink: {
+    marginTop: 10,
+  },
 });
 
-<<<<<<< HEAD
-
 export default RegisterScreen;
-=======
-export default RegisterScreen; 
->>>>>>> bd3d1bdaaefcbc06891fa469985abd6d6f27c9f1

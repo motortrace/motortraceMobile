@@ -1,5 +1,5 @@
-import React, { useState } from "react"
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native"
+import React, { useState, useEffect, useCallback } from "react"
+import { View, Text, StyleSheet, SafeAreaView, ScrollView} from "react-native"
 import Icon from 'react-native-vector-icons/Ionicons'
 import Colors from "../../constants/colors"
 import ServiceCard from "../../components/ServiceCard"
@@ -9,74 +9,161 @@ import SearchBar from '../../components/SearchBar';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
-import AppointmentBottomSheet from '../../components/AppointmentSheet';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import LoadingComponent from '../../components/Loading';
+import CustomAlert from '../../components/Alert';
+
+interface Service {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  estimatedHours: number;
+  hourlyRate: number;
+  isActive: boolean;
+}
 
 interface AllServicesScreenProps {
   onBack?: () => void,
   onScheduleAppointment?: () => void
 }
 
-const AllServicesScreen: React.FC<AllServicesScreenProps> = ({ onBack, onScheduleAppointment }) => {
+const AllServicesScreen: React.FC<AllServicesScreenProps> = ({ onBack: _onBack, onScheduleAppointment: _onScheduleAppointment }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const [showAppointmentSheet, setShowAppointmentSheet] = useState(false);
+  const [services, setServices] = useState<Service[]>([]);
+  const [filteredServices, setFilteredServices] = useState<Service[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    type: 'info' as 'success' | 'error' | 'warning' | 'info',
+    title: '',
+    message: '',
+    buttonType: 'single' as 'none' | 'single' | 'double' | 'triple',
+    confirmText: 'OK',
+    onConfirm: () => {},
+  });
+
+  const showAlert = useCallback((config: typeof alertConfig) => {
+    setAlertConfig(config);
+    setAlertVisible(true);
+  }, []);
+
+  const hideAlert = useCallback(() => {
+    setAlertVisible(false);
+    // Execute the onConfirm action after hiding
+    setTimeout(() => {
+      alertConfig.onConfirm();
+    }, 100);
+  }, [alertConfig]);
+
+  // Map category to icon
+  const getCategoryIcon = (category: string): string => {
+    const iconMap: { [key: string]: string } = {
+      'Engine': 'speedometer-outline',
+      'Brake': 'car-sport-outline',
+      'Electrical': 'battery-charging-outline',
+      'Transmission': 'swap-horizontal-outline',
+      'AC': 'snow-outline',
+      'Oil': 'construct-outline',
+      'Tire': 'swap-horizontal-outline',
+      'General': 'settings-outline',
+    };
+    return iconMap[category] || 'construct-outline';
+  };
+
+  // Fetch services from labor catalog
+  const fetchServices = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      console.log('🔍 Fetching services from labor catalog...');
+      
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        console.log('❌ No token found');
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch('http://10.0.2.2:3000/labor/catalog?isActive=true', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('📥 Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('📥 Services data received:', data);
+
+      if (data.success && data.data) {
+        const servicesData: Service[] = data.data.map((service: any) => ({
+          id: service.id,
+          name: service.name,
+          description: service.description || `Professional ${service.name.toLowerCase()} service`,
+          icon: getCategoryIcon(service.category),
+          category: service.category,
+          estimatedHours: service.estimatedHours || 1,
+          hourlyRate: service.hourlyRate || 50,
+          isActive: service.isActive,
+        }));
+
+        setServices(servicesData);
+        setFilteredServices(servicesData);
+        console.log('✅ Services updated:', servicesData.length, 'services loaded');
+      }
+    } catch (error: unknown) {
+      console.error('❌ Failed to fetch services:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load Services, Please try again later.';
+      showAlert({
+        type: 'error',
+        title: 'Loading Services Failed',
+        message: errorMessage,
+        buttonType: 'none',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [showAlert]);
+
+  // Filter services based on search query
+  const filterServices = (query: string) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      setFilteredServices(services);
+    } else {
+      const filtered = services.filter(service =>
+        service.name.toLowerCase().includes(query.toLowerCase()) ||
+        service.description.toLowerCase().includes(query.toLowerCase()) ||
+        service.category.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredServices(filtered);
+    }
+  };
+
+  // Handle schedule appointment button press
   const handleScheduleAppointment = () => {
-    setShowAppointmentSheet(true);
+    if (_onScheduleAppointment) {
+      _onScheduleAppointment();
+    } else {
+      // Default behavior - navigate to appointment scheduling
+      navigation.navigate('Appointment');
+    }
   };
-  const handleCloseSheet = () => {
-    setShowAppointmentSheet(false);
-  };
-  const handleConfirmAppointment = (appointmentData: any) => {
-    console.log('Appointment confirmed:', appointmentData);
-    setShowAppointmentSheet(false);
-  };
-  const services = [
-    {
-      name: "Oil Change",
-      description: "Complete oil replacement and filter change with quality motor oil.",
-      icon: "construct-outline",
-    },
-    {
-      name: "Brake Inspection",
-      description: "Thorough checkup of brake pads, rotors, and fluid.",
-      icon: "car-sport-outline",
-    },
-    {
-      name: "Battery Replacement",
-      description: "Diagnostics and full battery replacement with warranty.",
-      icon: "battery-charging-outline",
-    },
-    {
-      name: "Tire Rotation",
-      description: "Extends tire life and improves safety.",
-      icon: "swap-horizontal-outline",
-    },
-    {
-      name: "AC Repair",
-      description: "Air conditioning system diagnostics and refrigerant refill.",
-      icon: "snow-outline",
-    },
-    {
-      name: "Engine Diagnostics",
-      description: "Check engine lights and detailed diagnostic scan.",
-      icon: "speedometer-outline",
-    },
-        {
-      name: "Tire Rotation",
-      description: "Extends tire life and improves safety.",
-      icon: "swap-horizontal-outline",
-    },
-    {
-      name: "AC Repair",
-      description: "Air conditioning system diagnostics and refrigerant refill.",
-      icon: "snow-outline",
-    },
-    {
-      name: "Engine Diagnostics",
-      description: "Check engine lights and detailed diagnostic scan.",
-      icon: "speedometer-outline",
-    },
-  ]
+
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -91,40 +178,61 @@ const AllServicesScreen: React.FC<AllServicesScreenProps> = ({ onBack, onSchedul
 
       <Header
         icon="back"
-        name="John Doe"
-        image=""
         onIconPress={() => navigation.navigate('GarageServices')}
       />
       <SearchBar
-        containerStyle={{
-          marginTop: 10,
-          marginBottom: -10,
-        }}
-        placeholder="Search products..."
+        containerStyle={styles.searchBarContainer}
+        placeholder="Search services..."
+        onChangeText={filterServices}
+        value={searchQuery}
       />
 
       {/* Services List */}
       <ScrollView style={styles.servicesContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.servicesList}>
-          {services.map((service, index) => (
-            <ServiceCard
-              key={index}
-              icon={service.icon}
-              title={service.name}
-              description={service.description}
-            />
-          ))}
-        </View>
+        {isLoading ? (
+          <LoadingComponent 
+            textStyle={styles.loadingText}
+            size="medium"
+            loadingText="Loading services"
+            containerStyle={styles.loadingContainer}
+          />
+        ) : filteredServices.length > 0 ? (
+          <View style={styles.servicesList}>
+            {filteredServices.map((service) => (
+              <ServiceCard
+                key={service.id}
+                icon={service.icon}
+                title={service.name}
+                description={service.description}
+                onPress={() => navigation.navigate('ServiceDetails', { serviceId: service.id })}
+              />
+            ))}
+          </View>
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Icon name="construct-outline" size={64} color={Colors.neutral400} />
+            <Text style={styles.emptyTitle}>No Services Found</Text>
+            <Text style={styles.emptySubtitle}>
+              {searchQuery ? 'Try adjusting your search terms' : 'No services are currently available'}
+            </Text>
+          </View>
+        )}
         <View style={styles.bottomSpacing} />
       </ScrollView>
       <View style={styles.scheduleContainer}>
         <Button label="Schedule Appointment" onPress={handleScheduleAppointment} />
       </View>
-      <AppointmentBottomSheet
-        visible={showAppointmentSheet}
-        onClose={handleCloseSheet}
-        onConfirm={handleConfirmAppointment}
+
+      <CustomAlert
+        visible={alertVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttonType={alertConfig.buttonType}
+        confirmText={alertConfig.confirmText}
+        onClose={hideAlert}
       />
+
     </SafeAreaView>
   )
 }
@@ -136,6 +244,10 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 30,
+  },
+  searchBarContainer: {
+    marginTop: 10,
+    marginBottom: -10,
   },
   servicesContainer: {
     flex: 1,
@@ -152,6 +264,37 @@ const styles = StyleSheet.create({
     paddingBottom: 34,
     borderTopWidth: 1,
     borderTopColor: Colors.neutral100,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+    paddingHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.neutral800,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: Colors.neutral500,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.neutral500,
+    marginTop: 10,
   },
 })
 

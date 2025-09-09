@@ -40,23 +40,21 @@ export default function SplashScreen() {
         if (token && userData) {
           const user = JSON.parse(userData);
           
-          // Navigate based on user role and registration status
           if (user.role === 'technician') {
             navigation.navigate('TechnicianHome');
-          } else if (user.isRegistrationComplete) {
+          } else if (user.role === 'customer') {
             navigation.navigate('Home');
           } else {
             navigation.navigate('Onboarding');
           }
         } else {
-          // No existing auth, go to signup
+          // Only set timeout if no auth found
           setTimeout(() => {
-            navigation.navigate('SignUp');
+            navigation.navigate('LogIn');
           }, 2000);
         }
       } catch (error) {
         console.error('Error checking auth status:', error);
-        // Fallback to signup
         setTimeout(() => {
           navigation.navigate('SignUp');
         }, 2000);
@@ -87,6 +85,10 @@ export default function SplashScreen() {
 
     navigation.navigate('SignUp');
   };
+
+  setTimeout(() => {
+    navigation.navigate('LogIn');
+  }, 3000);
 
   return (
     <SafeAreaView style={styles.container}>

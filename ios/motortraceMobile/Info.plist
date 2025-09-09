@@ -25,7 +25,10 @@
 	<key>LSRequiresIPhoneOS</key>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We need access to your location</string>
-	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs access to camera to take profile pictures</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to photo library to select profile pictures</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 	  <!-- Do not change NSAllowsArbitraryLoads to true, or you will risk app rejection! -->

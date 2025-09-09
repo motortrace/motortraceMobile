@@ -7,10 +7,11 @@ import FormInput from "../components/FormInput"
 import AnimatedButton from "../components/AnimatedButton"
 import Link from "../components/Link"
 import BackButton from "../components/Back"
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
+import emailService from '../services/emailService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ResetPasswordScreenProps {
   email?: string
@@ -20,19 +21,20 @@ interface ResetPasswordScreenProps {
 
 const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
   email: propEmail,
-  onResetSuccess,
+  onResetSuccess: _onResetSuccess,
   onBack,
 }) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [_loading, _setLoading] = useState(false);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [email, setEmail] = useState(propEmail || "");
+  // OTP-based reset flow is used for both logged-in and forgot-password cases
   
   // Get email from AsyncStorage on mount if not provided
   useEffect(() => {
     if (!propEmail) {
-      AsyncStorage.getItem('resetEmail').then(storedEmail => {
+      emailService.getStoredResetEmail().then(storedEmail => {
         if (storedEmail) setEmail(storedEmail);
       });
     }
@@ -49,32 +51,45 @@ const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
   }
 
   const handleResetPassword = async () => {
-    if (!passwordsMatch || newPassword.length < 8) return;
-    setLoading(true);
+    if (!passwordsMatch || newPassword.length < 6) return;
+    _setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('resetToken');
-      if (!token) {
-        Alert.alert('Error', 'Reset token missing. Please restart the reset process.');
+      // OTP + email flow (applies to both logged-in and not logged-in users)
+      const otp = await emailService.getStoredResetToken();
+      console.log('🔍 Retrieved OTP from storage:', otp);
+      console.log('🔍 Email for reset:', email);
+
+      if (!otp) {
+        Alert.alert('Error', 'OTP missing. Please restart the reset process.');
         return;
       }
-      const res = await fetch('http://10.0.2.2:3000/auth/reset-password', {
+
+      const response = await fetch('http://10.0.2.2:3000/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: newPassword, token }),
+        body: JSON.stringify({ 
+          email, 
+          otp, 
+          newPassword 
+        }),
       });
-      const data = await res.json();
-      if (!res.ok) {
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.log('❌ Reset password error response:', data);
         Alert.alert('Error', data.error || 'Failed to reset password');
         return;
       }
-      await AsyncStorage.removeItem('resetEmail');
-      Alert.alert('Success', 'Password reset! Please log in.', [
+
+      await emailService.clearResetData();
+      Alert.alert('Success', 'Password reset successfully! Please log in.', [
         { text: 'OK', onPress: () => navigation.navigate('LogIn') }
       ]);
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to reset password');
     } finally {
-      setLoading(false);
+      _setLoading(false);
     }
   };
 
@@ -85,7 +100,7 @@ const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         {/* Header */}
-        <BackButton onPress={onBack} />
+        <BackButton onPress={() => navigation.goBack()} />
 
         <View style={styles.iconContainer}>
           <Image source={require("../assets/images/Logo_white_no_bg.png")} style={styles.Logo} />
@@ -128,7 +143,7 @@ const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
           {/* Password Match Indicator */}
           {confirmPassword.length > 0 && (
             <View style={styles.matchContainer}>
-              <Text style={[styles.matchText, { color: passwordsMatch ? "#10B981" : "#EF4444" }]}>
+              <Text style={[styles.matchText, passwordsMatch ? styles.matchTextSuccess : styles.matchTextError]}>
                 {passwordsMatch ? "✓ Passwords match" : "✗ Passwords don't match"}
               </Text>
             </View>
@@ -139,14 +154,14 @@ const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
             <Text style={styles.requirementsTitle}>Password must contain:</Text>
             <View style={styles.requirementsList}>
               <Text
-                style={[styles.requirementItem, { color: newPassword.length >= 8 ? "#10B981" : Colors.neutral500 }]}
+                style={[styles.requirementItem, newPassword.length >= 6 ? styles.requirementItemSuccess : styles.requirementItemDefault]}
               >
-                {newPassword.length >= 8 ? "✓" : "•"} At least 8 characters
+                {newPassword.length >= 6 ? "✓" : "•"} At least 6 characters
               </Text>
               <Text
                 style={[
                   styles.requirementItem,
-                  { color: /(?=.*\d)/.test(newPassword) ? "#10B981" : Colors.neutral500 },
+                  /(?=.*\d)/.test(newPassword) ? styles.requirementItemSuccess : styles.requirementItemDefault,
                 ]}
               >
                 {/(?=.*\d)/.test(newPassword) ? "✓" : "•"} At least one number
@@ -157,15 +172,16 @@ const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
           {/* Reset Button */}
           <AnimatedButton
             title="Reset Password"
-            onPress={handleResetPassword}
-            disabled={!passwordsMatch || newPassword.length < 8}
+            onPress={passwordsMatch && newPassword.length >= 6 ? handleResetPassword : () => {}}
+            style={(!passwordsMatch || newPassword.length < 6) ? styles.disabledButton : undefined}
+            textStyle={(!passwordsMatch || newPassword.length < 6) ? styles.disabledButtonText : undefined}
           />
 
         </FormBox>
         {/* Back to Login */}
         <View style={styles.loginContainer}>
           <Text style={styles.loginText}>Remember your password? </Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('LogIn')}>
             <Link link="Back to Login" />
           </TouchableOpacity>
         </View>
@@ -270,6 +286,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.neutral700,
     marginTop: 4
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  disabledButtonText: {
+    color: Colors.neutral500,
+  },
+  matchTextSuccess: {
+    color: "#10B981",
+  },
+  matchTextError: {
+    color: "#EF4444",
+  },
+  requirementItemSuccess: {
+    color: "#10B981",
+  },
+  requirementItemDefault: {
+    color: Colors.neutral500,
   },
 })
 

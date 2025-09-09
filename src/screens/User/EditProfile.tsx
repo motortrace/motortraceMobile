@@ -36,36 +36,33 @@ const EditProfileScreen = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const [email, setEmail] = useState(profileData.email);
-  const [contact, setContact] = useState(profileData.phoneNumber);
+  // Using profileData state directly for form fields
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({
     email: true,
     contact: true,
   });
 
-  // Fetch profile data on mount
+  // Fetch profile data on mount (use new /auth/profile)
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const userStr = await AsyncStorage.getItem('user');
-        if (!userStr) return;
-        const user = JSON.parse(userStr);
         const token = await AsyncStorage.getItem('token');
         if (!token) return;
 
-        const res = await fetch(`http://10.0.2.2:3000/profiles/${user.id}`, {
+        const res = await fetch(`http://10.0.2.2:3000/auth/profile`, {
+          method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
         const data = await res.json();
-        if (data.role === 'car_owner' && data.profile) {
+        if (res.ok && data?.profile) {
           setProfileData({
-            fullName: data.profile.name || "",
-            phoneNumber: data.phone || "",
-            profileImage: data.profile.imageBase64 || "",
-            email: data.email || "",
+            fullName: data.profile.fullName || "",
+            phoneNumber: data.profile.phoneNumber || "",
+            profileImage: data.profile.profileImageUrl || "",
+            email: (await AsyncStorage.getItem('user') ? JSON.parse((await AsyncStorage.getItem('user')) as string).email : "") || "",
           });
         }
       } catch (err) {
@@ -75,17 +72,7 @@ const EditProfileScreen = () => {
     fetchProfile();
   }, []);
 
-  useEffect(() => {
-    if (verificationStatus.email) {
-      setVerificationStatus((prev) => ({ ...prev, email: true }));
-    }
-  }, [email]);
-
-  useEffect(() => {
-    if (verificationStatus.contact) {
-      setVerificationStatus((prev) => ({ ...prev, contact: true }));
-    }
-  }, [contact]);
+  // Removed redundant effects for verification flags
 
   const handleContactVerify = () => {
     if (verificationStatus.contact) {
@@ -94,12 +81,14 @@ const EditProfileScreen = () => {
       return;
     }
 
-    if (!contact.trim()) {
+    const phone = profileData.phoneNumber || '';
+
+    if (!phone.trim()) {
       Alert.alert("Contact Required", "Please enter your contact number first.");
       return;
     }
 
-    if (contact.length < 10) {
+    if (phone.length < 10) {
       Alert.alert("Invalid Contact", "Please enter a valid contact number.");
       return;
     }
@@ -128,7 +117,7 @@ const EditProfileScreen = () => {
             (response) => {
               if (response.didCancel || response.errorMessage) return;
               if (response.assets && response.assets[0]) {
-                handleInputChange("profileImage", response.assets[0].uri);
+                handleInputChange("profileImage", response.assets[0].uri || "");
               }
             }
           );
@@ -142,7 +131,7 @@ const EditProfileScreen = () => {
             (response) => {
               if (response.didCancel || response.errorMessage) return;
               if (response.assets && response.assets[0]) {
-                handleInputChange("profileImage", response.assets[0].uri);
+                handleInputChange("profileImage", response.assets[0].uri || "");
               }
             }
           );
@@ -168,20 +157,17 @@ const EditProfileScreen = () => {
     }
     setIsLoading(true);
     try {
-      const userStr = await AsyncStorage.getItem('user');
-      if (!userStr) return;
-      const user = JSON.parse(userStr);
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
-      // Only send allowed fields
+      // Send fields expected by backend
       const payload = {
         name: profileData.fullName,
         phone: profileData.phoneNumber,
-        image: profileData.profileImage,
+        profileImageUrl: profileData.profileImage || null,
       };
 
-      const res = await fetch(`http://10.0.2.2:3000/profiles/${user.id}`, {
+      const res = await fetch(`http://10.0.2.2:3000/auth/profile`, {
         method: "PUT",
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -200,41 +186,24 @@ const EditProfileScreen = () => {
     }
   };
 
-  const handleCancel = () => {
-    if (hasChanges) {
-      Alert.alert("Discard Changes", "You have unsaved changes. Are you sure you want to go back?", [
-        { text: "Stay", style: "cancel" },
-        {
-          text: "Discard",
-          style: "destructive",
-          onPress: () => console.log("Navigate back without saving"),
-        },
-      ]);
-    } else {
-      console.log("Navigate back");
-    }
-  };
+  // removed unused handleCancel
 
-  const renderProfileImage = () => {
-    if (profileData.profileImage) {
-      return <Image source={{ uri: profileData.profileImage }} style={styles.profileImage} />;
-    } else {
-      return (
-        <View style={styles.profileImagePlaceholder}>
-          <Icon name="person" size={50} color={Colors.primary} />
-        </View>
-      );
-    }
+  const buildImageUrl = (imagePath?: string | null): string | undefined => {
+    if (!imagePath) return undefined;
+    if (imagePath.startsWith('data:')) return imagePath;
+    if (imagePath.startsWith('http')) return imagePath;
+    const base = 'http://10.0.2.2:3000';
+    return `${base}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header icon="back" name="Edit Profile" onIconPress={() => navigation.goBack()} />
+      <Header icon="back" />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.imageSection}>
           <TouchableOpacity style={styles.imageContainer} onPress={handleChangeProfilePicture} activeOpacity={0.8}>
             {profileData.profileImage ? (
-              <Image source={{ uri: profileData.profileImage }} style={styles.profileImage} />
+              <Image source={{ uri: buildImageUrl(profileData.profileImage) }} style={styles.profileImage} onError={() => handleInputChange("profileImage", "")} />
             ) : (
               <View style={styles.profileImagePlaceholder}>
                 <Icon name="person" size={50} color={Colors.primary} />
@@ -257,13 +226,6 @@ const EditProfileScreen = () => {
             iconName="person-outline"
             value={profileData.fullName}
             onChangeText={(text) => handleInputChange("fullName", text)}
-          />
-          <FormInput
-            label="Email"
-            placeholder="Email"
-            iconName="mail-outline"
-            value={profileData.email}
-            editable={false} // Make email read-only
           />
           <FormInput
             label="Contact Number"

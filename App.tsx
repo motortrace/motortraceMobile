@@ -17,20 +17,21 @@ import RecoverPassword from './src/screens/RecoverPassword';
 
 import AllPackages from  './src/screens/User/AllPackages'
 import AllServices from  './src/screens/User/AllServices'
-import AllReviews from  './src/screens/User/AllReviews'
-import Locations from './src/screens/User/Locations'
+import AllReviews from  './src/screens/Vresion2/AllReviews'
+import Locations from './src/screens/Vresion2/Locations'
 import RecommendedServices from './src/screens/User/RecommendedServices'
-import GarageHistory from './src/screens/User/GarageHistory'
-import GarageExplore from './src/screens/User/GarageExplore'
-import GarageFavourites from './src/screens/User/GarageFavourites'
-import GarageInfo from './src/screens/User/GarageInfo'
-import GaragePackage from './src/screens/User/GaragePackages'
-import GarageReview from './src/screens/User/GarageReview'
-import GarageServices from './src/screens/User/GarageServices'
-import GarageServiceDetails from './src/screens/User/GarageServiceDetails'
+import GarageHistory from './src/screens/Vresion2/GarageHistory'
+import GarageExplore from './src/screens/Vresion2/GarageExplore'
+import GarageFavourites from './src/screens/Vresion2/GarageFavourites'
+import GarageInfo from './src/screens/Vresion2/GarageInfo'
+import GaragePackage from './src/screens/Vresion2/GaragePackages'
+import GarageReview from './src/screens/Vresion2/GarageReview'
+import GarageServices from './src/screens/Vresion2/GarageServices'
+import GarageServiceDetails from './src/screens/Vresion2/GarageServiceDetails'
 import DetailedBill from './src/screens/User/DetailedBill';
 import PaidServiceBillSummary from './src/screens/User/PaidServiceBillSummary';
-import Appointment from './src/screens/User/Appointment'
+import ServiceDetails from './src/screens/User/ServiceDetails'
+import PackageDetails from './src/screens/User/PackageDetails'
 
 // import Forum from './src/screens/User/Forum'
 // import SearchPosts from './src/screens/User/SearchPost';
@@ -49,7 +50,7 @@ import Help from './src/screens/Help'
 import PrivacyPolicy from './src/screens/PrivacyPolicy'
 import DeleteAccount from './src/screens/DeleteAccount';
 import LoginActivity from './src/screens/LoginActivity';
-import ActiveSession from './src/screens/User/ActiveSession';
+import ActiveSession from './src/screens/Vresion2/ActiveSession';
 import SupportChat from './src/screens/User/SupportChat';
 import faq from './src/screens/faq'
 import FaqAnswer from './src/screens/FaqAnswer';
@@ -133,6 +134,8 @@ export type RootStackParamList = {
   DetailedBill: undefined;
   PaidServiceBillSummary: undefined
   Appointment: undefined;
+  ServiceDetails: { serviceId: string };
+  PackageDetails: { packageId: string };
 
   // Forum: undefined;
   // SearchPosts: undefined;
@@ -212,7 +215,7 @@ function App(): React.ReactElement {
     <UserProvider>
       <NavigationContainer>
         <Stack.Navigator 
-          initialRouteName="SignUp"
+          initialRouteName="Splash"
           screenOptions={{ 
             headerShown: false,
             gestureEnabled: true,
@@ -251,7 +254,8 @@ function App(): React.ReactElement {
           <Stack.Screen name="GarageServiceDetails" component={GarageServiceDetails} />
           <Stack.Screen name="DetailedBill" component={DetailedBill} />
           <Stack.Screen name="PaidServiceBillSummary" component={PaidServiceBillSummary} />
-          <Stack.Screen name="Appointment" component={Appointment} />
+          <Stack.Screen name="ServiceDetails" component={ServiceDetails} />
+          <Stack.Screen name="PackageDetails" component={PackageDetails} />
 
           {/* Forum */}
           {/* <Stack.Screen name="Forum" component={Forum} />

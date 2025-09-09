@@ -43,7 +43,7 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBack }) =
           return;
         }
         await AsyncStorage.setItem('resetEmail', email);
-        navigation.navigate('Verification');
+        navigation.navigate('RecoverPassword');
       } catch (err: any) {
         alert(err.message || 'Failed to send OTP');
       }

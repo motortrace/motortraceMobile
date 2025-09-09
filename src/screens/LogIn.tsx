@@ -5,8 +5,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,
   Image,
+  ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -18,6 +19,7 @@ import FormInput from '../components/FormInput';
 import Link from '../components/Link'
 import SocialLoginButtons from '../components/SocialLoginButtons';
 import FormBox from '../components/FormBox';
+import CustomAlert from '../components/Alert';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../App';
@@ -35,22 +37,47 @@ interface LoginScreenProps {
 
 const LoginScreen: React.FC<LoginScreenProps> = ({
   onLogin,
-  onGoogleLogin,
   onAppleLogin,
   onSignUp,
   onForgotPassword,
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { setUser } = useUser();
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [errors, setErrors] = useState({
     email: '',
     password: '',
   });
+
+  // Custom Alert states
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    type: 'info' as 'success' | 'error' | 'warning' | 'info',
+    title: '',
+    message: '',
+    buttonType: 'single' as 'none' | 'single' | 'double' | 'triple',
+    confirmText: 'OK',
+    onConfirm: () => {},
+  });
+
+  // Keyboard visibility listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      keyboardDidHideListener?.remove();
+      keyboardDidShowListener?.remove();
+    };
+  }, []);
 
   // Email validation
   const validateEmail = (email: string): boolean => {
@@ -93,6 +120,21 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     });
   }, []);
 
+  // Show custom alert helper
+  const showAlert = (config: typeof alertConfig) => {
+    setAlertConfig(config);
+    setAlertVisible(true);
+  };
+
+  // Hide custom alert
+  const hideAlert = () => {
+    setAlertVisible(false);
+    // Execute the onConfirm action after hiding
+    setTimeout(() => {
+      alertConfig.onConfirm();
+    }, 100);
+  };
+
   const handleLogin = async () => {
     if (!validateInputs()) {
       return;
@@ -125,6 +167,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         await AsyncStorage.setItem('token', data.data.access_token);
         console.log('Token stored successfully');
       }
+
+      console.log('User data received:', data.data.user);
       
       // Set user in context
       if (data.data?.user) {
@@ -155,7 +199,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       });
       
       if (!error.message.includes('email') && !error.message.includes('password')) {
-        Alert.alert('Login Failed', error.message || 'Please check your credentials and try again.');
+        showAlert({
+          type: 'error',
+          title: 'Login Failed',
+          message: error.message || 'Please check your credentials and try again.',
+          buttonType: 'single',
+          confirmText: 'OK',
+          onConfirm: () => {}
+        });
       }
     } finally {
       setIsLoading(false);
@@ -208,6 +259,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         setUser(data.data.user);
       }
 
+      console.log('User data received:', data.data.user);
+
       // Handle navigation based on user role and registration status
       if (data.data?.user?.role === 'technician') {
         navigation.navigate('TechnicianHome');
@@ -222,14 +275,26 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       console.error('Error type:', error.name);
       console.error('Error message:', error.message);
       
+      let alertTitle = 'Google Login Failed';
+      let alertMessage = error.message || 'Please try again.';
+      
       // More specific error handling
       if (error.message.includes('Network request failed')) {
-        Alert.alert('Network Error', 'Cannot connect to server. Please check your internet connection and try again.');
+        alertTitle = 'Network Error';
+        alertMessage = 'Cannot connect to server. Please check your internet connection and try again.';
       } else if (error.message.includes('fetch')) {
-        Alert.alert('Server Error', 'Unable to reach the authentication server. Please try again later.');
-      } else {
-        Alert.alert('Google Login Failed', error.message || 'Please try again.');
+        alertTitle = 'Server Error';
+        alertMessage = 'Unable to reach the authentication server. Please try again later.';
       }
+      
+      showAlert({
+        type: 'error',
+        title: alertTitle,
+        message: alertMessage,
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
     } finally {
       setIsLoading(false);
     }
@@ -242,7 +307,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         await onAppleLogin();
       }
     } catch (error) {
-      Alert.alert('Apple Login Failed', 'Please try again.');
+      showAlert({
+        type: 'error',
+        title: 'Apple Login Failed',
+        message: 'Please try again.',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
     } finally {
       setIsLoading(false);
     }
@@ -264,103 +336,149 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     }
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={styles.loadingText}>Signing In...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Car Icon */}
-        <View style={styles.iconContainer}>
-          <Image source={require('../assets/images/Logo_white_no_bg.png')} style={styles.Logo} />
-        </View>
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView 
+          contentContainerStyle={[
+            styles.scrollContent,
+            isKeyboardVisible ? styles.scrollContentKeyboard : undefined
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[
+            styles.content,
+            isKeyboardVisible ? styles.contentKeyboard : undefined
+          ]}>
+            {/* Logo - Hide when keyboard is visible */}
+            {!isKeyboardVisible && (
+              <View style={styles.iconContainer}>
+                <Image source={require('../assets/images/Logo_white_no_bg.png')} style={styles.Logo} />
+              </View>
+            )}
 
-        {/* Welcome Text */}
-        <Text style={styles.welcomeTitle}>Welcome Back</Text>
-        <Text style={styles.welcomeSubtitle}>Sign in to your car account</Text>
+            {/* Welcome Text - Hide when keyboard is visible */}
+            {!isKeyboardVisible && (
+              <>
+                <Text style={styles.welcomeTitle}>Welcome Back</Text>
+                <Text style={styles.welcomeSubtitle}>Sign in to your car account</Text>
+              </>
+            )}
 
-        <FormBox>
-          {/* Username Input */}
-          <FormInput
-            label="Email"
-            placeholder="Enter your email"
-            iconName="mail-outline"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              if (errors.email) {
-                setErrors(prev => ({ ...prev, email: '' }));
-                }
-              }}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            error={errors.email}
-            autoComplete="email"
-          />
+            <FormBox style={isKeyboardVisible ? styles.formBoxKeyboard : undefined}>
+              {/* Email Input */}
+              <FormInput
+                label="Email"
+                placeholder="Enter your email"
+                iconName="mail-outline"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) {
+                    setErrors(prev => ({ ...prev, email: '' }));
+                    }
+                  }}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                error={errors.email}
+                autoComplete="email"
+              />
 
-          {/* Password Input */}
-          <FormInput
-            label="Password"
-            placeholder="Enter your password"
-            iconName="lock-closed-outline"
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              if (errors.password) {
-                setErrors(prev => ({ ...prev, password: '' }));
-              }
-            }}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            error={errors.password}
-          />
+              {/* Password Input */}
+              <FormInput
+                label="Password"
+                placeholder="Enter your password"
+                iconName="lock-closed-outline"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password) {
+                    setErrors(prev => ({ ...prev, password: '' }));
+                  }
+                }}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                error={errors.password}
+              />
 
-          {/* Remember Me & Forgot Password */}
-          <View style={styles.optionsRow}>
-            <View style={{flexDirection: 'row'}}>
-              <TouchableOpacity
-                style={styles.rememberMeContainer}
-                onPress={() => setRememberMe(!rememberMe)}
-              >
-                <View
-                  style={[styles.checkbox, rememberMe && styles.checkboxChecked]}
-                >
-                  {rememberMe && <Icon name="checkmark" size={12} color="white" />}
+              {/* Remember Me & Forgot Password */}
+              <View style={styles.optionsRow}>
+                <View style={{flexDirection: 'row'}}>
+                  <TouchableOpacity
+                    style={styles.rememberMeContainer}
+                    onPress={() => setRememberMe(!rememberMe)}
+                  >
+                    <View
+                      style={[styles.checkbox, rememberMe && styles.checkboxChecked]}
+                    >
+                      {rememberMe && <Icon name="checkmark" size={12} color="white" />}
+                    </View>
+                  </TouchableOpacity>
+                  <Text style={styles.rememberMeText}>Remember me</Text>
                 </View>
+
+                <TouchableOpacity onPress={handleForgotPassword}>
+                  <Link link="Forgot password?" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Sign In Button */}
+              <AnimatedButton title="Sign in" onPress={handleLogin} style={styles.signInButton} />
+
+              {/* Divider */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>Or continue with</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Social Login Buttons */}
+              <SocialLoginButtons
+                onGoogleLogin={handleGoogleLogin}
+                onAppleLogin={handleAppleLogin}
+              />
+
+            </FormBox>
+
+            {/* Sign Up Link */}
+            <View style={styles.signUpContainer}>
+              <Text style={styles.signUpText}>Don't have an account? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+                <Link link="Sign up" style={styles.signUpLink} />
               </TouchableOpacity>
-              <Text style={styles.rememberMeText}>Remember me</Text>
             </View>
-
-            <TouchableOpacity onPress={onForgotPassword}>
-              <Link link="Forgot password?" />
-            </TouchableOpacity>
           </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-          {/* Sign In Button */}
-          <AnimatedButton title="Sign in" onPress={handleLogin} style={{ marginBottom: 24 }} />
-
-          {/* Divider */}
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Or continue with</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Social Login Buttons */}
-          <SocialLoginButtons
-            onGoogleLogin={handleGoogleLogin}
-            onAppleLogin={handleAppleLogin}
-          />
-
-        </FormBox>
-
-        {/* Sign Up Link */}
-        <View style={styles.signUpContainer}>
-          <Text style={styles.signUpText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-            <Link link="Sign up" style={{ marginTop: 25 }} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={alertVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttonType={alertConfig.buttonType}
+        confirmText={alertConfig.confirmText}
+        onClose={hideAlert}
+      />
     </SafeAreaView>
   );
 };
@@ -370,11 +488,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.primarybg,
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+  },
+  scrollContentKeyboard: {
+    paddingTop: 35,
+  },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    justifyContent: "center",
+    paddingTop: 100,
+    justifyContent: 'center',
+  },
+  contentKeyboard: {
+    paddingTop: 20,
+    justifyContent: 'flex-start',
   },
   iconContainer: {
     width: 64,
@@ -384,7 +512,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   Logo: {
     width: 70,
@@ -401,7 +529,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.neutral500,
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 20,
+  },
+  formBoxKeyboard: {
+    marginTop: 0,
   },
   optionsRow: {
     flexDirection: 'row',
@@ -435,7 +566,7 @@ const styles = StyleSheet.create({
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   dividerLine: {
     flex: 1,
@@ -452,12 +583,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom: 20,
   },
   signUpText: {
     fontSize: 16,
     color: Colors.neutral500,
-    marginTop: 25
+    marginTop: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.primarybg,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: Colors.neutral500,
+    textAlign: 'center',
+  },
+  signInButton: {
+    marginBottom: 24,
+  },
+  signUpLink: {
+    marginTop: 10,
   },
 });
 
-export default LoginScreen; 
+export default LoginScreen;

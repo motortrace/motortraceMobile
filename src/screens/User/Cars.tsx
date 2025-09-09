@@ -109,21 +109,22 @@ const Cars = () => {
         if (!token) return;
         console.log("Toke is", token)
         console.log("user is:", user)
-        const res = await fetch(`http://10.0.2.2:3000/vehicles/${user.id}/vehicles`, {
+        const res = await fetch(`http://10.0.2.2:3000/vehicles/customer/${user.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
         const data = await res.json();
-        if (res.ok && data.vehicles) {
+        const vehicles = data.vehicles || data.data || [];
+        if (res.ok && vehicles) {
           // Merge backend and local data by id, always use local for image and extra fields
-          const merged = data.vehicles.map((car: any) => {
+          const merged = vehicles.map((car: any) => {
             const local = localCarDetails.find(lc => lc.id === car.id);
             return {
               id: car.id,
-              vehicleName: car.vehicleName,
-              name: car.vehicleName, // for CarCard
+              vehicleName: car.vehicleName || car.make || car.name,
+              name: car.vehicleName || car.make || car.name, // for CarCard
               model: car.model,
               year: car.year,
               image: local?.image || '',

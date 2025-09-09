@@ -19,26 +19,159 @@ import type { RootStackParamList } from '../../../App';
 import ProfileField from '../../components/ProfileField';
 import { useUser } from '../../store/UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { launchImageLibrary, launchCamera, ImagePickerResponse, MediaType, PhotoQuality } from 'react-native-image-picker';
+import { imageUploadService } from '../../services/imageUpload.service';
+import CustomAlert from '../../components/Alert';
+import LoadingComponent from '../../components/Loading';
 
 const UserProfileScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const { setUser } = useUser();
   const [profileData, setProfileData] = useState({
     email: '',
     fullName: '',
     phoneNumber: '',
     profileImage: '', // Empty string means no image
-    joinDate: ''
+    joinDate: '',
+    role: '',
+    emailConfirmed: false,
+    createdAt: '',
+    lastSignIn: ''
   });
+
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    type: 'info' as 'success' | 'error' | 'warning' | 'info',
+    title: '',
+    message: '',
+    buttonType: 'single' as 'none' | 'single' | 'double' | 'triple',
+    confirmText: 'OK',
+    onConfirm: () => {},
+  });
+
+  const showAlert = (config: typeof alertConfig) => {
+    setAlertConfig(config);
+    setAlertVisible(true);
+  };
+
+  // Hide custom alert
+  const hideAlert = () => {
+    setAlertVisible(false);
+    // Execute the onConfirm action after hiding
+    setTimeout(() => {
+      alertConfig.onConfirm();
+    }, 100);
+  };
+
+  const pickImageFromGallery = () => {
+    console.log('📱 Opening gallery...');
+    const options = {
+      mediaType: 'photo' as MediaType,
+      includeBase64: false,
+      maxHeight: 2000,
+      maxWidth: 2000,
+      quality: 1 as PhotoQuality,
+    }
+
+    launchImageLibrary(options, (response: ImagePickerResponse) => {
+      console.log('📱 Gallery response:', response);
+      if (response.didCancel || response.errorMessage) {
+        console.log('📱 Gallery cancelled or error:', response.errorMessage);
+        return
+      }
+
+      if (response.assets && response.assets[0]) {
+        console.log('📱 Image selected from gallery:', response.assets[0].uri);
+        uploadProfileImage(response.assets[0].uri || '');
+      }
+    })
+  }
+
+  const takePhotoWithCamera = () => {
+    console.log('📷 Opening camera...');
+    const options = {
+      mediaType: 'photo' as MediaType,
+      includeBase64: false,
+      maxHeight: 2000,
+      maxWidth: 2000,
+      quality: 1 as PhotoQuality,
+      saveToPhotos: true,
+    }
+
+    launchCamera(options, (response: ImagePickerResponse) => {
+      console.log('📷 Camera response:', response);
+      if (response.didCancel || response.errorMessage) {
+        console.log('📷 Camera cancelled or error:', response.errorMessage);
+        return
+      }
+
+      if (response.assets && response.assets[0]) {
+        console.log('📷 Photo taken:', response.assets[0].uri);
+        uploadProfileImage(response.assets[0].uri || '');
+      }
+    })
+  }
+
+  const uploadProfileImage = async (imageUri: string) => {
+    try {
+      setIsLoading(true);
+      console.log('📤 Uploading profile image...');
+      
+      const uploadResult = await imageUploadService.uploadProfileImage(imageUri);
+      
+      if (!uploadResult.success) {
+        showAlert({
+          type: 'error',
+          title: 'Upload Failed',
+          message: uploadResult.error || 'Failed to upload profile image. Please try again.',
+          buttonType: 'single',
+          confirmText: 'OK',
+          onConfirm: () => {}
+        });
+        return;
+      }
+      
+      console.log('✅ Profile image uploaded successfully:', uploadResult.imageUrl);
+      
+      // Update the profile data with new image URL
+      setProfileData(prev => ({
+        ...prev,
+        profileImage: uploadResult.imageUrl || ''
+      }));
+      
+      showAlert({
+        type: 'success',
+        title: 'Success',
+        message: 'Profile picture updated successfully!',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Profile image upload error:', error);
+      showAlert({
+        type: 'error',
+        title: 'Upload Error',
+        message: error.message || 'Failed to upload profile image. Please try again.',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleChangeProfilePicture = () => {
     Alert.alert(
       'Change Profile Picture',
-      'Choose an option',
+      'Choose how you want to update your profile picture',
       [
-        { text: 'Camera', onPress: () => console.log('Camera selected') },
-        { text: 'Gallery', onPress: () => console.log('Gallery selected') },
+        { text: 'Camera', onPress: takePhotoWithCamera },
+        { text: 'Gallery', onPress: pickImageFromGallery },
         { text: 'Cancel', style: 'cancel' },
       ]
     );
@@ -80,8 +213,14 @@ const UserProfileScreen = () => {
               // Navigate to login screen
               navigation.navigate('LogIn');
               
-              // Optional: Show success message
-              Alert.alert('Signed Out', 'You have been successfully signed out.');
+              showAlert({
+                type: 'success',
+                title: 'Signed Out',
+                message: 'You have been successfully signed out.',
+                buttonType: 'single',
+                confirmText: 'OK',
+                onConfirm: () => {}
+              });
               
             } catch (error: any) {
               console.error('Sign out error:', error);
@@ -94,7 +233,14 @@ const UserProfileScreen = () => {
                 navigation.navigate('LogIn');
               } catch (localError) {
                 console.error('Error clearing local data:', localError);
-                Alert.alert('Sign Out Error', 'There was an issue signing out. Please try again.');
+                showAlert({
+                  type: 'error',
+                  title: 'Sign Out Error',
+                  message: 'There was an issue signing out. Please try again.',
+                  buttonType: 'single',
+                  confirmText: 'OK',
+                  onConfirm: () => {}
+                });
               }
             } finally {
               setIsLoading(false);
@@ -127,49 +273,190 @@ const UserProfileScreen = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        // Get user from AsyncStorage or context
-        const userStr = await AsyncStorage.getItem('user');
-        if (!userStr) return;
-        const user = JSON.parse(userStr);
-        const token = await AsyncStorage.getItem('token');
-        if (!token) return;
-  
-        const res = await fetch(`http://10.0.2.2:3000/profiles/${user.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        const data = await res.json();
-  
-        if (data.role === 'car_owner' && data.profile) {
-          setProfileData({
-            email: data.email,
-            fullName: data.profile.name,
-            phoneNumber: data.phone,
-            profileImage: data.profile.imageBase64, // If you store as base64, use: `data:image/png;base64,${data.profile.imageBase64}`
-            joinDate: data.profile.createdAt
-              ? `Member since ${new Date(data.profile.createdAt).toLocaleDateString()}`
-              : '',
-          });
-        }
-        // You can add logic for other roles here if needed
-      } catch (err) {
-        console.error('Failed to fetch profile:', err);
+  // Sequential API fetching - First auth/me, then auth/header
+  const fetchAuthMeData = async (token: string) => {
+    try {
+      console.log('📡 Step 1: Calling auth/me endpoint...');
+      const response = await fetch('http://10.0.2.2:3000/auth/me', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-Client-Type': 'mobile',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Auth/me failed with status: ${response.status}`);
       }
-    };
-  
+
+      const data = await response.json();
+      console.log('✅ Auth/me data received:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Failed to fetch auth/me data:', error);
+      throw error;
+    }
+  };
+
+  const fetchAuthHeaderData = async (token: string) => {
+    try {
+      console.log('📡 Step 2: Calling auth/header endpoint...');
+      const response = await fetch('http://10.0.2.2:3000/auth/header', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-Client-Type': 'mobile',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Auth/header failed with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Auth/header data received:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Failed to fetch auth/header data:', error);
+      throw error;
+    }
+  };
+
+  const refreshProfile = async () => {
+    setIsLoadingProfile(true);
+    await fetchProfile();
+  };
+
+  const fetchProfile = async () => {
+    try {
+      console.log('🔍 Starting sequential profile data fetch...');
+      
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        console.log('❌ No token found');
+        showAlert({
+          type: 'warning',
+          title: 'Session Expired',
+          message: 'Please log in again to continue.',
+          buttonType: 'single',
+          confirmText: 'Login',
+          onConfirm: () => navigation.navigate('LogIn')
+        });
+        return;
+      }
+
+      // Initialize data containers
+      let authData = null;
+      let headerData = null;
+
+      // Step 1: Fetch auth/me data first
+      try {
+        authData = await fetchAuthMeData(token);
+      } catch (error) {
+        console.warn('⚠️ Auth/me endpoint failed, continuing with header data...');
+      }
+
+      // Step 2: Fetch auth/header data second
+      try {
+        headerData = await fetchAuthHeaderData(token);
+      } catch (error) {
+        console.warn('⚠️ Auth/header endpoint failed...');
+      }
+
+      // Check if we got any data at all
+      if (!authData && !headerData) {
+        throw new Error('Both API endpoints failed to return data');
+      }
+
+      // Combine and prioritize data from both endpoints
+      const combinedData = {
+        // Primary data from auth/me endpoint
+        email: authData?.user?.email || authData?.email || '',
+        role: authData?.user?.role || authData?.role || '',
+        emailConfirmed: authData?.user?.emailConfirmed ?? authData?.emailConfirmed ?? false,
+        createdAt: authData?.user?.createdAt || authData?.createdAt || '',
+        lastSignIn: authData?.user?.lastSignIn || authData?.lastSignIn || '',
+        phoneNumber: authData?.user?.phone || authData?.user?.phoneNumber || authData?.phone || '0779991124',
+        
+        // Display data from auth/header endpoint (fallback to auth/me if not available)
+        fullName: headerData?.user?.fullname || 
+                  headerData?.user?.fullName || 
+                  headerData?.fullname ||
+                  authData?.user?.fullName || 
+                  authData?.user?.name || 
+                  authData?.fullName ||
+                  'User',
+        
+        profileImage: headerData?.user?.profile_image || 
+                     headerData?.user?.profileImage || 
+                     headerData?.profile_image ||
+                     authData?.user?.profileImage || 
+                     authData?.profileImage ||
+                     '',
+        
+        // Additional flags
+        isRegistrationComplete: headerData?.user?.isRegistrationComplete ?? 
+                               authData?.user?.isRegistrationComplete ?? 
+                               true,
+        
+        // Formatted join date
+        joinDate: authData?.user?.createdAt || authData?.createdAt
+          ? `Member since ${new Date(authData.user?.createdAt || authData.createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}`
+          : '',
+      };
+
+      console.log('📥 Combined profile data:', combinedData);
+
+      // Validate that we have essential data
+      if (!combinedData.email && !combinedData.fullName) {
+        throw new Error('Unable to retrieve essential profile data from either endpoint');
+      }
+
+      setProfileData(combinedData);
+      console.log('✅ Profile data updated successfully');
+
+    } catch (error) {
+      console.error('❌ Failed to fetch profile:', error);
+      showAlert({
+        type: 'error',
+        title: 'Profile Load Error',
+        message: 'Unable to load your profile data. Please check your connection and try again.',
+        buttonType: 'double',
+        confirmText: 'Retry',
+        onConfirm: () => refreshProfile()
+      });
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProfile();
   }, []);
+
+  // Show loading component while profile is loading
+  if (isLoadingProfile) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Header 
+          icon="back"
+          onIconPress={() => navigation.navigate('Home')}
+        />
+        <LoadingComponent message="Loading profile..." />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <Header 
         icon="back"
-        name="Profile"
         onIconPress={() => navigation.navigate('Home')}
       />
 
@@ -187,7 +474,16 @@ const UserProfileScreen = () => {
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{profileData.fullName}</Text>
             <Text style={styles.userEmail}>{profileData.email}</Text>
+            {profileData.role && (
+              <Text style={styles.userRole}>{profileData.role.toUpperCase()}</Text>
+            )}
             <Text style={styles.joinDate}>{profileData.joinDate}</Text>
+            {profileData.emailConfirmed && (
+              <View style={styles.emailVerifiedContainer}>
+                <Icon name="checkmark-circle" size={16} color={Colors.success} />
+                <Text style={styles.emailVerifiedText}>Email Verified</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -224,7 +520,6 @@ const UserProfileScreen = () => {
           >
             <Text style={styles.editButtonText}>Edit Profile</Text>
           </TouchableOpacity>
-
         </FormBox>
 
         {/* Account Settings Card */}
@@ -282,6 +577,9 @@ const UserProfileScreen = () => {
             </View>
             <Icon name="chevron-forward" size={20} color={Colors.neutral400} />
           </TouchableOpacity>
+
+          <View style={styles.divider} />
+
           <TouchableOpacity 
             style={styles.actionRow}
             onPress={() => navigation.navigate('PrivacyPolicy')}
@@ -301,20 +599,39 @@ const UserProfileScreen = () => {
 
         {/* Logout Section */}
         <FormBox style={styles.logoutCard}>
-        <TouchableOpacity 
-          style={styles.logoutButton}
-          onPress={handleSignOut}
-          disabled={isLoading}
-        >
-          <Icon name="log-out-outline" size={30} color={Colors.danger} />
-          <Text style={styles.logoutText}>
-            {isLoading ? 'Signing Out...' : 'Sign Out'}
-          </Text>
-        </TouchableOpacity>
-      </FormBox>
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={handleSignOut}
+            disabled={isLoading}
+          >
+            <Icon name="log-out-outline" size={30} color={Colors.danger} />
+            <Text style={styles.logoutText}>
+              {isLoading ? 'Signing Out...' : 'Sign Out'}
+            </Text>
+          </TouchableOpacity>
+        </FormBox>
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      {/* Custom Alert Component */}
+      <CustomAlert
+        visible={alertVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttonType={alertConfig.buttonType}
+        confirmText={alertConfig.confirmText}
+        onConfirm={hideAlert}
+        onCancel={() => setAlertVisible(false)}
+      />
+
+      {/* Loading overlay for image upload */}
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <LoadingComponent message="Uploading image..." />
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -361,27 +678,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.neutral0,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  changeImageButton: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    backgroundColor: Colors.primary,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: Colors.neutral0,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
   },
   userInfo: {
     alignItems: 'center',
@@ -463,9 +759,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14, // Increased padding for better touch area
-    paddingHorizontal: 24, // Added horizontal padding
-    backgroundColor: Colors.neutral0, // White background for contrast
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    backgroundColor: Colors.neutral0,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -473,17 +769,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     marginTop: 8,
-  },
-  logoutIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 20,
-    backgroundColor: `${Colors.danger}15`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16, // More space between icon and text
-    borderWidth: 1,
-    borderColor: Colors.danger,
   },
   logoutText: {
     fontSize: 20,
@@ -503,11 +788,39 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginBottom: -10,
   },
-
   editButtonText: {
     color: Colors.neutral0,
     fontSize: 16,
     fontWeight: '600',
+  },
+  userRole: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  emailVerifiedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  emailVerifiedText: {
+    fontSize: 14,
+    color: Colors.success,
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
