@@ -31,7 +31,7 @@ export default function SplashScreen() {
     }).start();
 
     const timer = setTimeout(() => {
-      navigation.navigate('SignUp');
+      navigation.navigate('TechnicianHome');
     }, 3000);
 
     return () => {
@@ -54,7 +54,7 @@ export default function SplashScreen() {
       useNativeDriver: true,
     }).start();
 
-    navigation.navigate('SignUp');
+    navigation.navigate('Home');
   };
 
   return (
