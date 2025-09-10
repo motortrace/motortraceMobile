@@ -8,6 +8,9 @@ const Colors = {
   // primarybg: '#FFFFFF',
   primarybg: '#E3F2FF',
 
+  techPrimary: '#284480ff',
+  techPrimaryLight: '#93a2c4ff',
+
   // Secondary Palette - Updated to Teal
   secondary: '#0d9488',
   secondaryDark: '#0f766e',
