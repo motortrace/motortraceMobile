@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import CategoryBadge from '../../components/CategoryBadge';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const repairs = [
   {
@@ -68,15 +69,164 @@ const repairs = [
   },
 ];
 
+interface Repair {
+  id: string | number;
+  category: string;
+  categoryColor: string;
+  categoryBg: string;
+  title: string;
+  description: string;
+  price: number;
+  estimatedTime: string;
+}
+
 const ReviewRepairsScreen = () => {
-  const [selected, setSelected] = useState<{ [id: number]: boolean }>({
-    1: true,
-    3: true,
-  });
+  const [repairs, setRepairs] = useState<Repair[]>([]);
+  const [selected, setSelected] = useState<{ [key: string]: boolean }>({});
+  const [loading, setLoading] = useState(true);
+  const [workOrderId, setWorkOrderId] = useState<string>('');
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  const toggleRepair = (id: number) => {
+  useEffect(() => {
+    fetchRepairsData();
+  }, []);
+
+  const fetchRepairsData = async () => {
+    try {
+      const userStr = await AsyncStorage.getItem('user');
+      const token = await AsyncStorage.getItem('token');
+
+      if (!userStr || !token) {
+        Alert.alert('Error', 'User not authenticated');
+        setLoading(false);
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+
+      // Fetch current work order
+      const workOrdersRes = await fetch(`http://10.0.2.2:3000/work-orders?customerId=${user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (workOrdersRes.ok) {
+        const workOrdersData = await workOrdersRes.json();
+        const currentWorkOrder = workOrdersData.data?.find((wo: any) =>
+          wo.status === 'IN_PROGRESS' && wo.workflowStep === 'ESTIMATE'
+        );
+
+        if (currentWorkOrder) {
+          setWorkOrderId(currentWorkOrder.id);
+
+          // Fetch existing estimate if any
+          const estimatesRes = await fetch(`http://10.0.2.2:3000/estimates?workOrderId=${currentWorkOrder.id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (estimatesRes.ok) {
+            const estimatesData = await estimatesRes.json();
+            const estimate = estimatesData.data?.[0]; // Get first estimate
+
+            if (estimate) {
+              // Convert estimate items to repairs
+              const repairItems: Repair[] = [];
+              estimate.estimateLaborItems?.forEach((labor: any) => {
+                repairItems.push({
+                  id: labor.id,
+                  category: 'Recommended',
+                  categoryColor: Colors.warning,
+                  categoryBg: Colors.warningLight,
+                  title: labor.description,
+                  description: `Labor: ${labor.hours} hours at $${labor.rate}/hr`,
+                  price: parseFloat(labor.subtotal),
+                  estimatedTime: `${labor.hours} hours`,
+                });
+              });
+
+              estimate.estimatePartItems?.forEach((part: any) => {
+                repairItems.push({
+                  id: part.id,
+                  category: 'Critical',
+                  categoryColor: Colors.danger,
+                  categoryBg: Colors.dangerLight,
+                  title: part.part.name,
+                  description: `Part: ${part.quantity}x ${part.part.name}`,
+                  price: parseFloat(part.subtotal),
+                  estimatedTime: 'TBD',
+                });
+              });
+
+              setRepairs(repairItems);
+
+              // Set initial selections based on customer approval
+              const initialSelected: { [key: string]: boolean } = {};
+              estimate.estimateLaborItems?.forEach((labor: any) => {
+                initialSelected[labor.id] = labor.customerApproved;
+              });
+              estimate.estimatePartItems?.forEach((part: any) => {
+                initialSelected[part.id] = part.customerApproved;
+              });
+              setSelected(initialSelected);
+            }
+          }
+        }
+      }
+
+      // Fallback to mock data if no real data
+      if (repairs.length === 0) {
+        setRepairs(getMockRepairs());
+        setSelected({ 1: true, 3: true });
+      }
+    } catch (error) {
+      console.error('Error fetching repairs data:', error);
+      setRepairs(getMockRepairs());
+      setSelected({ 1: true, 3: true });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMockRepairs = (): Repair[] => [
+    {
+      id: 1,
+      category: 'Critical',
+      categoryColor: Colors.danger,
+      categoryBg: Colors.dangerLight,
+      title: 'Brake Pads Replacement',
+      description: 'Brake pads are severely worn and require immediate replacement for safety.',
+      price: 150,
+      estimatedTime: '2 hours',
+    },
+    {
+      id: 2,
+      category: 'Recommended',
+      categoryColor: Colors.warning,
+      categoryBg: Colors.warningLight,
+      title: 'Engine Oil Change',
+      description: 'Oil is due for replacement to maintain optimal engine performance.',
+      price: 45,
+      estimatedTime: '30 minutes',
+    },
+    {
+      id: 3,
+      category: 'Critical',
+      categoryColor: Colors.danger,
+      categoryBg: Colors.dangerLight,
+      title: 'Tire Replacement (Front Left)',
+      description: 'Tire tread is below safe limits and poses a safety risk.',
+      price: 120,
+      estimatedTime: '45 minutes',
+    },
+  ];
+
+  const toggleRepair = (id: string | number) => {
     setSelected(prev => ({
       ...prev,
       [id]: !prev[id],
@@ -94,7 +244,7 @@ const ReviewRepairsScreen = () => {
     return selectedRepairs.length;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const selectedCount = getSelectedRepairsCount();
     const total = getSelectedRepairsTotal();
 
@@ -108,12 +258,55 @@ const ReviewRepairsScreen = () => {
       `You selected ${selectedCount} repair(s) totaling $${total}. Submit?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Submit', onPress: () => console.log('Repairs submitted:', selectedRepairs) },
+        { text: 'Submit', onPress: submitCustomerApprovals },
       ]
     );
   };
 
-  const renderRepairCard = (repair, isSelected) => {
+  const submitCustomerApprovals = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+      // Update labor item approvals
+      for (const repair of repairs) {
+        const isSelected = selected[repair.id];
+        if (typeof repair.id === 'string' && repair.id.length > 10) { // Real data has longer IDs
+          await fetch(`http://10.0.2.2:3000/estimates/labor/${repair.id}/customer-approval`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ approved: isSelected }),
+          });
+        }
+      }
+
+      // Update part item approvals
+      for (const repair of repairs) {
+        const isSelected = selected[repair.id];
+        if (typeof repair.id === 'string' && repair.id.length > 10) { // Real data has longer IDs
+          await fetch(`http://10.0.2.2:3000/estimates/parts/${repair.id}/customer-approval`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ approved: isSelected }),
+          });
+        }
+      }
+
+      Alert.alert('Success', 'Your repair selections have been submitted!');
+      navigation.navigate('PartsSelection');
+    } catch (error) {
+      console.error('Error submitting approvals:', error);
+      Alert.alert('Error', 'Failed to submit selections. Please try again.');
+    }
+  };
+
+  const renderRepairCard = (repair: Repair, isSelected: boolean) => {
     return (
       <TouchableOpacity
         key={repair.id}

@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert,
   SafeAreaView,
   PermissionsAndroid,
   Platform,
@@ -47,7 +46,6 @@ const CarOnboardingForm = () => {
     confirmText: 'OK',
     onConfirm: () => {},
   });
-
   // Valid colors list
   const validColors = [
     'white', 'black', 'gray', 'grey', 'silver', 'red', 'blue', 'green', 
@@ -144,6 +142,7 @@ const CarOnboardingForm = () => {
   const uploadImageToStorage = async (uri: string): Promise<string | null> => {
     try {
       setIsLoading(true);
+      // Use the car image upload service instead of profile image
       const result = await imageUploadService.uploadCarImage(uri);
       if (!result.success || !result.imageUrl) {
         throw new Error(result.error || 'Upload failed');
@@ -417,7 +416,7 @@ const CarOnboardingForm = () => {
 
   return (
     <SafeAreaView style={styles.wrapper}>
-      <Header 
+      <Header
         icon='back'
       />
 
@@ -464,10 +463,11 @@ const CarOnboardingForm = () => {
         )}
       </View>
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
         bounces={false}
+        keyboardShouldPersistTaps="handled"
       >
 
 

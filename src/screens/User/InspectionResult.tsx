@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,13 +14,109 @@ import CategoryBadge from '../../components/CategoryBadge';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+interface InspectionFinding {
+  id: string | number;
+  category: string;
+  categoryColor: string;
+  categoryBg: string;
+  title: string;
+  description: string;
+  price: number;
+  estimatedTime: string;
+  selected: boolean;
+}
 
 const InspectionResultsScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const [selectedRepairs, setSelectedRepairs] = useState({});
+  const [selectedRepairs, setSelectedRepairs] = useState<{[key: string]: boolean}>({});
+  const [inspectionFindings, setInspectionFindings] = useState<InspectionFinding[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock inspection findings with different urgency levels
-  const inspectionFindings = [
+  useEffect(() => {
+    fetchInspectionFindings();
+  }, []);
+
+  const fetchInspectionFindings = async () => {
+    try {
+      const userStr = await AsyncStorage.getItem('user');
+      const token = await AsyncStorage.getItem('token');
+
+      if (!userStr || !token) {
+        Alert.alert('Error', 'User not authenticated');
+        setLoading(false);
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+
+      // Fetch current work order for this customer
+      const workOrdersRes = await fetch(`http://10.0.2.2:3000/work-orders?customerId=${user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (workOrdersRes.ok) {
+        const workOrdersData = await workOrdersRes.json();
+        const currentWorkOrder = workOrdersData.data?.find((wo: any) =>
+          wo.status === 'IN_PROGRESS' && wo.workflowStep === 'ESTIMATE'
+        );
+
+        if (currentWorkOrder) {
+          // Fetch inspection data
+          const inspectionRes = await fetch(`http://10.0.2.2:3000/work-orders/${currentWorkOrder.id}/inspections`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (inspectionRes.ok) {
+            const inspectionData = await inspectionRes.json();
+            const inspections = inspectionData.data || [];
+
+            // Convert inspection checklist items to repair findings
+            const findings: InspectionFinding[] = [];
+            inspections.forEach((inspection: any) => {
+              inspection.checklistItems?.forEach((item: any) => {
+                if (item.status === 'RED' || item.status === 'YELLOW') { // Issues found
+                  findings.push({
+                    id: item.id,
+                    category: item.status === 'RED' ? 'Critical' : 'Recommended',
+                    categoryColor: item.status === 'RED' ? Colors.danger : Colors.warning,
+                    categoryBg: item.status === 'RED' ? Colors.dangerLight : Colors.warningLight,
+                    title: item.item || item.templateItem?.name || 'Inspection Issue',
+                    description: item.notes || 'Issue found during inspection',
+                    price: 0, // Will be set by estimate
+                    estimatedTime: 'TBD',
+                    selected: false,
+                  });
+                }
+              });
+            });
+
+            setInspectionFindings(findings.length > 0 ? findings : getMockFindings());
+          } else {
+            setInspectionFindings(getMockFindings());
+          }
+        } else {
+          setInspectionFindings(getMockFindings());
+        }
+      } else {
+        setInspectionFindings(getMockFindings());
+      }
+    } catch (error) {
+      console.error('Error fetching inspection findings:', error);
+      setInspectionFindings(getMockFindings());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMockFindings = () => [
     {
       id: 1,
       category: 'Critical',
@@ -78,7 +174,7 @@ const InspectionResultsScreen = () => {
     },
   ];
 
-  const toggleRepairSelection = (repairId) => {
+  const toggleRepairSelection = (repairId: string | number) => {
     setSelectedRepairs(prev => ({
       ...prev,
       [repairId]: !prev[repairId]
@@ -101,18 +197,23 @@ const InspectionResultsScreen = () => {
       Alert.alert('No Repairs Selected', 'Please select at least one repair to proceed.');
       return;
     }
-    
+
+    const selectedRepairs = inspectionFindings.filter(finding => selectedRepairs[finding.id]);
+
     Alert.alert(
       'Confirm Repairs',
       `You have selected ${selectedCount} repair(s) totaling $${getSelectedRepairsTotal()}. Do you want to proceed?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Approve', onPress: () => console.log('Repairs approved') }
+        {
+          text: 'Approve',
+          onPress: () => navigation.navigate('PartsSelection', { approvedRepairs: selectedRepairs })
+        }
       ]
     );
   };
 
-  const renderInspectionFinding = (finding) => {
+  const renderInspectionFinding = (finding: InspectionFinding) => {
     const isSelected = selectedRepairs[finding.id];
     
     return (

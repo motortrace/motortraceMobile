@@ -1,5 +1,5 @@
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, FlatList, ImageBackground } from "react-native"
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from "../../constants/colors"
@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
 import { useUser } from '../../store/UserContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Vehicle {
   id: string;
@@ -48,6 +49,135 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const userName = user?.name || "John Doe";
   const [selectedVehicle, setSelectedVehicle] = useState(0)
   const [trackedVehicleId, setTrackedVehicleId] = useState<string | null>(null);
+  const [asyncStorageUser, setAsyncStorageUser] = useState<any>(null);
+  const [realVehicles, setRealVehicles] = useState<Vehicle[]>([]);
+  const [realServices, setRealServices] = useState<ServiceStatus[]>([]);
+  const [dashboardStats, setDashboardStats] = useState({
+    vehicles: 0,
+    active: 0,
+    scheduled: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch dashboard data from backend
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        const userStr = await AsyncStorage.getItem('user');
+        const token = await AsyncStorage.getItem('token');
+
+        if (!userStr || !token) {
+          console.log('No user or token found, using mock data');
+          setRealVehicles(vehicles); // Use existing mock data
+          setRealServices(serviceStatuses);
+          setDashboardStats({ vehicles: 2, active: 1, scheduled: 3 });
+          return;
+        }
+
+        const user = JSON.parse(userStr);
+
+        // Fetch vehicles
+        try {
+          const vehiclesRes = await fetch(`http://10.0.2.2:3000/vehicles?customerId=${user.id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (vehiclesRes.ok) {
+            const vehiclesData = await vehiclesRes.json();
+            if (vehiclesData.data) {
+              const formattedVehicles: Vehicle[] = vehiclesData.data.map((vehicle: any) => ({
+                id: vehicle.id,
+                name: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+                model: vehicle.model,
+                year: vehicle.year?.toString() || '',
+                license: vehicle.licensePlate || 'N/A',
+                color: Colors.primary, // Default color
+                type: 'sedan' as const, // Default type
+                mileage: 0, // Would need to be fetched from service history
+                nextService: 'Oil Change', // Default
+                serviceStatus: 'good' as const,
+              }));
+              setRealVehicles(formattedVehicles);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching vehicles:', error);
+          setRealVehicles(vehicles); // Fallback to mock
+        }
+
+        // Fetch appointments/services
+        try {
+          const appointmentsRes = await fetch(`http://10.0.2.2:3000/appointments?customerId=${user.id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (appointmentsRes.ok) {
+            const appointmentsData = await appointmentsRes.json();
+            if (appointmentsData.data) {
+              const appointments = appointmentsData.data;
+
+              // Calculate stats
+              const totalVehicles = realVehicles.length || 2;
+              const activeServices = appointments.filter((apt: any) =>
+                apt.status === 'IN_PROGRESS' || apt.status === 'CHECKED_IN'
+              ).length;
+              const scheduledServices = appointments.filter((apt: any) =>
+                apt.status === 'PENDING' || apt.status === 'CONFIRMED'
+              ).length;
+
+              setDashboardStats({
+                vehicles: totalVehicles,
+                active: activeServices,
+                scheduled: scheduledServices
+              });
+
+              // Format recent services
+              const formattedServices: ServiceStatus[] = appointments.slice(0, 3).map((apt: any) => ({
+                id: apt.id,
+                title: apt.cannedServices?.map((cs: any) => cs.cannedService?.name).join(', ') || 'Service',
+                status: apt.status === 'IN_PROGRESS' ? 'in-progress' :
+                       apt.status === 'COMPLETED' ? 'completed' :
+                       apt.status === 'PENDING' ? 'scheduled' : 'scheduled',
+                date: apt.startTime ? new Date(apt.startTime).toLocaleDateString() : 'TBD',
+                time: apt.startTime ? new Date(apt.startTime).toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }) : 'TBD',
+                serviceType: 'Service',
+                vehicle: apt.vehicle ? `${apt.vehicle.year} ${apt.vehicle.make} ${apt.vehicle.model}` : 'Unknown Vehicle',
+                icon: 'construct',
+                color: Colors.primary
+              }));
+
+              setRealServices(formattedServices.length > 0 ? formattedServices : serviceStatuses);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching appointments:', error);
+          setRealServices(serviceStatuses); // Fallback to mock
+          setDashboardStats({ vehicles: 2, active: 1, scheduled: 3 });
+        }
+
+      } catch (error) {
+        console.error('Error in dashboard data fetch:', error);
+        // Use mock data as fallback
+        setRealVehicles(vehicles);
+        setRealServices(serviceStatuses);
+        setDashboardStats({ vehicles: 2, active: 1, scheduled: 3 });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
@@ -135,12 +265,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     },
     { 
       id: 3, 
-      title: "Vehicle Details", 
+      title: "Vehicle Details",
       subtitle: "Manage your cars",
       icon: "car", 
       color: "#10B981",
       screen: "Cars",
-      bgColor: "#ECFDF5"
+      bgColor: "#ECFDF5",
     },
     { 
       id: 4, 
@@ -148,7 +278,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       subtitle: "Real-time updates",
       icon: "location", 
       color: "#F59E0B",
-      screen: "ServiceProgress",
+      screen: "Reservations",
       bgColor: "#FFFBEB"
     },
   ]
@@ -270,28 +400,54 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           {/* Stats Cards */}
           <View style={styles.statsContainer}>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>2</Text>
+              <Text style={styles.statNumber}>{dashboardStats.vehicles}</Text>
               <Text style={styles.statLabel}>Vehicles</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>1</Text>
+              <Text style={styles.statNumber}>{dashboardStats.active}</Text>
               <Text style={styles.statLabel}>Active</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>3</Text>
+              <Text style={styles.statNumber}>{dashboardStats.scheduled}</Text>
               <Text style={styles.statLabel}>Scheduled</Text>
             </View>
           </View>
         </View>
+
+        {/* Debug: AsyncStorage User Data - Commented out for production
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, {marginLeft: 20}]}>🔍 Debug: AsyncStorage User Data</Text>
+          <View style={styles.debugContainer}>
+            <Text style={styles.debugTitle}>User from AsyncStorage:</Text>
+            {asyncStorageUser ? (
+              <ScrollView style={styles.debugScrollView} showsVerticalScrollIndicator={false}>
+                <Text style={styles.debugText}>
+                  {JSON.stringify(asyncStorageUser, null, 2)}
+                </Text>
+              </ScrollView>
+            ) : (
+              <Text style={styles.debugText}>No user data found in AsyncStorage</Text>
+            )}
+
+            <Text style={[styles.debugTitle, {marginTop: 16}]}>User from Context:</Text>
+            <ScrollView style={styles.debugScrollView} showsVerticalScrollIndicator={false}>
+              <Text style={styles.debugText}>
+                {JSON.stringify(user, null, 2)}
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
+        */}
 
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, {marginLeft: 20}] }>Quick Actions</Text>
           <View style={styles.quickActionsContainer}>
             {quickActions.map((action) => (
-              <TouchableOpacity 
-                key={action.id} 
+              <TouchableOpacity
+                key={action.id}
                 style={[styles.quickActionCard, { backgroundColor: action.bgColor }]}
+                // @ts-ignore - Navigation type issue
                 onPress={() => navigation.navigate(action.screen)}
               >
                 <View style={[styles.quickActionIconContainer, { backgroundColor: action.color + "15" }]}>
@@ -314,7 +470,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
             </TouchableOpacity>
           </View>
           <FlatList
-            data={vehicles}
+            data={realVehicles.length > 0 ? realVehicles : vehicles}
             renderItem={renderVehicleCard}
             keyExtractor={(item) => item.id}
             horizontal
@@ -332,7 +488,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
             </TouchableOpacity>
           </View>
           <FlatList
-            data={serviceStatuses}
+            data={realServices.length > 0 ? realServices : serviceStatuses}
             renderItem={renderServiceStatus}
             keyExtractor={(item) => item.id}
             horizontal
@@ -345,7 +501,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <View style={[styles.section, styles.lastSection]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Upcoming Services</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('ServiceHistory')}>
+            {/* @ts-ignore - Navigation type issue */}
+            <TouchableOpacity onPress={() => navigation.navigate('Reservations')}>
               <Text style={styles.viewAllButton}>View All</Text>
             </TouchableOpacity>
           </View>
@@ -728,6 +885,41 @@ const styles = StyleSheet.create({
   priorityText: {
     fontSize: 10,
     fontWeight: '600',
+  },
+
+  // Debug Section Styles
+  debugContainer: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  debugTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  debugScrollView: {
+    maxHeight: 200,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  debugText: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    color: '#374151',
+    lineHeight: 16,
   },
 })
 

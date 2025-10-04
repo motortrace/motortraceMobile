@@ -193,6 +193,18 @@ const ServiceProgressScreen = () => {
         </View>
       </ScrollView>
 
+      {/* Action Button for Completed Services */}
+      {progress.percentage === 100 && (
+        <View style={styles.actionSection}>
+          <TouchableOpacity
+            style={styles.viewBillButton}
+            onPress={() => navigation.navigate('DetailedBill')}
+          >
+            <Text style={styles.viewBillButtonText}>View Detailed Bill</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Image Modal */}
       <Modal
         animationType="fade"
@@ -324,6 +336,21 @@ const styles = StyleSheet.create({
     color: Colors.neutral0,
     fontSize: 16,
     fontWeight: '600',
+  },
+  actionSection: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  viewBillButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  viewBillButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.neutral0,
   },
 });
 

@@ -19,6 +19,7 @@ import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import Colors from '../../constants/colors';
 import Header from '../../components/Header';
 import BorderButton from '../../components/BorderButton';
+import LoadingComponent from '../../components/Loading';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
@@ -103,6 +104,7 @@ const CarDetailsPage = () => {
   const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const getCarIdAndFetch = async () => {
@@ -117,47 +119,87 @@ const CarDetailsPage = () => {
 
   const fetchCar = async (carId: string) => {
     try {
+      setIsLoading(true);
       const userStr = await AsyncStorage.getItem('user');
-      if (!userStr) return;
+      if (!userStr) {
+        setIsLoading(false);
+        return;
+      }
       const user = JSON.parse(userStr);
       const token = await AsyncStorage.getItem('token');
-      console.log('Card ID is', carId)
-      if (!token) return;
-      console.log('Fetching from', `http://10.0.2.2:3000/vehicles/${carId}`);
-      const res = await fetch(`http://10.0.2.2:3000/vehicles/${carId}`, {
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log('Fetching vehicle details for ID:', carId);
+      
+      // Fetch vehicle details
+      const vehicleRes = await fetch(`http://10.0.2.2:3000/vehicles/${carId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
-      const data = await res.json();
-      console.log('Data is', data)
-      if (res.ok && (data.vehicle || data.data)) {
+      
+      const vehicleData = await vehicleRes.json();
+      console.log('Vehicle data:', vehicleData);
+      
+      // Fetch work orders for this vehicle to get service history
+      const workOrdersRes = await fetch(`http://10.0.2.2:3000/work-orders?vehicleId=${carId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const workOrdersData = await workOrdersRes.json();
+      console.log('Work orders data:', workOrdersData);
+      
+      if (vehicleRes.ok && (vehicleData.vehicle || vehicleData.data)) {
+        const vehicle = vehicleData.vehicle || vehicleData.data;
+        const workOrders = workOrdersData.data || workOrdersData.workOrders || [];
+        
+        // Process work orders into service history
+        const serviceHistory = workOrders.map((wo: any) => ({
+          id: wo.id,
+          type: wo.jobType || 'Service',
+          description: wo.complaint || wo.internalNotes || 'Vehicle service',
+          date: wo.createdAt ? new Date(wo.createdAt).toLocaleDateString() : 'Unknown',
+          mileage: wo.odometerReading ? `${wo.odometerReading} km` : 'N/A',
+          cost: wo.totalAmount ? `$${wo.totalAmount}` : 'N/A',
+          status: wo.status || 'completed',
+        }));
+        
         setCar({
-          id: (data.vehicle || data.data).id,
-          name: (data.vehicle || data.data).vehicleName || (data.vehicle || data.data).make || hardcodedCarData.name,
-          nickname: (data.vehicle || data.data).nickname || hardcodedCarData.nickname,
-          model: (data.vehicle || data.data).model,
-          year: (data.vehicle || data.data).year,
-          image: hardcodedCarData.image,
-          status: hardcodedCarData.status,
+          id: vehicle.id,
+          name: vehicle.make || vehicle.vehicleName || 'Unknown Vehicle',
+          nickname: hardcodedCarData.nickname, // Keep mock nickname for now
+          model: vehicle.model || 'Unknown Model',
+          year: vehicle.year || new Date().getFullYear(),
+          // Use backend imageUrl if available, otherwise fallback to mock
+          image: vehicle.imageUrl || hardcodedCarData.image,
+          status: hardcodedCarData.status, // Keep mock status for now
           statusText: hardcodedCarData.statusText,
-          mileage: hardcodedCarData.mileage,
-          lastService: hardcodedCarData.lastService,
-          number: (data.vehicle || data.data).licensePlate || hardcodedCarData.number,
-          color: (data.vehicle || data.data).color || hardcodedCarData.color,
-          issues: hardcodedCarData.issues,
-          services: hardcodedCarData.services,
+          mileage: hardcodedCarData.mileage, // Keep mock mileage for now
+          lastService: serviceHistory.length > 0 ? serviceHistory[0].date : hardcodedCarData.lastService,
+          number: vehicle.licensePlate || hardcodedCarData.number,
+          color: vehicle.color || hardcodedCarData.color,
+          issues: hardcodedCarData.issues, // Keep mock issues for now
+          services: serviceHistory.length > 0 ? serviceHistory : hardcodedCarData.services,
           location: hardcodedCarData.location,
           isTracking: hardcodedCarData.isTracking,
         });
       } else {
+        console.error('Failed to fetch vehicle:', vehicleData);
         // fallback to hardcoded data if backend fails
         setCar({ ...hardcodedCarData });
       }
     } catch (err) {
       console.error('Failed to fetch car details:', err);
       setCar({ ...hardcodedCarData });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -364,6 +406,26 @@ const CarDetailsPage = () => {
       setIsDeleting(false);
     }
   };
+
+  // Show loading component while fetching car details
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Header
+          icon="back"
+          name="John Doe"
+          image=""
+          onIconPress={() => navigation.navigate('Cars')}
+        />
+        <LoadingComponent 
+          loadingText="Loading car details..." 
+          size="medium"
+          containerStyle={styles.loadingContainer}
+          textStyle={styles.loadingText}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -1072,6 +1134,18 @@ const styles = StyleSheet.create({
     color: Colors.neutral700,
     marginTop: 2,
     marginBottom: 2,
+  },
+  // Loading state styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.neutral600,
+    fontWeight: '500',
   },
 });
 

@@ -13,17 +13,26 @@ import Colors from '../../constants/colors';
 import Header from '../../components/Header';
 import Button from '../../components/Button';
 import BorderButton from '../../components/BorderButton';
+import LoadingComponent from '../../components/Loading';
+import AppointmentSheet from '../../components/AppointmentSheet';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ReservationsScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming', 'ongoing', 'completed'
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [appointmentSheetVisible, setAppointmentSheetVisible] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState<any>(null);
+  const [upcomingReservations, setUpcomingReservations] = useState<any[]>([]);
+  const [ongoingReservations, setOngoingReservations] = useState<any[]>([]);
+  const [completedReservations, setCompletedReservations] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data for upcoming reservations
-  const upcomingReservations = [
+  // Mock data for upcoming reservations - fallback when backend is unavailable
+  const mockUpcomingReservations = [
     {
       id: 1,
       customerName: 'John Smith',
@@ -62,7 +71,7 @@ const ReservationsScreen = () => {
     },
   ];
 
-  const ongoingReservations = [
+  const mockOngoingReservations = [
     {
       id: 4,
       customerName: 'David Brown',
@@ -79,7 +88,7 @@ const ReservationsScreen = () => {
       hasNotification: true,
       notificationType: 'inspection_results',
       progress: 75,
-      navigation: 'InspectionCar',
+      navigation: 'InspectionOngoing',
     },
     {
       id: 5,
@@ -96,7 +105,7 @@ const ReservationsScreen = () => {
       technician: 'Maria Rodriguez',
       hasNotification: false,
       progress: 45,
-      navigation: 'InspectionCar',
+      navigation: 'InspectionOngoing',
     },
     {
       id: 6,
@@ -114,12 +123,12 @@ const ReservationsScreen = () => {
       hasNotification: true,
       notificationType: 'parts_needed',
       progress: 30,
-      navigation: 'InspectionCar',
+      navigation: 'InspectionOngoing',
     },
   ];
 
-  // Mock completed reservations
-  const completedReservations = [
+  // Mock completed reservations - fallback when backend is unavailable
+  const mockCompletedReservations = [
     {
       id: 7,
       customerName: 'Emma Thompson',
@@ -132,6 +141,118 @@ const ReservationsScreen = () => {
       status: 'paid',
     },
   ];
+
+  // Fetch appointments from backend
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        setIsLoading(true);
+        const userStr = await AsyncStorage.getItem('user');
+        if (!userStr) {
+          console.log('No user found, using mock data');
+          setUpcomingReservations(mockUpcomingReservations);
+          setOngoingReservations(mockOngoingReservations);
+          setCompletedReservations(mockCompletedReservations);
+          return;
+        }
+
+        const user = JSON.parse(userStr);
+        const token = await AsyncStorage.getItem('token');
+        if (!token) {
+          console.log('No token found, using mock data');
+          setUpcomingReservations(mockUpcomingReservations);
+          setOngoingReservations(mockOngoingReservations);
+          setCompletedReservations(mockCompletedReservations);
+          return;
+        }
+
+        console.log('Fetching appointments for user:', user.id);
+        
+        // Fetch appointments for this customer
+        const res = await fetch(`http://10.0.2.2:3000/appointments?customerId=${user.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await res.json();
+        console.log('Appointments response:', data);
+
+        if (res.ok && data.data) {
+          const appointments = data.data;
+          
+          // Categorize appointments by status
+          const upcoming = appointments.filter((apt: any) => 
+            apt.status === 'PENDING' || apt.status === 'CONFIRMED'
+          ).map((apt: any) => ({
+            id: apt.id,
+            customerName: apt.customer?.name || 'Customer',
+            vehicleInfo: apt.vehicle ? `${apt.vehicle.year} ${apt.vehicle.make} ${apt.vehicle.model}` : 'Unknown Vehicle',
+            Numberplate: apt.vehicle?.licensePlate || 'N/A',
+            serviceType: apt.cannedServices?.map((cs: any) => cs.cannedService?.name).join(', ') || 'Service',
+            scheduledDate: apt.requestedAt ? new Date(apt.requestedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            scheduledTime: apt.startTime ? new Date(apt.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'TBD',
+            estimatedDuration: '2 hours', // Default duration
+            status: apt.status?.toLowerCase() === 'confirmed' ? 'confirmed' : 'pending_confirmation',
+            phone: apt.customer?.phone || 'N/A',
+          }));
+
+          const ongoing = appointments.filter((apt: any) =>
+            apt.status === 'IN_PROGRESS' || apt.status === 'CHECKED_IN'
+          ).map((apt: any) => ({
+            id: apt.id,
+            customerName: apt.customer?.name || 'Customer',
+            vehicleInfo: apt.vehicle ? `${apt.vehicle.year} ${apt.vehicle.make} ${apt.vehicle.model}` : 'Unknown Vehicle',
+            Numberplate: apt.vehicle?.licensePlate || 'N/A',
+            serviceType: apt.cannedServices?.map((cs: any) => cs.cannedService?.name).join(', ') || 'Service',
+            checkedInDate: apt.startTime ? new Date(apt.startTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            checkedInTime: apt.startTime ? new Date(apt.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'TBD',
+            currentPhase: 'in_progress',
+            phaseDescription: 'Service in Progress',
+            estimatedCompletion: apt.endTime ? new Date(apt.endTime).toLocaleString() : 'TBD',
+            assignedBay: 'Bay 1', // Default bay
+            technician: 'Technician', // Default technician
+            hasNotification: false,
+            progress: 50, // Default progress
+            navigation: 'InspectionOngoing',
+          }));
+
+          const completed = appointments.filter((apt: any) => 
+            apt.status === 'COMPLETED' || apt.status === 'CANCELLED'
+          ).map((apt: any) => ({
+            id: apt.id,
+            customerName: apt.customer?.name || 'Customer',
+            vehicleInfo: apt.vehicle ? `${apt.vehicle.year} ${apt.vehicle.make} ${apt.vehicle.model}` : 'Unknown Vehicle',
+            Numberplate: apt.vehicle?.licensePlate || 'N/A',
+            serviceType: apt.cannedServices?.map((cs: any) => cs.cannedService?.name).join(', ') || 'Service',
+            completedDate: apt.endTime ? new Date(apt.endTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            completedTime: apt.endTime ? new Date(apt.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'TBD',
+            totalCost: 0, // Default cost
+            status: apt.status?.toLowerCase() === 'completed' ? 'paid' : 'cancelled',
+          }));
+
+          setUpcomingReservations(upcoming.length > 0 ? upcoming : mockUpcomingReservations);
+          setOngoingReservations(ongoing.length > 0 ? ongoing : mockOngoingReservations);
+          setCompletedReservations(completed.length > 0 ? completed : mockCompletedReservations);
+        } else {
+          console.error('Failed to fetch appointments:', data);
+          setUpcomingReservations(mockUpcomingReservations);
+          setOngoingReservations(mockOngoingReservations);
+          setCompletedReservations(mockCompletedReservations);
+        }
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+        setUpcomingReservations(mockUpcomingReservations);
+        setOngoingReservations(mockOngoingReservations);
+        setCompletedReservations(mockCompletedReservations);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAppointments();
+  }, []);
 
   useEffect(() => {
     // Check for notifications from ongoing reservations
@@ -146,7 +267,7 @@ const ReservationsScreen = () => {
       }));
     
     setNotifications(activeNotifications);
-  }, []);
+  }, [ongoingReservations]);
 
   const getNotificationMessage = (reservation) => {
     switch (reservation.notificationType) {
@@ -216,64 +337,104 @@ const ReservationsScreen = () => {
       <View style={styles.cardActions}>
         <Button label="Call" icon='call' containerStyle={{width: 100}} onPress={() => {}} />
         <Button label="Chat" icon='chatbubble' containerStyle={{width: 100}} onPress={() => {navigation.navigate('ChatBox')}} />
-        <BorderButton label="Reschedule" icon="create-outline" style={{width: 140}} onPress={() => {}} />
+        <BorderButton label="Reschedule" icon="create-outline" style={{width: 140}} onPress={() => {
+          setSelectedReservation(item);
+          setAppointmentSheetVisible(true);
+        }} />
       </View>
     </TouchableOpacity>
   );
 
-  const renderOngoingReservation = ({ item }) => (
-    <TouchableOpacity style={styles.reservationCard}>
-      {item.hasNotification && (
-        <View style={styles.notificationBadge}>
-          <Text style={styles.notificationText}>🔔 New Update</Text>
+  const renderOngoingReservation = ({ item }) => {
+    // Check if car has arrived (using checkedInDate as indicator)
+    const carArrived = item.checkedInDate && item.checkedInTime;
+
+    return (
+      <TouchableOpacity style={styles.reservationCard}>
+        {item.hasNotification && (
+          <View style={styles.notificationBadge}>
+            <Text style={styles.notificationText}>🔔 New Update</Text>
+          </View>
+        )}
+
+        <View style={styles.cardHeader}>
+          <View style={styles.customerInfo}>
+            <Text style={styles.customerName}>{item.customerName}</Text>
+            <Text style={styles.vehicleInfo}>{item.vehicleInfo}</Text>
+          </View>
+          <View style={styles.bayInfo}>
+            <Text style={styles.bayText}>{item.assignedBay}</Text>
+          </View>
         </View>
-      )}
-      
-      <View style={styles.cardHeader}>
-        <View style={styles.customerInfo}>
-          <Text style={styles.customerName}>{item.customerName}</Text>
-          <Text style={styles.vehicleInfo}>{item.vehicleInfo}</Text>
-        </View>
-        <View style={styles.bayInfo}>
-          <Text style={styles.bayText}>{item.assignedBay}</Text>
-        </View>
-      </View>
-      
-      <View style={styles.progressSection}>
-        <View style={styles.progressHeader}>
-          <Text style={styles.currentPhase}>{item.phaseDescription}</Text>
-          <Text style={styles.progressPercent}>{item.progress}%</Text>
-        </View>
-        <View style={styles.progressBar}>
-          <View 
-            style={[styles.progressFill, { 
-              width: `${item.progress}%`,
-              backgroundColor: getPhaseColor(item.currentPhase)
-            }]} 
+
+        {!carArrived ? (
+          // Car not arrived yet
+          <View style={styles.waitingSection}>
+            <Text style={styles.waitingTitle}>Waiting for Vehicle Arrival</Text>
+            <Text style={styles.waitingDescription}>
+              Your vehicle has not arrived at the garage yet. Please arrive at your scheduled time.
+            </Text>
+            <View style={styles.scheduledTimeContainer}>
+              <Text style={styles.scheduledTimeLabel}>Scheduled Arrival:</Text>
+              <Text style={styles.scheduledTimeValue}>
+                {item.scheduledDate} at {item.scheduledTime}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          // Car has arrived - show progress
+          <>
+            <View style={styles.progressSection}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.currentPhase}>{item.phaseDescription}</Text>
+                <Text style={styles.progressPercent}>{item.progress}%</Text>
+              </View>
+              <View style={styles.progressBar}>
+                <View
+                  style={[styles.progressFill, {
+                    width: `${item.progress}%`,
+                    backgroundColor: getPhaseColor(item.currentPhase)
+                  }]}
+                />
+              </View>
+            </View>
+
+            <View style={styles.serviceDetails}>
+              <Text style={styles.serviceType}>{item.serviceType}</Text>
+              <Text style={styles.timeInfo}>
+                📅 Checked in: {item.checkedInDate} at {item.checkedInTime}
+              </Text>
+              <Text style={styles.estimatedCompletion}>
+                🕒 Est. Completion: {item.estimatedCompletion}
+              </Text>
+              <Text style={styles.technicianInfo}>
+                👨‍🔧 Technician: {item.technician}
+              </Text>
+            </View>
+          </>
+        )}
+
+        <View style={styles.cardActions}>
+          <Button label="Call" icon='call' containerStyle={{width: 100}} onPress={() => {}} />
+          <Button label="Chat" icon='chatbubble' containerStyle={{width: 100}} onPress={() =>navigation.navigate('ChatBox') } />
+          <BorderButton
+            label={carArrived ? "View Details" : "View Schedule"}
+            icon="eye"
+            style={{width: 140}}
+            onPress={() => {
+              if (carArrived) {
+                // Navigate to InspectionOngoing for arrived cars
+                navigation.navigate('InspectionOngoing');
+              } else {
+                // Could navigate to a schedule details screen or just show alert
+                Alert.alert('Vehicle Not Arrived', 'Please arrive at the garage at your scheduled time.');
+              }
+            }}
           />
         </View>
-      </View>
-      
-      <View style={styles.serviceDetails}>
-        <Text style={styles.serviceType}>{item.serviceType}</Text>
-        <Text style={styles.timeInfo}>
-          📅 Checked in: {item.checkedInDate} at {item.checkedInTime}
-        </Text>
-        <Text style={styles.estimatedCompletion}>
-          🕒 Est. Completion: {item.estimatedCompletion}
-        </Text>
-        <Text style={styles.technicianInfo}>
-          👨‍🔧 Technician: {item.technician}
-        </Text>
-      </View>
-      
-      <View style={styles.cardActions}>
-        <Button label="Call" icon='call' containerStyle={{width: 100}} onPress={() => {}} />
-        <Button label="Chat" icon='chatbubble' containerStyle={{width: 100}} onPress={() =>navigation.navigate('ChatBox') } />
-        <BorderButton label="View Details" icon="eye" style={{width: 140}} onPress={() => navigation.navigate(item.navigation)} />
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderCompletedReservation = ({ item }) => (
     <TouchableOpacity style={[styles.reservationCard, styles.completedCard]}>
@@ -298,7 +459,28 @@ const ReservationsScreen = () => {
       </View>
       
       <View style={styles.cardActions}>
-        <BorderButton label="View Report" icon="eye" style={{width: '100%'}} onPress={() => {}} />
+        <BorderButton label="View Report" icon="eye" style={{width: '100%'}} onPress={() => navigation.navigate('PaidServiceBillSummary', {
+          serviceType: item.serviceType,
+          location: 'Garage Location',
+          date: item.completedDate,
+          time: item.completedTime,
+          garageName: 'MotorTrace Garage',
+          services: [{ name: item.serviceType, price: item.totalCost }],
+          cgst: 2.00,
+          sgst: 2.00,
+          discount: 5.00,
+          workOrderId: item.id,
+          serviceDetails: [
+            {
+              name: item.serviceType,
+              description: `Completed ${item.serviceType} service`,
+              status: 'completed',
+              beforeCondition: 'Vehicle inspection needed',
+              afterCondition: 'Service completed successfully',
+              cost: item.totalCost
+            }
+          ]
+        })} />
       </View>
     </TouchableOpacity>
   );
@@ -343,6 +525,27 @@ const ReservationsScreen = () => {
     }
   };
 
+  // Show loading component while fetching appointments
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Header 
+          icon="back"
+          name="Garage Management"
+          image=""
+          onIconPress={() => navigation.navigate('Home')}
+        />
+        
+        <LoadingComponent 
+          loadingText="Loading appointments..." 
+          size="medium"
+          containerStyle={styles.loadingContainer}
+          textStyle={styles.loadingText}
+        />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <Header 
@@ -385,6 +588,17 @@ const ReservationsScreen = () => {
         style={styles.listContainer}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+      />
+
+      {/* Appointment Sheet */}
+      <AppointmentSheet
+        visible={appointmentSheetVisible}
+        onClose={() => setAppointmentSheetVisible(false)}
+        onConfirm={(appointmentData) => {
+          console.log('Appointment rescheduled:', appointmentData);
+          // Here you would call the API to reschedule the appointment
+          Alert.alert('Success', 'Appointment rescheduled successfully!');
+        }}
       />
     </SafeAreaView>
   );
@@ -671,6 +885,52 @@ const styles = StyleSheet.create({
   },
   notificationActionText: {
     color: Colors.neutral0,
+  },
+  // Loading state styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.neutral600,
+    fontWeight: '500',
+  },
+  // Waiting section styles
+  waitingSection: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  waitingTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.warning,
+    marginBottom: 8,
+  },
+  waitingDescription: {
+    fontSize: 14,
+    color: Colors.neutral600,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  scheduledTimeContainer: {
+    backgroundColor: Colors.neutral50,
+    padding: 12,
+    borderRadius: 8,
+    width: '100%',
+  },
+  scheduledTimeLabel: {
+    fontSize: 12,
+    color: Colors.neutral500,
+    marginBottom: 4,
+  },
+  scheduledTimeValue: {
+    fontSize: 14,
+    color: Colors.neutral900,
+    fontWeight: '500',
   },
 });
 

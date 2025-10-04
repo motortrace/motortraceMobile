@@ -13,6 +13,7 @@ import Header from '../../components/Header';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CustomAlert from "../../components/Alert";
 import LoadingComponent from "../../components/Loading";
+import AppointmentBottomSheet from "../../components/AppointmentSheet";
 import { useRoute } from '@react-navigation/native';
 
 interface CannedServiceDetails {
@@ -64,6 +65,7 @@ const PackageDetailsScreen: React.FC<PackageDetailsScreenProps> = ({
   const [packageDetails, setPackageDetails] = useState<CannedServiceDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
+  const [appointmentSheetVisible, setAppointmentSheetVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState({
     type: 'info' as 'success' | 'error' | 'warning' | 'info',
     title: '',
@@ -85,6 +87,25 @@ const PackageDetailsScreen: React.FC<PackageDetailsScreenProps> = ({
       alertConfig.onConfirm();
     }, 100);
   }, [alertConfig]);
+
+  const handleBookService = useCallback(() => {
+    if (packageDetails) {
+      setAppointmentSheetVisible(true);
+    }
+  }, [packageDetails]);
+
+  const handleAppointmentConfirm = useCallback((appointmentData: any) => {
+    console.log('Appointment booked:', appointmentData);
+    setAppointmentSheetVisible(false);
+    showAlert({
+      type: 'success',
+      title: 'Appointment Booked',
+      message: `Your appointment for ${packageDetails?.name} has been successfully booked!`,
+      buttonType: 'single',
+      confirmText: 'OK',
+      onConfirm: () => {}
+    });
+  }, [packageDetails, showAlert]);
 
   const getCategoryIcon = (category: string): string => {
     const iconMap: { [key: string]: string } = {
@@ -272,14 +293,7 @@ const PackageDetailsScreen: React.FC<PackageDetailsScreenProps> = ({
         <View style={styles.bookingContainer}>
           <Button 
             label={`Book ${packageDetails.name} - $${packageDetails.price}`}
-            onPress={() => {
-              if (_onBookService) {
-                _onBookService();
-              } else {
-                // Default behavior - navigate to appointment booking
-                console.log('Book service:', packageDetails.id);
-              }
-            }}
+            onPress={handleBookService}
           />
         </View>
       )}
@@ -293,6 +307,18 @@ const PackageDetailsScreen: React.FC<PackageDetailsScreenProps> = ({
         confirmText={alertConfig.confirmText}
         onClose={hideAlert}
       />
+
+      {/* Appointment Booking Sheet */}
+      {packageDetails && (
+        <AppointmentBottomSheet
+          visible={appointmentSheetVisible}
+          onClose={() => setAppointmentSheetVisible(false)}
+          onConfirm={handleAppointmentConfirm}
+          serviceId={packageDetails.id}
+          serviceName={packageDetails.name}
+          servicePrice={packageDetails.price}
+        />
+      )}
     </SafeAreaView>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   View, 
   Text, 
@@ -12,16 +12,21 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons'
 import Colors from '../../constants/colors'
 import Header from '../../components/Header'
+import LoadingComponent from '../../components/Loading'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CarProducts = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'engine' | 'brake' | 'electrical' | 'transmission' | 'suspension' | 'other'>('all')
+  const [usedProducts, setUsedProducts] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const usedProducts = [
+  // Mock data - fallback when backend is unavailable
+  const mockUsedProducts = [
     {
       id: '1',
       icon: 'battery-charging-outline',
@@ -188,21 +193,21 @@ const CarProducts = () => {
     return endDate
   }
 
-  const getWarrantyStatusColor = (status: UsedProduct['warrantyStatus']) => {
+  const getWarrantyStatusColor = (status: string) => {
     switch (status) {
       case 'active': return Colors.success || '#22C55E'
       case 'expiring-soon': return Colors.warning || '#F59E0B'
-      case 'expired': return Colors.error || '#EF4444'
+      case 'expired': return Colors.danger || '#EF4444'
       default: return Colors.neutral600
     }
   }
 
-  const getConditionColor = (condition: UsedProduct['condition']) => {
+  const getConditionColor = (condition: string) => {
     switch (condition) {
       case 'excellent': return Colors.success || '#22C55E'
       case 'good': return Colors.primary || '#3B82F6'
       case 'fair': return Colors.warning || '#F59E0B'
-      case 'poor': return Colors.error || '#EF4444'
+      case 'poor': return Colors.danger || '#EF4444'
       default: return Colors.neutral600
     }
   }
@@ -215,13 +220,146 @@ const CarProducts = () => {
     return diffDays
   }
 
+  // Fetch parts/products from backend
+  useEffect(() => {
+    const fetchParts = async () => {
+      try {
+        setIsLoading(true);
+        const selectedCarId = await AsyncStorage.getItem('selectedCarId');
+        if (!selectedCarId) {
+          console.log('No car selected, using mock data');
+          setUsedProducts(mockUsedProducts);
+          return;
+        }
+
+        const token = await AsyncStorage.getItem('token');
+        if (!token) {
+          console.log('No token found, using mock data');
+          setUsedProducts(mockUsedProducts);
+          return;
+        }
+
+        console.log('Fetching parts for vehicle:', selectedCarId);
+        
+        // Fetch work orders for this vehicle to get parts used
+        const res = await fetch(`http://10.0.2.2:3000/work-orders?vehicleId=${selectedCarId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await res.json();
+        console.log('Work orders response:', data);
+
+        if (res.ok && data.data) {
+          // Get all parts from work orders
+          const allParts: any[] = [];
+          
+          for (const workOrder of data.data) {
+            // Fetch parts for each work order
+            const partsRes = await fetch(`http://10.0.2.2:3000/work-orders/${workOrder.id}/parts`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            });
+
+            if (partsRes.ok) {
+              const partsData = await partsRes.json();
+              if (partsData.data) {
+                // Transform parts data into product format
+                const transformedParts = partsData.data.map((part: any) => ({
+                  id: part.id,
+                  icon: getPartIcon(part.inventoryItem?.category || 'other'),
+                  name: part.inventoryItem?.name || 'Unknown Part',
+                  brand: part.inventoryItem?.manufacturer || 'Unknown Brand',
+                  partNumber: part.inventoryItem?.partNumber || part.inventoryItem?.sku || 'N/A',
+                  purchaseDate: part.installedAt ? new Date(part.installedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                  installationDate: part.installedAt ? new Date(part.installedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                  warrantyPeriod: 12, // Default warranty period
+                  warrantyStatus: 'active',
+                  cost: part.unitPrice || 0,
+                  supplier: part.supplierName || 'Unknown Supplier',
+                  category: getPartCategory(part.inventoryItem?.category || 'other'),
+                  condition: 'excellent',
+                  notes: part.notes || '',
+                }));
+                allParts.push(...transformedParts);
+              }
+            }
+          }
+
+          setUsedProducts(allParts.length > 0 ? allParts : mockUsedProducts);
+        } else {
+          console.error('Failed to fetch parts:', data);
+          setUsedProducts(mockUsedProducts);
+        }
+      } catch (err) {
+        console.error('Error fetching parts:', err);
+        setUsedProducts(mockUsedProducts);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchParts();
+  }, [mockUsedProducts]);
+
+  // Helper function to get part icon based on category
+  const getPartIcon = (category: string) => {
+    switch (category?.toLowerCase()) {
+      case 'engine': return 'car-sport-outline';
+      case 'brake': return 'car-outline';
+      case 'electrical': return 'flash-outline';
+      case 'transmission': return 'settings-outline';
+      case 'suspension': return 'barbell-outline';
+      case 'battery': return 'battery-charging-outline';
+      case 'filter': return 'thermometer-outline';
+      default: return 'cube-outline';
+    }
+  };
+
+  // Helper function to get part category
+  const getPartCategory = (category: string) => {
+    switch (category?.toLowerCase()) {
+      case 'engine': return 'engine';
+      case 'brake': return 'brake';
+      case 'electrical': return 'electrical';
+      case 'transmission': return 'transmission';
+      case 'suspension': return 'suspension';
+      default: return 'other';
+    }
+  };
+
+  // Show loading component while fetching parts
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor={Colors.neutral0} />
+        
+        <Header 
+          icon='back'
+          name='Used Parts & Products'
+          onIconPress={() => navigation.navigate('CarDetails')}
+        />
+        
+        <LoadingComponent 
+          loadingText="Loading parts..." 
+          size="medium"
+          containerStyle={styles.loadingContainer}
+          textStyle={styles.loadingText}
+        />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.neutral0} />
       
       <Header 
         icon='back'
-        image=''
         name='Used Parts & Products'
         onIconPress={() => navigation.navigate('CarDetails')}
       />
@@ -605,6 +743,18 @@ const styles = StyleSheet.create({
     color: Colors.neutral400,
     marginTop: 8,
     textAlign: 'center',
+  },
+  // Loading state styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.neutral600,
+    fontWeight: '500',
   },
 })
 

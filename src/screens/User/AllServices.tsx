@@ -12,6 +12,7 @@ import type { RootStackParamList } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoadingComponent from '../../components/Loading';
 import CustomAlert from '../../components/Alert';
+import AppointmentBottomSheet from '../../components/AppointmentSheet';
 
 interface Service {
   id: string;
@@ -35,6 +36,7 @@ const AllServicesScreen: React.FC<AllServicesScreenProps> = ({ onBack: _onBack, 
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [appointmentSheetVisible, setAppointmentSheetVisible] = useState(false);
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState({
@@ -156,10 +158,23 @@ const AllServicesScreen: React.FC<AllServicesScreenProps> = ({ onBack: _onBack, 
     if (_onScheduleAppointment) {
       _onScheduleAppointment();
     } else {
-      // Default behavior - navigate to appointment scheduling
-      navigation.navigate('Appointment');
+      // Default behavior - open appointment sheet for general service
+      setAppointmentSheetVisible(true);
     }
   };
+
+  const handleAppointmentConfirm = useCallback((appointmentData: any) => {
+    console.log('Appointment booked:', appointmentData);
+    setAppointmentSheetVisible(false);
+    showAlert({
+      type: 'success',
+      title: 'Appointment Booked',
+      message: 'Your general service appointment has been successfully booked!',
+      buttonType: 'single',
+      confirmText: 'OK',
+      onConfirm: () => {}
+    });
+  }, [showAlert]);
 
   useEffect(() => {
     fetchServices();
@@ -231,6 +246,15 @@ const AllServicesScreen: React.FC<AllServicesScreenProps> = ({ onBack: _onBack, 
         buttonType={alertConfig.buttonType}
         confirmText={alertConfig.confirmText}
         onClose={hideAlert}
+      />
+
+      {/* Appointment Booking Sheet */}
+      <AppointmentBottomSheet
+        visible={appointmentSheetVisible}
+        onClose={() => setAppointmentSheetVisible(false)}
+        onConfirm={handleAppointmentConfirm}
+        serviceName="General Service"
+        servicePrice={0}
       />
 
     </SafeAreaView>

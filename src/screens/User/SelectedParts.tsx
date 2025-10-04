@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,67 +14,116 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
 import PartCard from '../../components/PartCard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const repairs = [
-  {
-    id: 1,
-    category: 'Critical',
-    categoryColor: Colors.danger,
-    categoryBg: Colors.dangerLight,
-    title: 'Brake Pads Replacement',
-    description: 'Brake pads are severely worn and require immediate replacement for safety.',
-    price: 150,
-    estimatedTime: '2 hours',
-  },
-  {
-    id: 2,
-    category: 'Recommended',
-    categoryColor: Colors.warning,
-    categoryBg: Colors.warningLight,
-    title: 'Engine Oil Change',
-    description: 'Oil is due for replacement to maintain optimal engine performance.',
-    price: 45,
-    estimatedTime: '30 minutes',
-  },
-  {
-    id: 3,
-    category: 'Critical',
-    categoryColor: Colors.danger,
-    categoryBg: Colors.dangerLight,
-    title: 'Tire Replacement (Front Left)',
-    description: 'Tire tread is below safe limits and poses a safety risk.',
-    price: 120,
-    estimatedTime: '45 minutes',
-  },
-  {
-    id: 4,
-    category: 'Optional',
-    categoryColor: Colors.info,
-    categoryBg: Colors.infoLight,
-    title: 'Air Filter Replacement',
-    description: 'Air filter is slightly dirty but can improve fuel efficiency when replaced.',
-    price: 25,
-    estimatedTime: '15 minutes',
-  },
-  {
-    id: 5,
-    category: 'Recommended',
-    categoryColor: Colors.warning,
-    categoryBg: Colors.warningLight,
-    title: 'Battery Check & Clean',
-    description: 'Battery terminals show corrosion and should be cleaned for better performance.',
-    price: 30,
-    estimatedTime: '20 minutes',
-  },
-];
+
+interface Part {
+  id: string | number;
+  repairId: string | number;
+  repairName: string;
+  partName: string;
+  partNumber: string;
+  oem: string;
+  garagePrice: number;
+  marketPrice: string;
+  warrantyGarage: string;
+  warrantyOwnParts: string;
+  category: string;
+  categoryColor: string;
+  categoryBg: string;
+  estimatedTime: string;
+  selected: string;
+}
 
 const PartsSelectionScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  
-  const [partsSelection, setPartsSelection] = useState({});
+  const [partsSelection, setPartsSelection] = useState<{[key: string]: string}>({});
+  const [requiredParts, setRequiredParts] = useState<Part[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock parts data based on approved repairs
-  const requiredParts = [
+  useEffect(() => {
+    fetchSelectedParts();
+  }, []);
+
+  const fetchSelectedParts = async () => {
+    try {
+      const userStr = await AsyncStorage.getItem('user');
+      const token = await AsyncStorage.getItem('token');
+
+      if (!userStr || !token) {
+        Alert.alert('Error', 'User not authenticated');
+        setLoading(false);
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+
+      // Fetch current work order
+      const workOrdersRes = await fetch(`http://10.0.2.2:3000/work-orders?customerId=${user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (workOrdersRes.ok) {
+        const workOrdersData = await workOrdersRes.json();
+        const currentWorkOrder = workOrdersData.data?.find((wo: any) =>
+          wo.status === 'IN_PROGRESS' && wo.workflowStep === 'REPAIR'
+        );
+
+        if (currentWorkOrder) {
+          // Fetch estimate with approved parts
+          const estimatesRes = await fetch(`http://10.0.2.2:3000/estimates?workOrderId=${currentWorkOrder.id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (estimatesRes.ok) {
+            const estimatesData = await estimatesRes.json();
+            const estimate = estimatesData.data?.[0];
+
+            if (estimate) {
+              // Convert estimate parts to required parts
+              const parts: Part[] = estimate.estimatePartItems?.map((part: any) => ({
+                id: part.id,
+                repairId: part.id,
+                repairName: part.part.name,
+                partName: part.part.name,
+                partNumber: part.part.partNumber || 'N/A',
+                oem: part.part.manufacturer || 'Generic',
+                garagePrice: parseFloat(part.unitPrice),
+                marketPrice: `${(parseFloat(part.unitPrice) * 0.8).toFixed(0)}-${(parseFloat(part.unitPrice) * 1.2).toFixed(0)}`,
+                warrantyGarage: part.warrantyInfo || '12 months',
+                warrantyOwnParts: '6 months labor only',
+                category: 'Critical',
+                categoryColor: Colors.danger,
+                categoryBg: Colors.dangerLight,
+                estimatedTime: 'TBD',
+                selected: 'garage',
+              })) || [];
+
+              setRequiredParts(parts);
+            }
+          }
+        }
+      }
+
+      // Fallback to mock data if no real data
+      if (requiredParts.length === 0) {
+        setRequiredParts(getMockParts());
+      }
+    } catch (error) {
+      console.error('Error fetching selected parts:', error);
+      setRequiredParts(getMockParts());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMockParts = (): Part[] => [
     {
       id: 1,
       repairId: 1,
@@ -145,14 +194,14 @@ const PartsSelectionScreen = () => {
     },
   ];
 
-  const handlePartSelection = (partId, selection) => {
+  const handlePartSelection = (partId: string | number, selection: string) => {
     setPartsSelection(prev => ({
       ...prev,
       [partId]: selection
     }));
   };
 
-  const getPartSelection = (partId) => {
+  const getPartSelection = (partId: string | number) => {
     return partsSelection[partId] || 'garage';
   };
 
@@ -176,7 +225,7 @@ const PartsSelectionScreen = () => {
         'Customer Parts Information',
         `You've chosen to provide ${customerParts.length} part(s). Please bring these parts on your service date. Total garage parts: ${totals.garagePartsTotal}`,
         [
-          { text: 'OK', onPress: () => navigation.navigate('ServiceSchedule') }
+          { text: 'OK', onPress: () => navigation.navigate('ServiceProgress') }
         ]
       );
     } else {
@@ -184,7 +233,7 @@ const PartsSelectionScreen = () => {
         'Parts Confirmed',
         `All parts will be provided by the garage. Total: ${totals.garagePartsTotal}`,
         [
-          { text: 'OK', onPress: () => navigation.navigate('ServiceSchedule') }
+          { text: 'OK', onPress: () => navigation.navigate('ServiceProgress') }
         ]
       );
     }

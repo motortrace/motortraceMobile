@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import Colors from '../../constants/colors';
 import BottomNavigation from '../../components/BottomNav';
@@ -19,6 +20,7 @@ import type { RootStackParamList } from '../../../App';
 import AppointmentBottomSheet from '../../components/AppointmentSheet';
 import Button from '../../components/Button';
 import Icon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface RecommendedServicesScreenProps {
   onBack?: () => void;
@@ -37,6 +39,11 @@ const RecommendedServicesScreen: React.FC<RecommendedServicesScreenProps> = ({
   const [showAppointmentSheet, setShowAppointmentSheet] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
 
+  // Real data states
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+
   const handleScheduleAppointment = () => {
     setShowAppointmentSheet(true);
   };
@@ -46,6 +53,224 @@ const RecommendedServicesScreen: React.FC<RecommendedServicesScreenProps> = ({
   const handleConfirmAppointment = (appointmentData: any) => {
     console.log('Appointment confirmed:', appointmentData);
     setShowAppointmentSheet(false);
+  };
+
+  // Check if service exists as a package and handle booking
+  const handleBookService = async (service: any) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const userStr = await AsyncStorage.getItem('user');
+
+      if (!token || !userStr) {
+        Alert.alert('Error', 'Please log in to book services');
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+
+      // Check if service exists as a package
+      try {
+        const packagesResponse = await fetch('http://10.0.2.2:3000/canned-services', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (packagesResponse.ok) {
+          const packagesResult = await packagesResponse.json();
+          if (packagesResult.success && packagesResult.data) {
+            // Find if the recommended service exists as a package
+            const matchingPackage = packagesResult.data.find((pkg: any) => {
+              const pkgName = pkg.name.toLowerCase();
+              const serviceTitle = service.title.toLowerCase();
+              const serviceType = service.serviceType?.toLowerCase() || '';
+
+              // More flexible matching
+              return pkgName.includes(serviceTitle) ||
+                     pkgName.includes(serviceType) ||
+                     serviceTitle.includes(pkgName) ||
+                     // Check for common service name variations
+                     (serviceTitle.includes('oil') && pkgName.includes('oil')) ||
+                     (serviceTitle.includes('brake') && pkgName.includes('brake')) ||
+                     (serviceTitle.includes('tire') && pkgName.includes('tire')) ||
+                     (serviceTitle.includes('battery') && pkgName.includes('battery')) ||
+                     (serviceTitle.includes('transmission') && pkgName.includes('transmission')) ||
+                     (serviceTitle.includes('coolant') && pkgName.includes('coolant')) ||
+                     (serviceTitle.includes('spark') && pkgName.includes('spark'));
+            });
+
+            if (matchingPackage) {
+              // Service exists as package, create appointment directly
+              await createAppointmentForService(matchingPackage, user, token);
+            } else {
+              // Service not available as package, redirect to AllPackages
+              navigation.navigate('AllPackages');
+            }
+          } else {
+            // No packages data, redirect to AllPackages
+            navigation.navigate('AllPackages');
+          }
+        } else {
+          // API error, redirect to AllPackages
+          navigation.navigate('AllPackages');
+        }
+      } catch (error) {
+        console.error('Error checking packages:', error);
+        navigation.navigate('AllPackages');
+      }
+    } catch (error) {
+      console.error('Error in handleBookService:', error);
+      Alert.alert('Error', 'Failed to process booking request');
+    }
+  };
+
+  // Create appointment for a specific service
+  const createAppointmentForService = async (servicePackage: any, user: any, token: string) => {
+    try {
+      // For demo purposes, use mock vehicle ID
+      // In real app, this would come from vehicle selection
+      const mockVehicleId = 'vehicle-123';
+
+      const appointmentData = {
+        customerId: user.id,
+        vehicleId: mockVehicleId,
+        requestedAt: new Date().toISOString(),
+        startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
+        endTime: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(), // 1 hour later
+        notes: `Appointment for ${servicePackage.name} - Recommended Service`,
+        cannedServiceIds: [servicePackage.id],
+        serviceNotes: [`Recommended service: ${servicePackage.name}`]
+      };
+
+      const response = await fetch('http://10.0.2.2:3000/appointments', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(appointmentData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          Alert.alert(
+            'Appointment Created',
+            `Your appointment for ${servicePackage.name} has been scheduled successfully!`,
+            [
+              { text: 'OK', onPress: () => navigation.navigate('Reservations') }
+            ]
+          );
+        } else {
+          throw new Error(result.message || 'Failed to create appointment');
+        }
+      } else {
+        throw new Error('Failed to create appointment');
+      }
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      Alert.alert(
+        'Booking Failed',
+        'Unable to create appointment. Please try again or contact support.',
+        [
+          { text: 'Try Again', onPress: () => {} },
+          { text: 'Contact Support', onPress: () => {} }
+        ]
+      );
+    }
+  };
+
+  // Fetch service recommendations from backend
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        setIsLoading(true);
+        const token = await AsyncStorage.getItem('token');
+
+        if (!token) {
+          console.log('No token found, using mock data');
+          setRecommendations(recommendedServices);
+          return;
+        }
+
+        // For demo purposes, use a mock vehicle ID
+        // In a real app, this would come from vehicle selection
+        const mockVehicleId = 'vehicle-123';
+
+        try {
+          const response = await fetch(`http://10.0.2.2:3000/service-recommendations/vehicles/${mockVehicleId}/recommendations`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+              // Transform backend data to frontend format
+              const transformedRecommendations = result.data.recommendations.map((rec: any) => ({
+                id: rec.serviceType, // Use serviceType as ID for now
+                icon: getServiceIcon(rec.serviceType),
+                title: rec.serviceName,
+                description: generateDescription(rec),
+                category: rec.category,
+                priority: rec.priority.toLowerCase(),
+                estimatedCost: rec.estimatedCost ? `$${rec.estimatedCost}` : '$50-100',
+                duration: rec.estimatedDuration ? `${rec.estimatedDuration} min` : '30-60 min'
+              }));
+
+              setRecommendations(transformedRecommendations);
+            }
+          } else {
+            console.log('Failed to fetch recommendations, using mock data');
+            setRecommendations(recommendedServices);
+          }
+        } catch (error) {
+          console.error('Error fetching recommendations:', error);
+          setRecommendations(recommendedServices);
+        }
+      } catch (error) {
+        console.error('Error in recommendations fetch:', error);
+        setRecommendations(recommendedServices);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRecommendations();
+  }, []);
+
+  // Helper function to get service icon
+  const getServiceIcon = (serviceType: string): string => {
+    const iconMap: { [key: string]: string } = {
+      'oil_change': 'construct',
+      'brake_inspection': 'car-sport',
+      'tire_rotation': 'settings',
+      'air_filter': 'thermometer',
+      'transmission_service': 'construct',
+      'battery_check': 'flash',
+      'coolant_flush': 'thermometer',
+      'spark_plugs': 'flash'
+    };
+    return iconMap[serviceType] || 'construct';
+  };
+
+  // Helper function to generate description
+  const generateDescription = (rec: any): string => {
+    const mileageText = rec.dueMileage ? `Due at ${rec.dueMileage}km` : '';
+    const timeText = rec.dueDate ? `Due ${rec.dueDate.toLocaleDateString()}` : '';
+    const reason = rec.reason || 'Recommended service';
+
+    if (mileageText && timeText) {
+      return `${reason}. ${mileageText} or ${timeText.toLowerCase()}`;
+    } else if (mileageText) {
+      return `${reason}. ${mileageText}`;
+    } else if (timeText) {
+      return `${reason}. ${timeText}`;
+    }
+    return reason;
   };
 
   const navItems = [
@@ -143,9 +368,9 @@ const RecommendedServicesScreen: React.FC<RecommendedServicesScreenProps> = ({
     }
   ];
 
-  const filteredServices = selectedCategory === 'All' 
-    ? recommendedServices 
-    : recommendedServices.filter(service => service.category === selectedCategory);
+  const filteredServices = selectedCategory === 'All'
+    ? recommendations
+    : recommendations.filter(service => service.category === selectedCategory);
 
   const CategoryChip = ({ title, isSelected, onPress }: { title: string; isSelected: boolean; onPress: () => void }) => (
     <TouchableOpacity
@@ -180,9 +405,6 @@ const RecommendedServicesScreen: React.FC<RecommendedServicesScreenProps> = ({
     <SafeAreaView style={styles.container}>
       <Header
         icon="back"
-        name="John Doe"
-        image=""
-        onIconPress={() => navigation.navigate('Home')}
       />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -255,9 +477,9 @@ const RecommendedServicesScreen: React.FC<RecommendedServicesScreenProps> = ({
               </View>
 
               <View style={styles.serviceActions}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.bookButton}
-                  onPress={() => navigation.navigate('Appointment')}
+                  onPress={() => handleBookService(service)}
                 >
                   <Text style={styles.bookButtonText}>Book Now</Text>
                 </TouchableOpacity>

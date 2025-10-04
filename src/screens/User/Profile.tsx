@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -51,10 +51,10 @@ const UserProfileScreen = () => {
     onConfirm: () => {},
   });
 
-  const showAlert = (config: typeof alertConfig) => {
+  const showAlert = useCallback((config: typeof alertConfig) => {
     setAlertConfig(config);
     setAlertVisible(true);
-  };
+  }, []);
 
   // Hide custom alert
   const hideAlert = () => {
@@ -251,12 +251,31 @@ const UserProfileScreen = () => {
     );
   };
 
+  const buildImageUrl = (imagePath?: string | null): string | undefined => {
+    if (!imagePath) return undefined;
+    // If it's already a full URL (Supabase or data URL), return as is
+    if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
+      return imagePath;
+    }
+    // For relative paths, prepend the API base URL
+    const base = 'http://10.0.2.2:3000';
+    return `${base}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+  };
+
   const renderProfileImage = () => {
     if (profileData.profileImage) {
       return (
         <Image 
-          source={{ uri: profileData.profileImage }} 
-          style={styles.profileImage} 
+          source={{ uri: buildImageUrl(profileData.profileImage) }} 
+          style={styles.profileImage}
+          onError={() => {
+            console.warn('Profile image failed to load:', profileData.profileImage);
+            // Clear the image if it fails to load
+            setProfileData(prev => ({
+              ...prev,
+              profileImage: ''
+            }));
+          }}
         />
       );
     } else {
@@ -324,12 +343,7 @@ const UserProfileScreen = () => {
     }
   };
 
-  const refreshProfile = async () => {
-    setIsLoadingProfile(true);
-    await fetchProfile();
-  };
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       console.log('🔍 Starting sequential profile data fetch...');
       
@@ -429,16 +443,20 @@ const UserProfileScreen = () => {
         message: 'Unable to load your profile data. Please check your connection and try again.',
         buttonType: 'double',
         confirmText: 'Retry',
-        onConfirm: () => refreshProfile()
+        onConfirm: () => {
+          setIsLoadingProfile(true);
+          fetchProfile();
+        }
       });
     } finally {
       setIsLoadingProfile(false);
     }
-  };
+  }, [navigation, showAlert]);
+
 
   useEffect(() => {
     fetchProfile();
-  }, []);
+  }, [fetchProfile]);
 
   // Show loading component while profile is loading
   if (isLoadingProfile) {
@@ -446,9 +464,12 @@ const UserProfileScreen = () => {
       <SafeAreaView style={styles.container}>
         <Header 
           icon="back"
-          onIconPress={() => navigation.navigate('Home')}
         />
-        <LoadingComponent message="Loading profile..." />
+        <LoadingComponent 
+          loadingText="Loading profile..." 
+          containerStyle={{}}
+          textStyle={{}}
+        />
       </SafeAreaView>
     );
   }
@@ -457,7 +478,6 @@ const UserProfileScreen = () => {
     <SafeAreaView style={styles.container}>
       <Header 
         icon="back"
-        onIconPress={() => navigation.navigate('Home')}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -469,7 +489,11 @@ const UserProfileScreen = () => {
             activeOpacity={0.8}
           >
             {renderProfileImage()}
+            <View style={styles.changeImageOverlay}>
+              <Icon name="camera" size={20} color={Colors.neutral0} />
+            </View>
           </TouchableOpacity>
+          <Text style={styles.imageHint}>Tap to change profile picture</Text>
           
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{profileData.fullName}</Text>
@@ -622,14 +646,18 @@ const UserProfileScreen = () => {
         message={alertConfig.message}
         buttonType={alertConfig.buttonType}
         confirmText={alertConfig.confirmText}
-        onConfirm={hideAlert}
+        onClose={hideAlert}
         onCancel={() => setAlertVisible(false)}
       />
 
       {/* Loading overlay for image upload */}
       {isLoading && (
         <View style={styles.loadingOverlay}>
-          <LoadingComponent message="Uploading image..." />
+          <LoadingComponent 
+            loadingText="Uploading image..." 
+            containerStyle={{}}
+            textStyle={{}}
+          />
         </View>
       )}
     </SafeAreaView>
@@ -821,6 +849,26 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  changeImageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: Colors.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: Colors.neutral0,
+    elevation: 3,
+  },
+  imageHint: {
+    fontSize: 14,
+    color: Colors.neutral500,
+    fontStyle: 'italic',
+    marginBottom: 20,
   },
 });
 

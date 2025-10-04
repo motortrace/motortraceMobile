@@ -20,6 +20,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { imageUploadService } from '../../services/imageUpload.service';
 
 interface VerificationStatus {
   email: boolean;
@@ -117,6 +118,7 @@ const EditProfileScreen = () => {
             (response) => {
               if (response.didCancel || response.errorMessage) return;
               if (response.assets && response.assets[0]) {
+                // Store the local URI temporarily - will be uploaded when saving
                 handleInputChange("profileImage", response.assets[0].uri || "");
               }
             }
@@ -131,6 +133,7 @@ const EditProfileScreen = () => {
             (response) => {
               if (response.didCancel || response.errorMessage) return;
               if (response.assets && response.assets[0]) {
+                // Store the local URI temporarily - will be uploaded when saving
                 handleInputChange("profileImage", response.assets[0].uri || "");
               }
             }
@@ -160,11 +163,27 @@ const EditProfileScreen = () => {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
+      let finalImageUrl = profileData.profileImage;
+
+      // If profileImage is a local URI (starts with file:// or content://), upload it first
+      if (profileData.profileImage && (profileData.profileImage.startsWith('file://') || profileData.profileImage.startsWith('content://'))) {
+        console.log('📤 Uploading new profile image...');
+        const uploadResult = await imageUploadService.uploadProfileImage(profileData.profileImage);
+        
+        if (!uploadResult.success) {
+          Alert.alert("Upload Failed", uploadResult.error || "Failed to upload profile image. Please try again.");
+          return;
+        }
+        
+        finalImageUrl = uploadResult.imageUrl || '';
+        console.log('✅ Profile image uploaded successfully:', finalImageUrl);
+      }
+
       // Send fields expected by backend
       const payload = {
         name: profileData.fullName,
         phone: profileData.phoneNumber,
-        profileImageUrl: profileData.profileImage || null,
+        profileImageUrl: finalImageUrl || null,
       };
 
       const res = await fetch(`http://10.0.2.2:3000/auth/profile`, {
@@ -190,8 +209,11 @@ const EditProfileScreen = () => {
 
   const buildImageUrl = (imagePath?: string | null): string | undefined => {
     if (!imagePath) return undefined;
-    if (imagePath.startsWith('data:')) return imagePath;
-    if (imagePath.startsWith('http')) return imagePath;
+    // If it's already a full URL (Supabase or data URL), return as is
+    if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
+      return imagePath;
+    }
+    // For relative paths, prepend the API base URL
     const base = 'http://10.0.2.2:3000';
     return `${base}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
   };
@@ -239,8 +261,7 @@ const EditProfileScreen = () => {
             type="contact" 
             isVerified={verificationStatus.contact} 
             onVerify={handleContactVerify} 
-
-            style = {{marginBottom: -10}}
+            style={{ marginBottom: -10 }}
           />
         </FormBox>
         <View style={styles.buttonContainer}>

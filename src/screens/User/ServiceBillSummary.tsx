@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import Colors from '../../constants/colors'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ServiceItem {
   name: string;
@@ -54,13 +55,96 @@ const ServiceBillSummary: React.FC<ServiceBillSummaryProps> = ({
   onContinue,
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const subtotal = services.reduce((sum, service) => sum + service.price, 0);
+  const [billData, setBillData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBillData();
+  }, []);
+
+  const fetchBillData = async () => {
+    try {
+      const userStr = await AsyncStorage.getItem('user');
+      const token = await AsyncStorage.getItem('token');
+
+      if (!userStr || !token) {
+        setLoading(false);
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+
+      // Fetch completed work orders for this customer
+      const workOrdersRes = await fetch(`http://10.0.2.2:3000/work-orders?customerId=${user.id}&status=COMPLETED`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (workOrdersRes.ok) {
+        const workOrdersData = await workOrdersRes.json();
+        const completedWorkOrder = workOrdersData.data?.[0]; // Get most recent completed work order
+
+        if (completedWorkOrder) {
+          // Fetch payments for this work order
+          const paymentsRes = await fetch(`http://10.0.2.2:3000/work-orders/${completedWorkOrder.id}/payments`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          let payments = [];
+          if (paymentsRes.ok) {
+            const paymentsData = await paymentsRes.json();
+            payments = paymentsData.data || [];
+          }
+
+          setBillData({
+            workOrder: completedWorkOrder,
+            payments: payments,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching bill data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Use real data if available, otherwise fallback to props
+  const displayServiceType = billData?.workOrder?.complaint || serviceType;
+  const displayLocation = location; // Keep as is
+  const displayDate = billData?.workOrder?.closedAt ?
+    new Date(billData.workOrder.closedAt).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    }) : date;
+  const displayTime = billData?.workOrder?.closedAt ?
+    new Date(billData.workOrder.closedAt).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit'
+    }) : time;
+  const displayGarageName = garageName; // Keep as is
+
+  // Build services from work order data
+  const displayServices = billData?.workOrder ? [
+    {
+      name: billData.workOrder.complaint || 'Service',
+      price: parseFloat(billData.workOrder.totalAmount || '0')
+    }
+  ] : services;
+
+  const subtotal = displayServices.reduce((sum, service) => sum + service.price, 0);
   const totalTax = cgst + sgst;
   const finalTotal = subtotal + totalTax - discount;
 
   // Show only first 3 services in summary
-  const summaryServices = services.slice(0, 3);
-  const hasMoreServices = services.length > 3;
+  const summaryServices = displayServices.slice(0, 3);
+  const hasMoreServices = displayServices.length > 3;
 
   return (
     <View style={styles.container}>
@@ -75,18 +159,18 @@ const ServiceBillSummary: React.FC<ServiceBillSummaryProps> = ({
       
         {/* Service Info */}
         <View style={styles.serviceInfo}>
-          <Text style={styles.serviceType}>{serviceType}</Text>
-          <Text style={styles.location}>{location}</Text>
+          <Text style={styles.serviceType}>{displayServiceType}</Text>
+          <Text style={styles.location}>{displayLocation}</Text>
           <Text style={styles.openStatus}>📍 Open</Text>
-          
+
           <View style={styles.dateTimeRow}>
             <View style={styles.dateTimeItem}>
               <Text style={styles.dateTimeLabel}>Date & Time</Text>
-              <Text style={styles.dateTimeValue}>{date} - {time}</Text>
+              <Text style={styles.dateTimeValue}>{displayDate} - {displayTime}</Text>
             </View>
           </View>
-          
-          <Text style={styles.garageName}>{garageName}</Text>
+
+          <Text style={styles.garageName}>{displayGarageName}</Text>
         </View>
 
         {/* Services & Items Section */}
@@ -99,7 +183,7 @@ const ServiceBillSummary: React.FC<ServiceBillSummaryProps> = ({
               </View>
               <Text style={styles.sectionTitle}>Services</Text>
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>{services.length}</Text>
+                <Text style={styles.badgeText}>{displayServices.length}</Text>
               </View>
             </View>
             
@@ -124,7 +208,7 @@ const ServiceBillSummary: React.FC<ServiceBillSummaryProps> = ({
               </View>
               <Text style={styles.sectionTitle}>Items Used</Text>
               <View style={[styles.badge, styles.itemsBadge]}>
-                <Text style={styles.badgeText}>{services.length}</Text>
+                <Text style={styles.badgeText}>{displayServices.length}</Text>
               </View>
             </View>
             
@@ -174,7 +258,7 @@ const ServiceBillSummary: React.FC<ServiceBillSummaryProps> = ({
           </View>
           
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total Items ({services.length * 2})</Text>
+            <Text style={styles.summaryLabel}>Total Items ({displayServices.length * 2})</Text>
             <Text style={styles.summaryValue}>${(subtotal + totalTax).toFixed(2)}</Text>
           </View>
           

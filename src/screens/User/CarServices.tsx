@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   View, 
   Text, 
@@ -13,16 +13,20 @@ import Icon from 'react-native-vector-icons/Ionicons'
 import ServiceCard from '../../components/ServiceCard'
 import Colors from '../../constants/colors'
 import Header from '../../components/Header'
+import LoadingComponent from '../../components/Loading'
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CarServices = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'maintenance' | 'repair' | 'inspection' | 'upgrade'>('all')
+  const [services, setServices] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data - replace with actual API call
-  const services = [
+  // Mock data - fallback when backend is unavailable
+  const mockServices = [
     {
       id: '1',
       icon: 'build-outline',
@@ -139,7 +143,90 @@ const CarServices = () => {
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  const getStatusColor = (status: Service['status']) => {
+  // Fetch services from backend
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setIsLoading(true);
+        const selectedCarId = await AsyncStorage.getItem('selectedCarId');
+        if (!selectedCarId) {
+          console.log('No car selected, using mock data');
+          setServices(mockServices);
+          return;
+        }
+
+        const token = await AsyncStorage.getItem('token');
+        if (!token) {
+          console.log('No token found, using mock data');
+          setServices(mockServices);
+          return;
+        }
+
+        console.log('Fetching services for vehicle:', selectedCarId);
+        
+        // Fetch work orders for this vehicle
+        const res = await fetch(`http://10.0.2.2:3000/work-orders?vehicleId=${selectedCarId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await res.json();
+        console.log('Work orders response:', data);
+
+        if (res.ok && data.data) {
+          // Transform work orders into service format
+          const workOrderServices = data.data.map((wo: any) => ({
+            id: wo.id,
+            icon: getServiceIcon(wo.jobType),
+            title: wo.jobType || 'Service',
+            description: wo.complaint || wo.internalNotes || 'Vehicle service performed',
+            date: wo.createdAt ? new Date(wo.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            cost: wo.totalAmount || 0,
+            status: wo.status === 'COMPLETED' ? 'completed' : wo.status === 'IN_PROGRESS' ? 'in-progress' : 'pending',
+            category: getServiceCategory(wo.jobType),
+          }));
+
+          setServices(workOrderServices);
+        } else {
+          console.error('Failed to fetch services:', data);
+          setServices(mockServices);
+        }
+      } catch (err) {
+        console.error('Error fetching services:', err);
+        setServices(mockServices);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, [mockServices]);
+
+  // Helper function to get service icon based on job type
+  const getServiceIcon = (jobType: string) => {
+    switch (jobType?.toLowerCase()) {
+      case 'maintenance': return 'build-outline';
+      case 'repair': return 'hammer-outline';
+      case 'inspection': return 'checkmark-circle-outline';
+      case 'upgrade': return 'trending-up-outline';
+      default: return 'construct-outline';
+    }
+  };
+
+  // Helper function to get service category
+  const getServiceCategory = (jobType: string) => {
+    switch (jobType?.toLowerCase()) {
+      case 'maintenance': return 'maintenance';
+      case 'repair': return 'repair';
+      case 'inspection': return 'inspection';
+      case 'upgrade': return 'upgrade';
+      default: return 'maintenance';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return Colors.success || '#22C55E'
       case 'pending': return Colors.warning || '#F59E0B'
@@ -148,9 +235,31 @@ const CarServices = () => {
     }
   }
 
-  const handleServicePress = (service: Service) => {
+  const handleServicePress = (service: any) => {
     // Navigate to service details page
     console.log('Navigate to service details:', service.id)
+  }
+
+  // Show loading component while fetching services
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor={Colors.neutral0} />
+        
+        <Header 
+          icon = 'back'
+          name='Jhon Doe'
+          onIconPress={() => navigation.navigate('CarDetails')}
+        />
+        
+        <LoadingComponent 
+          loadingText="Loading services..." 
+          size="medium"
+          containerStyle={styles.loadingContainer}
+          textStyle={styles.loadingText}
+        />
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -159,7 +268,6 @@ const CarServices = () => {
       
       <Header 
         icon = 'back'
-        image = ''
         name='Jhon Doe'
         onIconPress={() => navigation.navigate('CarDetails')}
       />
@@ -420,6 +528,18 @@ const styles = StyleSheet.create({
     color: Colors.neutral400,
     marginTop: 8,
     textAlign: 'center',
+  },
+  // Loading state styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.neutral600,
+    fontWeight: '500',
   },
 })
 

@@ -79,6 +79,8 @@ import ChatBox from './src/screens/Chatbox'
 import InspectionResultSelected from './src/screens/User/InspectionResultSelected';
 import SelectedParts from './src/screens/User/SelectedParts'
 import ServiceProgress from './src/screens/User/ServiceProgress';
+import TestDriveStatus from './src/screens/User/TestDriveStatus';
+import InspectionOngoing from './src/screens/User/InspectionOngoing';
 
 // import Rewards from './src/screens/User/Rewards';
 // import RewardHistory from './src/screens/User/RewardHistory';
@@ -184,6 +186,8 @@ export type RootStackParamList = {
   InspectionResultSelected: undefined;
   SelectedParts: undefined;
   ServiceProgress: undefined;
+  TestDriveStatus: undefined;
+  InspectionOngoing: undefined;
 
   // Rewards: undefined;
   // RewardHistory: undefined;
@@ -309,6 +313,8 @@ function App(): React.ReactElement {
           <Stack.Screen name="InspectionResultSelected" component={InspectionResultSelected} />
           <Stack.Screen name="SelectedParts" component={SelectedParts} />
           <Stack.Screen name="ServiceProgress" component={ServiceProgress} />
+          <Stack.Screen name="TestDriveStatus" component={TestDriveStatus} />
+          <Stack.Screen name="InspectionOngoing" component={InspectionOngoing} />
 
           {/* Rewards */}
           {/* <Stack.Screen name="Rewards" component={Rewards} />

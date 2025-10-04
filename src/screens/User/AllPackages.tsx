@@ -11,6 +11,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import CustomAlert from '../../components/Alert';
 import LoadingComponent from "../../components/Loading"
 import Icon from 'react-native-vector-icons/Ionicons'
+import AppointmentBottomSheet from '../../components/AppointmentSheet';
+import Button from '../../components/Button';
 
 interface Package {
   id: string;
@@ -37,6 +39,7 @@ const AllPackagesScreen: React.FC<AllPackagesScreenProps> = ({ onBack: _onBack, 
     const [filteredPackages, setFilteredPackages] = useState<Package[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [appointmentSheetVisible, setAppointmentSheetVisible] = useState(false);
 
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertConfig, setAlertConfig] = useState({
@@ -154,6 +157,29 @@ const AllPackagesScreen: React.FC<AllPackagesScreenProps> = ({ onBack: _onBack, 
       }
     };
 
+    // Handle schedule appointment button press
+    const handleScheduleAppointment = () => {
+      if (_onScheduleAppointment) {
+        _onScheduleAppointment();
+      } else {
+        // Default behavior - open appointment sheet for general service
+        setAppointmentSheetVisible(true);
+      }
+    };
+
+    const handleAppointmentConfirm = useCallback((appointmentData: any) => {
+      console.log('Appointment booked:', appointmentData);
+      setAppointmentSheetVisible(false);
+      showAlert({
+        type: 'success',
+        title: 'Appointment Booked',
+        message: 'Your general service appointment has been successfully booked!',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
+    }, [showAlert]);
+
     useEffect(() => {
       fetchPackages();
     }, [fetchPackages]);
@@ -205,6 +231,10 @@ const AllPackagesScreen: React.FC<AllPackagesScreenProps> = ({ onBack: _onBack, 
           <View style={styles.bottomSpacing} />
         </ScrollView>
 
+        <View style={styles.scheduleContainer}>
+          <Button label="Schedule Appointment" onPress={handleScheduleAppointment} />
+        </View>
+
         <CustomAlert
           visible={alertVisible}
           type={alertConfig.type}
@@ -213,6 +243,15 @@ const AllPackagesScreen: React.FC<AllPackagesScreenProps> = ({ onBack: _onBack, 
           buttonType={alertConfig.buttonType}
           confirmText={alertConfig.confirmText}
           onClose={hideAlert}
+        />
+
+        {/* Appointment Booking Sheet */}
+        <AppointmentBottomSheet
+          visible={appointmentSheetVisible}
+          onClose={() => setAppointmentSheetVisible(false)}
+          onConfirm={handleAppointmentConfirm}
+          serviceName="General Service"
+          servicePrice={0}
         />
 
       </SafeAreaView>

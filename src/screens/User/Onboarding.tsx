@@ -327,6 +327,7 @@ const OnboardingScreen: React.FC = () => {
           return;
         }
         
+        // Store the full Supabase URL directly
         profileImageUrl = uploadResult.imageUrl || '';
         console.log('✅ Profile image uploaded successfully:', profileImageUrl);
       }
@@ -389,11 +390,6 @@ const OnboardingScreen: React.FC = () => {
     }
   };
 
-  // Test camera directly (for debugging)
-  const testCameraDirect = () => {
-    console.log('🧪 Testing camera directly...');
-    takePhotoWithCamera();
-  };
 
   // Fixed image options alert
   const showImageOptions = () => {

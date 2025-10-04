@@ -12,6 +12,7 @@ import Header from '../../components/Header';
 import SearchBar from '../../components/SearchBar';
 import Colors from '../../constants/colors'
 import CarCard from '../../components/CarCard';
+import LoadingComponent from '../../components/Loading';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
@@ -97,50 +98,108 @@ interface Vehicle {
 const Cars = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [cars, setCars] = useState<Vehicle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     const fetchCars = async () => {
       try {
+        setIsLoading(true);
         const userStr = await AsyncStorage.getItem('user');
-        if (!userStr) return;
+        if (!userStr) {
+          setIsLoading(false);
+          return;
+        }
         const user = JSON.parse(userStr);
         const token = await AsyncStorage.getItem('token');
-        if (!token) return;
-        console.log("Toke is", token)
-        console.log("user is:", user)
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log("Fetching vehicles for user:", user.id);
+        
+        // Fetch vehicles from backend
         const res = await fetch(`http://10.0.2.2:3000/vehicles/customer/${user.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
+        
         const data = await res.json();
+        console.log("Vehicles response:", data);
+        
         const vehicles = data.vehicles || data.data || [];
-        if (res.ok && vehicles) {
-          // Merge backend and local data by id, always use local for image and extra fields
-          const merged = vehicles.map((car: any) => {
-            const local = localCarDetails.find(lc => lc.id === car.id);
+        if (res.ok && vehicles && vehicles.length > 0) {
+          // Merge backend data with local mock data for enhanced UI
+          const merged = vehicles.map((car: any, index: number) => {
+            const local = localCarDetails[index % localCarDetails.length]; // Cycle through mock data
             return {
               id: car.id,
-              vehicleName: car.vehicleName || car.make || car.name,
-              name: car.vehicleName || car.make || car.name, // for CarCard
-              model: car.model,
-              year: car.year,
-              image: local?.image || '',
-              nickname: local?.nickname || '',
-              mileage: local?.mileage || '',
+              vehicleName: car.make || car.vehicleName || 'Unknown Vehicle',
+              name: car.make || car.vehicleName || 'Unknown Vehicle', // for CarCard
+              model: car.model || 'Unknown Model',
+              year: car.year || new Date().getFullYear(),
+              // Use backend imageUrl if available, otherwise fallback to mock
+              image: car.imageUrl || local?.image || '',
+              nickname: local?.nickname || `${car.make} ${car.model}`,
+              mileage: local?.mileage || '0 km',
               fuelLevel: local?.fuelLevel || 0,
-              lastService: local?.lastService || '',
-              status: local?.status || '',
-              statusText: local?.statusText || '',
+              lastService: local?.lastService || 'No recent service',
+              status: local?.status || 'perfect',
+              statusText: local?.statusText || 'Good Condition',
               issues: local?.issues || [],
+              // Additional backend fields
+              licensePlate: car.licensePlate || 'N/A',
+              vin: car.vin || 'N/A',
+              color: car.color || 'Unknown',
             };
           });
           setCars(merged);
+        } else if (res.ok && vehicles && vehicles.length === 0) {
+          // API returned successfully but no vehicles found
+          console.log('No vehicles found for this customer');
+          setCars([]); // Set empty array to show "no cars found" message
+        } else {
+          console.error('Failed to fetch vehicles:', data);
+          // Fallback to mock data if backend fails
+          setCars(localCarDetails.map(car => ({
+            id: car.id,
+            vehicleName: car.nickname,
+            name: car.nickname,
+            model: 'Unknown Model',
+            year: new Date().getFullYear(),
+            image: car.image,
+            nickname: car.nickname,
+            mileage: car.mileage,
+            fuelLevel: car.fuelLevel,
+            lastService: car.lastService,
+            status: car.status,
+            statusText: car.statusText,
+            issues: car.issues,
+          })));
         }
       } catch (err) {
         console.error('Failed to fetch cars:', err);
+        // Fallback to mock data on error
+        setCars(localCarDetails.map(car => ({
+          id: car.id,
+          vehicleName: car.nickname,
+          name: car.nickname,
+          model: 'Unknown Model',
+          year: new Date().getFullYear(),
+          image: car.image,
+          nickname: car.nickname,
+          mileage: car.mileage,
+          fuelLevel: car.fuelLevel,
+          lastService: car.lastService,
+          status: car.status,
+          statusText: car.statusText,
+          issues: car.issues,
+        })));
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchCars();
@@ -199,7 +258,6 @@ const Cars = () => {
       <Header
         icon="back"
         name="John Doe"
-        image=""
         onIconPress={() => navigation.navigate('Home')}
       />
 
@@ -240,11 +298,18 @@ const Cars = () => {
 
         {/* Car Cards */}
         <View style={styles.carsList}>
-          {cars.length === 0 ? (
+          {isLoading ? (
+            <LoadingComponent 
+              loadingText="Loading your cars..." 
+              size="medium"
+              containerStyle={styles.loadingContainer}
+              textStyle={styles.loadingText}
+            />
+          ) : cars.length === 0 ? (
             <View style={styles.emptyStateCard}>
               <Icon name="car-outline" size={48} color={Colors.neutral400} style={{ marginBottom: 12 }} />
-              <Text style={styles.emptyStateTitle}>No Cars Yet</Text>
-              <Text style={styles.emptyStateSubtitle}>You haven't added any cars yet. Register your car to start tracking maintenance and issues.</Text>
+              <Text style={styles.emptyStateTitle}>No Cars Found</Text>
+              <Text style={styles.emptyStateSubtitle}>No vehicles are registered under your account. Add your first car to start tracking maintenance and issues.</Text>
               <TouchableOpacity style={styles.addCarButton} onPress={() => navigation.navigate('CarOnboarding')}>
                 <Text style={styles.addCarButtonText}>Add Your First Car</Text>
               </TouchableOpacity>
@@ -424,6 +489,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
     paddingHorizontal: 20,
+  },
+  // Loading state styles
+  loadingContainer: {
+    backgroundColor: Colors.neutral0,
+    borderRadius: 16,
+    padding: 32,
+    marginVertical: 32,
+    marginHorizontal: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.neutral600,
+    fontWeight: '500',
   },
 });
 

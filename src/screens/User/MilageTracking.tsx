@@ -17,20 +17,25 @@ import Header from '../../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
 const MileageTrackingScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const [currentMileage, setCurrentMileage] = useState(45678);
+  const [currentMileage, setCurrentMileage] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
-  const [editMileage, setEditMileage] = useState('45678');
-  const [locationTracking, setLocationTracking] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [editMileage, setEditMileage] = useState('0');
   const [selectedPeriod, setSelectedPeriod] = useState('week');
   const [currentGraphIndex, setCurrentGraphIndex] = useState(0);
   const [isTrackingActive, setIsTrackingActive] = useState(false);
-  
+
+  // Real data states
+  const [realMileageData, setRealMileageData] = useState<any>(null);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+
   // Calculator states
   const [calculatorVisible, setCalculatorVisible] = useState(false);
   const [calcDistance, setCalcDistance] = useState('');
@@ -73,28 +78,50 @@ const MileageTrackingScreen = () => {
   };
 
   const getCurrentData = () => {
-    const data = allData[selectedPeriod];
+    // Use real data if available, otherwise fallback to mock data
+    if (analyticsData && analyticsData.chartData) {
+      const data = analyticsData.chartData;
+      const start = currentGraphIndex * 4;
+      const end = Math.min(start + 4, data.length);
+      return data.slice(start, end);
+    }
+
+    // Fallback to mock data
+    const data = allData[selectedPeriod as keyof typeof allData];
     const start = currentGraphIndex * 4;
     const end = Math.min(start + 4, data.length);
     return data.slice(start, end);
   };
 
   const getMaxPages = () => {
-    const data = allData[selectedPeriod];
+    if (analyticsData && analyticsData.chartData) {
+      return Math.ceil(analyticsData.chartData.length / 4);
+    }
+    const data = allData[selectedPeriod as keyof typeof allData];
     return Math.ceil(data.length / 4);
   };
 
   const getMaxDistance = () => {
     const data = getCurrentData();
-    return Math.max(...data.map(item => item.distance));
+    return Math.max(...data.map((item: any) => item.distance));
   };
 
   const getTotalStats = () => {
-    const data = allData[selectedPeriod];
-    const totalDistance = data.reduce((sum, item) => sum + item.distance, 0);
-    const totalFuel = data.reduce((sum, item) => sum + item.fuel, 0);
-    const avgEfficiency = data.reduce((sum, item) => sum + item.efficiency, 0) / data.length;
-    
+    // Use real data if available
+    if (analyticsData) {
+      return {
+        totalDistance: analyticsData.totalDistance?.toString() || '0',
+        totalFuel: analyticsData.totalFuelUsed?.toFixed(1) || '0.0',
+        avgEfficiency: analyticsData.averageEfficiency?.toFixed(1) || '0.0',
+      };
+    }
+
+    // Fallback to mock data
+    const data = allData[selectedPeriod as keyof typeof allData];
+    const totalDistance = data.reduce((sum: number, item: any) => sum + item.distance, 0);
+    const totalFuel = data.reduce((sum: number, item: any) => sum + item.fuel, 0);
+    const avgEfficiency = data.reduce((sum: number, item: any) => sum + item.efficiency, 0) / data.length;
+
     return {
       totalDistance: totalDistance.toFixed(0),
       totalFuel: totalFuel.toFixed(1),
@@ -102,14 +129,122 @@ const MileageTrackingScreen = () => {
     };
   };
 
-  const handleMileageEdit = () => {
+  // Fetch mileage data from backend
+  useEffect(() => {
+    const fetchMileageData = async () => {
+      try {
+        setIsLoading(true);
+        const userStr = await AsyncStorage.getItem('user');
+        const token = await AsyncStorage.getItem('token');
+
+        if (!userStr || !token) {
+          console.log('No user or token found, using mock data');
+          setCurrentMileage(45678);
+          setEditMileage('45678');
+          return;
+        }
+
+        const user = JSON.parse(userStr);
+
+        // For now, we'll use the first vehicle. In a real app, you'd select a vehicle
+        // For demo purposes, let's assume we have a vehicle ID
+        const mockVehicleId = 'vehicle-123'; // This should come from vehicle selection
+
+        try {
+          // Fetch current mileage
+          const currentRes = await fetch(`http://10.0.2.2:3000/mileage-tracking/vehicles/${mockVehicleId}/current`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (currentRes.ok) {
+            const currentData = await currentRes.json();
+            if (currentData.success && currentData.data) {
+              setCurrentMileage(currentData.data.currentMileage);
+              setEditMileage(currentData.data.currentMileage.toString());
+            }
+          }
+
+          // Fetch analytics data
+          const analyticsRes = await fetch(`http://10.0.2.2:3000/mileage-tracking/analytics`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              vehicleId: mockVehicleId,
+              period: selectedPeriod
+            })
+          });
+
+          if (analyticsRes.ok) {
+            const analyticsData = await analyticsRes.json();
+            if (analyticsData.success) {
+              setAnalyticsData(analyticsData.data);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching mileage data:', error);
+          // Fallback to mock data
+          setCurrentMileage(45678);
+          setEditMileage('45678');
+        }
+      } catch (error) {
+        console.error('Error in mileage data fetch:', error);
+        setCurrentMileage(45678);
+        setEditMileage('45678');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMileageData();
+  }, [selectedPeriod]);
+
+  const handleMileageEdit = async () => {
     if (isEditing) {
       const newMileage = parseInt(editMileage);
       if (isNaN(newMileage) || newMileage < 0) {
         Alert.alert('Invalid Mileage', 'Please enter a valid mileage number.');
         return;
       }
-      setCurrentMileage(newMileage);
+
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const mockVehicleId = 'vehicle-123'; // This should come from vehicle selection
+
+        if (token) {
+          const response = await fetch('http://10.0.2.2:3000/mileage-tracking/entries', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              vehicleId: mockVehicleId,
+              mileage: newMileage,
+              notes: 'Manual mileage update'
+            })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              setCurrentMileage(newMileage);
+              Alert.alert('Success', 'Mileage updated successfully');
+            }
+          } else {
+            Alert.alert('Error', 'Failed to update mileage');
+          }
+        }
+      } catch (error) {
+        console.error('Error updating mileage:', error);
+        Alert.alert('Error', 'Failed to update mileage');
+      }
+
       setIsEditing(false);
     } else {
       setEditMileage(currentMileage.toString());
@@ -178,7 +313,7 @@ const MileageTrackingScreen = () => {
             <TouchableOpacity
               style={[
                 styles.trackButton,
-                { backgroundColor: isTrackingActive ? Colors.error : Colors.success }
+                { backgroundColor: isTrackingActive ? Colors.danger : Colors.success }
               ]}
               onPress={handleTrackingToggle}
             >
@@ -202,30 +337,30 @@ const MileageTrackingScreen = () => {
         <View style={styles.chartHeader}>
           <TouchableOpacity
             style={[styles.navButton, currentGraphIndex === 0 && styles.navButtonDisabled]}
-            onPress={() => navigateGraph('prev')}
+            onPress={() => navigateGraph('prev' as any)}
             disabled={currentGraphIndex === 0}
           >
             <Text style={styles.navButtonText}>{'<'}</Text>
           </TouchableOpacity>
-          
+
           <View style={styles.chartTitleContainer}>
             <Text style={styles.chartTitle}>Distance Traveled</Text>
             <Text style={styles.chartSubtitle}>
               {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)} - Page {currentGraphIndex + 1} of {maxPages}
             </Text>
           </View>
-          
+
           <TouchableOpacity
             style={[styles.navButton, currentGraphIndex === maxPages - 1 && styles.navButtonDisabled]}
-            onPress={() => navigateGraph('next')}
+            onPress={() => navigateGraph('next' as any)}
             disabled={currentGraphIndex === maxPages - 1}
           >
             <Text style={styles.navButtonText}>{'>'}</Text>
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.barChart}>
-          {data.map((item, index) => {
+          {data.map((item: any, index: number) => {
             const barHeight = (item.distance / maxDistance) * 120;
             return (
               <View key={index} style={styles.barContainer}>
@@ -233,7 +368,7 @@ const MileageTrackingScreen = () => {
                   <View style={[styles.bar, { height: barHeight }]} />
                   <Text style={styles.barValue}>{item.distance}km</Text>
                 </View>
-                <Text style={styles.barLabel}>{item.day || item.period}</Text>
+                <Text style={styles.barLabel}>{item.date || item.day || item.period}</Text>
               </View>
             );
           })}
@@ -304,11 +439,8 @@ const MileageTrackingScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header 
+      <Header
         icon="back"
-        name="Mileage Tracking"
-        image=""
-        onIconPress={() => navigation.goBack()}
       />
       
       <ScrollView style={styles.scrollView}>
@@ -416,13 +548,13 @@ const MileageTrackingScreen = () => {
             <Text style={styles.tableHeaderText}>Fuel</Text>
             <Text style={styles.tableHeaderText}>Efficiency</Text>
           </View>
-          
-          {getCurrentData().map((item, index) => (
+
+          {getCurrentData().map((item: any, index: number) => (
             <View key={index} style={styles.tableRow}>
-              <Text style={styles.tableCell}>{item.day || item.period}</Text>
+              <Text style={styles.tableCell}>{item.date || item.day || item.period}</Text>
               <Text style={styles.tableCell}>{item.distance} km</Text>
-              <Text style={styles.tableCell}>{item.fuel} L</Text>
-              <Text style={styles.tableCell}>{item.efficiency} km/L</Text>
+              <Text style={styles.tableCell}>{item.fuel ? `${item.fuel} L` : 'N/A'}</Text>
+              <Text style={styles.tableCell}>{item.efficiency ? `${item.efficiency} km/L` : 'N/A'}</Text>
             </View>
           ))}
         </View>

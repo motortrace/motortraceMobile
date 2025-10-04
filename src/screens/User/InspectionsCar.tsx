@@ -44,19 +44,28 @@ const TrackOrderScreen = () => { // Add navigation prop
     },
     {
       id: 4,
+      title: 'Test Drive',
+      subtitle: '',
+      status: 'pending',
+      hasDetails: true,
+      navigation: 'TestDriveStatus'
+    },
+    {
+      id: 5,
       title: 'Final Inspection',
       subtitle: '',
       status: 'pending',
     },
     {
-      id: 5,
+      id: 6,
       title: 'Ready for Payment',
       subtitle: '',
       status: 'pending',
       hasDetails: true,
+      navigation: 'DetailedBill',
     },
     {
-      id: 6,
+      id: 7,
       title: 'Ready for Pickup',
       subtitle: '',
       status: 'pending',
