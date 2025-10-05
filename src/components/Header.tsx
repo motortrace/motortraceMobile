@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,18 @@ import {
   StyleSheet,
   Platform,
   ViewStyle,
+  Image,
 } from 'react-native';
+// API base URL - change this to your computer's IP if using real device
+// For Android emulator: 10.0.2.2
+// For iOS simulator: localhost
+// For real device: your computer's IP (e.g., 192.168.1.100)
+const API_BASE_URL = 'http://10.0.2.2:3000'; // Change this if needed
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define navigation type - adjust RootStackParamList according to your navigation structure
 type RootStackParamList = {
@@ -25,16 +32,70 @@ type NavigationProp = StackNavigationProp<RootStackParamList>;
 // Define component props interface
 interface HeaderProps {
   icon?: 'back' | 'none';
+  name?: string;
+  image?: string;
   showNotification?: boolean;
   style?: ViewStyle;
 }
 
 const Header: React.FC<HeaderProps> = ({
   icon = 'back',
+  name: propName = '',
+  image: propImage = '',
   showNotification = true,
   style,
 }) => {
   const navigation = useNavigation<NavigationProp>();
+  const [headerData, setHeaderData] = useState<{
+    fullname: string;
+    profile_image: string | null;
+  } | null>(null);
+
+  const fetchHeaderData = async () => {
+    try {
+      console.log('🔍 Header: Fetching header data...');
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔍 Header: Token exists:', !!token);
+      if (!token) {
+        console.log('🔍 Header: No token found');
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/auth/header`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-Client-Type': 'mobile',
+        },
+      });
+
+      console.log('🔍 Header: Response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 Header: Response data:', data);
+        if (data.success && data.user) {
+          console.log('🔍 Header: Setting header data:', data.user.fullname, data.user.profile_image);
+          setHeaderData({
+            fullname: data.user.fullname || 'User',
+            profile_image: data.user.profile_image || null,
+          });
+        } else {
+          console.log('🔍 Header: Data not in expected format');
+        }
+      } else {
+        const errorText = await response.text();
+        console.log('🔍 Header: Response error:', errorText);
+      }
+    } catch (error) {
+      console.error('🔍 Header: Failed to fetch header data:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchHeaderData();
+  }, []);
 
   const renderLeftIcon = (): React.ReactElement | null => {
     if (icon !== 'back') return null;
@@ -60,12 +121,34 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const renderProfile = (): React.ReactElement => {
+    const displayName = headerData?.fullname || propName || 'User';
+    const profileImage = headerData?.profile_image || propImage;
+
+    if (profileImage) {
+      return (
+        <TouchableOpacity
+          style={styles.profileImageContainer}
+          onPress={() => navigation.navigate('Profile')}
+        >
+          <Image
+            source={{ uri: profileImage }}
+            style={styles.profileImage}
+            onError={() => {
+              // Fallback to initial if image fails
+              setHeaderData(prev => prev ? { ...prev, profile_image: null } : null);
+            }}
+          />
+        </TouchableOpacity>
+      );
+    }
+
+    const initial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
     return (
       <TouchableOpacity
         style={styles.profilePlaceholder}
         onPress={() => navigation.navigate('Profile')}
       >
-        <Text style={styles.profileInitial}>U</Text>
+        <Text style={styles.profileInitial}>{initial}</Text>
       </TouchableOpacity>
     );
   };
@@ -128,11 +211,17 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: 4,
   },
-  profileImage: {
+  profileImageContainer: {
     width: 32,
     height: 32,
     borderRadius: 16,
     marginLeft: 16,
+    overflow: 'hidden',
+  },
+  profileImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   profilePlaceholder: {
     width: 32,

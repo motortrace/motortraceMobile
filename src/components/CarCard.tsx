@@ -69,12 +69,12 @@ const CarCard: React.FC<CarCardProps> = ({
   const statusConfig = getStatusConfig(car.status);
 
   return (
-    <TouchableOpacity 
-      style={styles.carCard} 
-      onPress={(id) => {
-        console.log('Pressed car with id:', id);
-        AsyncStorage.setItem('selectedCarId', String(id));
-        navigation.navigate('CarDetails');
+    <TouchableOpacity
+      style={styles.carCard}
+      onPress={() => {
+        console.log('Pressed car with id:', car.id);
+        AsyncStorage.setItem('selectedCarId', car.id);
+        onPress(car.id);
       }}
       activeOpacity={0.8}
     >

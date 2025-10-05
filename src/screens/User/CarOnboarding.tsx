@@ -360,9 +360,28 @@ const CarOnboardingForm = () => {
       if (!token) {
         throw new Error('Authentication token not found. Please login again.');
       }
-      
+
+      // Get customer ID by email
+      console.log('Fetching customer info for user:', user.email);
+      const customerRes = await fetch(`http://10.0.2.2:3000/customers?email=${encodeURIComponent(user.email)}&limit=1`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const customerData = await customerRes.json();
+      console.log('Customer data:', customerData);
+
+      if (!customerRes.ok || !customerData.success || !customerData.data || customerData.data.length === 0) {
+        throw new Error('Could not find customer information. Please complete your profile setup.');
+      }
+
+      const customerId = customerData.data[0].id;
+      console.log('Customer ID:', customerId);
+
       const requestBody = {
-        customerId: user.id,
+        customerId: customerId,
         make: formData.name,
         model: formData.model,
         year: Number(formData.year),

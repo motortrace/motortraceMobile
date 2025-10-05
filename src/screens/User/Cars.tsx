@@ -104,34 +104,101 @@ const Cars = () => {
   useEffect(() => {
     const fetchCars = async () => {
       try {
+        console.log('🚗 Starting fetchCars...');
         setIsLoading(true);
+
         const userStr = await AsyncStorage.getItem('user');
+        console.log('📱 User string from AsyncStorage:', userStr);
+
         if (!userStr) {
+          console.log('❌ No user string found in AsyncStorage');
           setIsLoading(false);
           return;
         }
+
         const user = JSON.parse(userStr);
+        console.log('👤 Parsed user object:', user);
+        console.log('📧 User email:', user.email);
+        console.log('🆔 User ID:', user.id);
+
         const token = await AsyncStorage.getItem('token');
+        console.log('🔑 Token from AsyncStorage:', token ? 'Token exists' : 'No token');
+
         if (!token) {
+          console.log('❌ No token found in AsyncStorage');
           setIsLoading(false);
           return;
         }
-        
-        console.log("Fetching vehicles for user:", user.id);
-        
-        // Fetch vehicles from backend
-        const res = await fetch(`http://10.0.2.2:3000/vehicles/customer/${user.id}`, {
+
+        console.log("🔍 Fetching customer info for email:", user.email);
+
+        // First, get the customer ID by email
+        const customerUrl = `http://10.0.2.2:3000/customers?email=${encodeURIComponent(user.email)}&limit=1`;
+        console.log('🌐 Customer API URL:', customerUrl);
+
+        const customerRes = await fetch(customerUrl, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
-        
+
+        console.log('📡 Customer API response status:', customerRes.status);
+        console.log('📡 Customer API response ok:', customerRes.ok);
+
+        const customerData = await customerRes.json();
+        console.log('📦 Customer API response data:', customerData);
+
+        if (!customerRes.ok) {
+          console.error('❌ Customer API request failed with status:', customerRes.status);
+          console.error('❌ Customer API error response:', customerData);
+          setCars([]);
+          setIsLoading(false);
+          return;
+        }
+
+        if (!customerData.success) {
+          console.error('❌ Customer API returned success=false:', customerData);
+          setCars([]);
+          setIsLoading(false);
+          return;
+        }
+
+        if (!customerData.data || customerData.data.length === 0) {
+          console.log('⚠️ No customer found for email:', user.email);
+          console.log('📋 Available customer data:', customerData.data);
+          setCars([]);
+          setIsLoading(false);
+          return;
+        }
+
+        const customerId = customerData.data[0].id;
+        console.log("✅ Found customer ID:", customerId);
+        console.log("🏢 Customer details:", customerData.data[0]);
+
+        // Fetch vehicles from backend
+        const vehiclesUrl = `http://10.0.2.2:3000/vehicles/customer/${customerId}`;
+        console.log('🚗 Fetching vehicles from URL:', vehiclesUrl);
+
+        const res = await fetch(vehiclesUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        console.log('📡 Vehicles API response status:', res.status);
+        console.log('📡 Vehicles API response ok:', res.ok);
+
         const data = await res.json();
-        console.log("Vehicles response:", data);
+        console.log("📦 Vehicles API response data:", data);
         
         const vehicles = data.vehicles || data.data || [];
+        console.log('🚗 Extracted vehicles array:', vehicles);
+        console.log('🚗 Vehicles array length:', vehicles.length);
+
         if (res.ok && vehicles && vehicles.length > 0) {
+          console.log('✅ Processing', vehicles.length, 'vehicles from backend');
           // Merge backend data with local mock data for enhanced UI
           const merged = vehicles.map((car: any, index: number) => {
             const local = localCarDetails[index % localCarDetails.length]; // Cycle through mock data
@@ -156,14 +223,18 @@ const Cars = () => {
               color: car.color || 'Unknown',
             };
           });
+          console.log('✅ Setting cars with merged data:', merged.length, 'cars');
           setCars(merged);
         } else if (res.ok && vehicles && vehicles.length === 0) {
           // API returned successfully but no vehicles found
-          console.log('No vehicles found for this customer');
+          console.log('⚠️ API returned successfully but no vehicles found for this customer');
           setCars([]); // Set empty array to show "no cars found" message
         } else {
-          console.error('Failed to fetch vehicles:', data);
+          console.error('❌ Failed to fetch vehicles - API error');
+          console.error('❌ Response status:', res.status);
+          console.error('❌ Response data:', data);
           // Fallback to mock data if backend fails
+          console.log('🔄 Falling back to mock data');
           setCars(localCarDetails.map(car => ({
             id: car.id,
             vehicleName: car.nickname,
@@ -181,7 +252,8 @@ const Cars = () => {
           })));
         }
       } catch (err) {
-        console.error('Failed to fetch cars:', err);
+        console.error('💥 Exception in fetchCars:', err);
+        console.log('🔄 Falling back to mock data due to exception');
         // Fallback to mock data on error
         setCars(localCarDetails.map(car => ({
           id: car.id,
@@ -199,6 +271,7 @@ const Cars = () => {
           issues: car.issues,
         })));
       } finally {
+        console.log('🏁 fetchCars completed, setting loading to false');
         setIsLoading(false);
       }
     };
@@ -299,8 +372,8 @@ const Cars = () => {
         {/* Car Cards */}
         <View style={styles.carsList}>
           {isLoading ? (
-            <LoadingComponent 
-              loadingText="Loading your cars..." 
+            <LoadingComponent
+              loadingText="Loading your cars..."
               size="medium"
               containerStyle={styles.loadingContainer}
               textStyle={styles.loadingText}
@@ -316,30 +389,33 @@ const Cars = () => {
             </View>
           ) : (
             <>
-              {cars.map(car => (
-                <CarCard
-                  key={car.id}
-                  car={{
-                    id: String(car.id),
-                    name: car.name || '',
-                    nickname: car.nickname || '',
-                    model: car.model,
-                    year: car.year,
-                    image: car.image || '',
-                    mileage: car.mileage || '',
-                    lastService: car.lastService || '',
-                    issues: car.issues || [],
-                    status: car.status || '',
-                    statusText: car.statusText || '',
-                  }}
-                  getStatusConfig={getStatusConfig}
-                  onPress={async () => {
-                    console.log('Pressed car with id:', car.id);
-                    await AsyncStorage.setItem('selectedCarId', '1');
-                    navigation.navigate('CarDetails');
-                  }}
-                />
-              ))}
+              {cars.map((car, index) => {
+                console.log('🚗 Rendering car', index + 1, ':', car.name || car.vehicleName, car.model);
+                return (
+                  <CarCard
+                    key={car.id}
+                    car={{
+                      id: String(car.id),
+                      name: car.name || '',
+                      nickname: car.nickname || '',
+                      model: car.model,
+                      year: car.year,
+                      image: car.image || '',
+                      mileage: car.mileage || '',
+                      lastService: car.lastService || '',
+                      issues: car.issues || [],
+                      status: car.status || '',
+                      statusText: car.statusText || '',
+                    }}
+                    getStatusConfig={getStatusConfig}
+                    onPress={async () => {
+                      console.log('Pressed car with id:', car.id);
+                      await AsyncStorage.setItem('selectedCarId', car.id);
+                      navigation.navigate('CarDetails');
+                    }}
+                  />
+                );
+              })}
               {/* Add New Car Card */}
               <View style={styles.addCarCard}>
                 <View style={styles.addCarIcon}>
