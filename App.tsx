@@ -50,7 +50,7 @@ import Help from './src/screens/Help'
 import PrivacyPolicy from './src/screens/PrivacyPolicy'
 import DeleteAccount from './src/screens/DeleteAccount';
 import LoginActivity from './src/screens/LoginActivity';
-import ActiveSession from './src/screens/Vresion2/ActiveSession';
+import ActiveSession from './src/screens/User/ActiveSession';
 import SupportChat from './src/screens/User/SupportChat';
 import faq from './src/screens/faq'
 import FaqAnswer from './src/screens/FaqAnswer';
@@ -70,6 +70,8 @@ import EditCarDetails from './src/screens/User/EditCarDetails';
 import CarOnboarding from './src/screens/User/CarOnboarding';
 import CarProducts from './src/screens/User/CarProducts';
 import CarServices from './src/screens/User/CarServices';
+import CarProfile from './src/screens/User/CarProfile';
+import CarExpenses from './src/screens/User/CarExpenses';
 import MileageTracking from './src/screens/User/MilageTracking';
 
 import InspectionResults from './src/screens/User/InspectionResult';
@@ -172,10 +174,12 @@ export type RootStackParamList = {
 
   Cars: undefined;
   CarDetails: undefined;
-  EditCarDetails: undefined;
+  EditCarDetails: { carData: { id?: number; image?: string; status?: string } };
   CarOnboarding: undefined;
   CarProducts: undefined;
   CarServices: undefined;
+  CarExpenses: undefined;
+  CarProfile: undefined;
   MileageTracking: undefined;
 
   Reservations: undefined;
@@ -302,6 +306,8 @@ function App(): React.ReactElement {
           <Stack.Screen name="CarOnboarding" component={CarOnboarding} />
           <Stack.Screen name="CarProducts" component={CarProducts} />
           <Stack.Screen name="CarServices" component={CarServices} />
+          <Stack.Screen name="CarExpenses" component={CarExpenses} />
+          <Stack.Screen name="CarProfile" component={CarProfile} />
           <Stack.Screen name="MileageTracking" component={MileageTracking} />
 
           {/* Appintments */} 

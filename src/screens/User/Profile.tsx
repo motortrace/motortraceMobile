@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,
   Image,
   ScrollView,
 } from 'react-native';
@@ -48,13 +47,35 @@ const UserProfileScreen = () => {
     message: '',
     buttonType: 'single' as 'none' | 'single' | 'double' | 'triple',
     confirmText: 'OK',
+    cancelText: 'Cancel',
+    option1Text: 'Camera',
+    option2Text: 'Gallery',
     onConfirm: () => {},
+    onCancel: () => {},
+    onOption1: () => {},
+    onOption2: () => {},
   });
 
-  const showAlert = useCallback((config: typeof alertConfig) => {
-    setAlertConfig(config);
+  const showAlert = useCallback((config: Partial<typeof alertConfig>) => {
+    const alertType = config.buttonType || 'single';
+
+    setAlertConfig({
+      type: config.type || 'info',
+      title: config.title || '',
+      message: config.message || '',
+      buttonType: alertType,
+      confirmText: config.confirmText || 'OK',
+      cancelText: config.cancelText || 'Cancel',
+      option1Text: config.option1Text || 'Camera',
+      option2Text: config.option2Text || 'Gallery',
+      onConfirm: config.onConfirm || (() => {}),
+      onCancel: config.onCancel || (() => {}),
+      onOption1: config.onOption1 || (() => {}),
+      onOption2: config.onOption2 || (() => {}),
+    });
     setAlertVisible(true);
   }, []);
+
 
   // Hide custom alert
   const hideAlert = () => {
@@ -134,13 +155,38 @@ const UserProfileScreen = () => {
       }
       
       console.log('✅ Profile image uploaded successfully:', uploadResult.imageUrl);
-      
+
+      // Update the user's profile in the backend with the new image URL
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          const updateResponse = await fetch('http://10.0.2.2:3000/auth/profile', {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              profileImageUrl: uploadResult.imageUrl
+            }),
+          });
+
+          if (updateResponse.ok) {
+            console.log('✅ Profile updated in database with new image URL');
+          } else {
+            console.warn('⚠️ Profile image uploaded but database update failed');
+          }
+        }
+      } catch (updateError) {
+        console.warn('⚠️ Profile image uploaded but database update failed:', updateError);
+      }
+
       // Update the profile data with new image URL
       setProfileData(prev => ({
         ...prev,
         profileImage: uploadResult.imageUrl || ''
       }));
-      
+
       showAlert({
         type: 'success',
         title: 'Success',
@@ -166,89 +212,90 @@ const UserProfileScreen = () => {
   };
 
   const handleChangeProfilePicture = () => {
-    Alert.alert(
-      'Change Profile Picture',
-      'Choose how you want to update your profile picture',
-      [
-        { text: 'Camera', onPress: takePhotoWithCamera },
-        { text: 'Gallery', onPress: pickImageFromGallery },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+    showAlert({
+      type: 'info',
+      title: 'Change Profile Picture',
+      message: 'Choose how you want to update your profile picture',
+      buttonType: 'triple',
+      cancelText: 'Cancel',
+      option1Text: 'Camera',
+      option2Text: 'Gallery',
+      onCancel: () => {},
+      onOption1: takePhotoWithCamera,
+      onOption2: pickImageFromGallery,
+    });
   };
 
   const handleSignOut = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Sign Out', 
-          style: 'destructive',
-          onPress: async () => {
-            setIsLoading(true);
-            
-            try {
-              // Get token from secure storage
-              const token = await AsyncStorage.getItem('token');
-              
-              if (token) {
-                // Call backend API to invalidate the token
-                await fetch('http://10.0.2.2:3000/auth/signout', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                    'X-Client-Type': 'mobile',
-                  },
-                });
-              }
-              
-              // Clear token from secure storage
-              await AsyncStorage.removeItem('token');
-              await AsyncStorage.removeItem('user');
-              setUser(null);
-              
-              // Navigate to login screen
-              navigation.navigate('LogIn');
-              
-              showAlert({
-                type: 'success',
-                title: 'Signed Out',
-                message: 'You have been successfully signed out.',
-                buttonType: 'single',
-                confirmText: 'OK',
-                onConfirm: () => {}
-              });
-              
-            } catch (error: any) {
-              console.error('Sign out error:', error);
-              
-              // Even if the API call fails, still clear local data
-              try {
-                await AsyncStorage.removeItem('token');
-                await AsyncStorage.removeItem('user');
-                setUser(null);
-                navigation.navigate('LogIn');
-              } catch (localError) {
-                console.error('Error clearing local data:', localError);
-                showAlert({
-                  type: 'error',
-                  title: 'Sign Out Error',
-                  message: 'There was an issue signing out. Please try again.',
-                  buttonType: 'single',
-                  confirmText: 'OK',
-                  onConfirm: () => {}
-                });
-              }
-            } finally {
-              setIsLoading(false);
-            }
+    showAlert({
+      type: 'warning',
+      title: 'Sign Out',
+      message: 'Are you sure you want to sign out?',
+      buttonType: 'double',
+      confirmText: 'Sign Out',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        setIsLoading(true);
+
+        try {
+          // Get token from secure storage
+          const token = await AsyncStorage.getItem('token');
+
+          if (token) {
+            // Call backend API to invalidate the token
+            await fetch('http://10.0.2.2:3000/auth/signout', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-Client-Type': 'mobile',
+              },
+            });
           }
-        },
-      ]
-    );
+
+          // Clear token from secure storage
+          await AsyncStorage.removeItem('token');
+          await AsyncStorage.removeItem('user');
+          setUser(null);
+
+          // Navigate to login screen
+          navigation.navigate('LogIn');
+
+          showAlert({
+            type: 'success',
+            title: 'Signed Out',
+            message: 'You have been successfully signed out.',
+            buttonType: 'single',
+            confirmText: 'OK',
+            onConfirm: () => {}
+          });
+
+        } catch (error: any) {
+          console.error('Sign out error:', error);
+
+          // Even if the API call fails, still clear local data
+          try {
+            await AsyncStorage.removeItem('token');
+            await AsyncStorage.removeItem('user');
+            setUser(null);
+            navigation.navigate('LogIn');
+          } catch (localError) {
+            console.error('Error clearing local data:', localError);
+            showAlert({
+              type: 'error',
+              title: 'Sign Out Error',
+              message: 'There was an issue signing out. Please try again.',
+              buttonType: 'single',
+              confirmText: 'OK',
+              onConfirm: () => {}
+            });
+          }
+        } finally {
+          setIsLoading(false);
+        }
+      },
+      onCancel: () => {}
+    });
   };
 
   const buildImageUrl = (imagePath?: string | null): string | undefined => {

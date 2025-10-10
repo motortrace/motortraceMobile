@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -24,13 +24,12 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ConfirmationPopup from '../../components/ConfirmationPopup';
+import CustomAlert, { CustomAlertProps } from '../../components/Alert';
 
 // Hardcoded car data
 const hardcodedCarData = {
   id: 1,
   name: "Honda Civic", // add name
-  nickname: "Reliable Runner",
   model: "Honda Civic LX",
   year: 2020,
   image: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=400',
@@ -78,7 +77,6 @@ const hardcodedCarData = {
 interface CarDetails {
   id: number;
   name: string;
-  nickname: string;
   model: string;
   year: number;
   image: string;
@@ -102,7 +100,7 @@ const CarDetailsPage = () => {
   const [showMileageModal, setShowMileageModal] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<any>(null);
   const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<CustomAlertProps | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -115,9 +113,19 @@ const CarDetailsPage = () => {
       }
     };
     getCarIdAndFetch();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchCar = async (carId: string) => {
+  // Refresh car data when returning from EditCarDetails
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (selectedCarId) {
+        fetchCar(selectedCarId);
+      }
+    });
+    return unsubscribe;
+  }, [navigation, selectedCarId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchCar = useCallback(async (carId: string) => {
     try {
       setIsLoading(true);
       const userStr = await AsyncStorage.getItem('user');
@@ -155,7 +163,65 @@ const CarDetailsPage = () => {
       
       const workOrdersData = await workOrdersRes.json();
       console.log('Work orders data:', workOrdersData);
-      
+
+      // Fetch current mileage from VehicleMileage
+      let currentMileage = '0 km';
+      try {
+        const mileageRes = await fetch(`http://10.0.2.2:3000/vehicles/${carId}/mileage`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (mileageRes.ok) {
+          const mileageData = await mileageRes.json();
+          if (mileageData.currentMileage) {
+            currentMileage = `${mileageData.currentMileage} km`;
+          }
+        }
+      } catch (mileageErr) {
+        console.warn('Could not fetch mileage:', mileageErr);
+      }
+
+      // Fetch service recommendations for active issues
+      let systemIssues = [];
+      try {
+        const recommendationsRes = await fetch(`http://10.0.2.2:3000/vehicles/${carId}/recommendations?status=PENDING`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (recommendationsRes.ok) {
+          const recommendationsData = await recommendationsRes.json();
+          systemIssues = recommendationsData.data?.map((rec: any) => ({
+            id: `system_${rec.id}`,
+            title: rec.reason,
+            description: `Priority: ${rec.priority} | Severity: ${rec.severity}`,
+            priority: rec.priority === 'CRITICAL' ? 'high' : rec.priority === 'HIGH' ? 'high' : 'medium',
+            createdAt: rec.triggeredAt,
+            status: 'active',
+            type: 'system'
+          })) || [];
+        }
+      } catch (issuesErr) {
+        console.warn('Could not fetch service recommendations:', issuesErr);
+      }
+
+      // Load user-added issues
+      let userIssues = [];
+      try {
+        const storedIssues = await AsyncStorage.getItem(`car_issues_${carId}`);
+        if (storedIssues) {
+          userIssues = JSON.parse(storedIssues).filter((issue: any) => issue.status === 'active');
+        }
+      } catch (userIssuesErr) {
+        console.warn('Could not load user issues:', userIssuesErr);
+      }
+
+      // Combine system and user issues
+      const activeIssues = [...systemIssues, ...userIssues];
+
       if (vehicleRes.ok && (vehicleData.vehicle || vehicleData.data)) {
         const vehicle = vehicleData.vehicle || vehicleData.data;
         const workOrders = workOrdersData.data || workOrdersData.workOrders || [];
@@ -170,23 +236,37 @@ const CarDetailsPage = () => {
           cost: wo.totalAmount ? `$${wo.totalAmount}` : 'N/A',
           status: wo.status || 'completed',
         }));
-        
+
+        // Find the most recent service date
+        const lastServiceDate = workOrders.length > 0
+          ? workOrders
+              .filter((wo: any) => wo.status === 'COMPLETED')
+              .sort((a: any, b: any) => new Date(b.closedAt || b.updatedAt).getTime() - new Date(a.closedAt || a.updatedAt).getTime())[0]
+          : null;
+
+        const lastService = lastServiceDate
+          ? new Date(lastServiceDate.closedAt || lastServiceDate.updatedAt).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            })
+          : 'No service history';
+
         setCar({
           id: vehicle.id,
           name: vehicle.make || vehicle.vehicleName || 'Unknown Vehicle',
-          nickname: hardcodedCarData.nickname, // Keep mock nickname for now
           model: vehicle.model || 'Unknown Model',
           year: vehicle.year || new Date().getFullYear(),
           // Use backend imageUrl if available, otherwise fallback to mock
           image: vehicle.imageUrl || hardcodedCarData.image,
-          status: hardcodedCarData.status, // Keep mock status for now
-          statusText: hardcodedCarData.statusText,
-          mileage: hardcodedCarData.mileage, // Keep mock mileage for now
-          lastService: serviceHistory.length > 0 ? serviceHistory[0].date : hardcodedCarData.lastService,
+          status: vehicle.status || 'ACTIVE', // Use real status from backend
+          statusText: getStatusText(vehicle.status || 'ACTIVE'), // Get status text from status
+          mileage: currentMileage, // Use real mileage from backend
+          lastService: lastService, // Use real last service date
           number: vehicle.licensePlate || hardcodedCarData.number,
           color: vehicle.color || hardcodedCarData.color,
-          issues: hardcodedCarData.issues, // Keep mock issues for now
-          services: serviceHistory.length > 0 ? serviceHistory : hardcodedCarData.services,
+          issues: activeIssues, // Use real issues from recommendations and user-added issues
+          services: serviceHistory, // Use real service history from work orders
           location: hardcodedCarData.location,
           isTracking: hardcodedCarData.isTracking,
         });
@@ -201,7 +281,7 @@ const CarDetailsPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   // Request location permission on component mount
   useEffect(() => {
@@ -366,12 +446,22 @@ const CarDetailsPage = () => {
   // Add type to status param
   const getStatusConfig = (status: string) => {
     const configs: { [key: string]: { icon: string; backgroundColor: string; color: string; textColor: string } } = {
-      active: { icon: 'checkmark-circle', backgroundColor: Colors.neutral100, color: Colors.success, textColor: Colors.success },
-      maintenance: { icon: 'build', backgroundColor: Colors.neutral100, color: Colors.warning, textColor: Colors.danger },
-      inactive: { icon: 'pause-circle', backgroundColor: Colors.neutral100 , color: Colors.Purple, textColor: '#4A148C' },
-      issues: { icon: 'warning', backgroundColor: Colors.neutral100, color: Colors.danger, textColor: Colors.danger },
+      ACTIVE: { icon: 'checkmark-circle', backgroundColor: Colors.neutral100, color: Colors.success, textColor: Colors.success },
+      MAINTENANCE: { icon: 'build', backgroundColor: Colors.neutral100, color: Colors.warning, textColor: Colors.danger },
+      INACTIVE: { icon: 'pause-circle', backgroundColor: Colors.neutral100 , color: Colors.Purple, textColor: '#4A148C' },
+      ISSUES: { icon: 'warning', backgroundColor: Colors.neutral100, color: Colors.danger, textColor: Colors.danger },
     };
-    return configs[status] || configs.active;
+    return configs[status] || configs.ACTIVE;
+  };
+
+  const getStatusText = (status: string) => {
+    const statusTexts: { [key: string]: string } = {
+      ACTIVE: 'Active',
+      MAINTENANCE: 'Maintenance',
+      INACTIVE: 'Inactive',
+      ISSUES: 'Has Issues',
+    };
+    return statusTexts[status] || 'Active';
   };
 
   const statusConfig = getStatusConfig(car?.status || '');
@@ -395,13 +485,28 @@ const CarDetailsPage = () => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to delete car');
-      setShowDeleteConfirm(false);
-      Alert.alert('Deleted', 'Car deleted successfully!', [
-        { text: 'OK', onPress: () => navigation.navigate('Cars') }
-      ]);
+      setAlertConfig(null);
+      setAlertConfig({
+        visible: true,
+        title: 'Success',
+        message: 'Car deleted successfully!',
+        type: 'success',
+        buttonType: 'single',
+        onClose: () => {
+          setAlertConfig(null);
+          navigation.navigate('Cars');
+        }
+      });
     } catch (error: any) {
-      setShowDeleteConfirm(false);
-      Alert.alert('Error', error.message || 'Failed to delete car');
+      setAlertConfig(null);
+      setAlertConfig({
+        visible: true,
+        title: 'Error',
+        message: error.message || 'Failed to delete car',
+        type: 'error',
+        buttonType: 'single',
+        onClose: () => setAlertConfig(null)
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -415,7 +520,6 @@ const CarDetailsPage = () => {
           icon="back"
           name="John Doe"
           image=""
-          onIconPress={() => navigation.navigate('Cars')}
         />
         <LoadingComponent 
           loadingText="Loading car details..." 
@@ -434,7 +538,6 @@ const CarDetailsPage = () => {
         icon="back"
         name="John Doe"
         image=""
-        onIconPress={() => navigation.navigate('Cars')}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -452,7 +555,6 @@ const CarDetailsPage = () => {
         {/* Car Info Card */}
         <View style={styles.infoCard}>
           <Text style={styles.carName}>{car?.name}</Text>
-          <Text style={styles.carNickname}>"{car?.nickname}"</Text>
           <Text style={styles.carModel}>{car?.model} • {car?.year}</Text>
           <Text style={styles.carNumber}>{car?.number}</Text>
           {/* Add Car Name and Color */}
@@ -470,10 +572,10 @@ const CarDetailsPage = () => {
             style={{width: '48%', height: 50}}
           />
 
-          <BorderButton 
+          <BorderButton
             label='Edit Details'
             icon = 'create-outline'
-            onPress={() => navigation.navigate('EditCarDetails', { carData: { id: car?.id, nickname: car?.nickname, image: car?.image } })}
+            onPress={() => navigation.navigate('EditCarDetails', { carData: { id: car?.id, image: car?.image || '', status: car?.status || 'ACTIVE' } })}
             style={{width: '48%', height: 50}}
           />
 
@@ -484,10 +586,24 @@ const CarDetailsPage = () => {
             style={{width: '48%', height: 50}}
           />
 
-          <BorderButton 
+          <BorderButton
             label='View Products'
             icon = 'cube-outline'
             onPress={() => navigation.navigate('CarProducts')}
+            style={{width: '48%', height: 50}}
+          />
+
+          <BorderButton
+            label='Car Profile'
+            icon = 'person-outline'
+            onPress={() => navigation.navigate('CarProfile')}
+            style={{width: '48%', height: 50}}
+          />
+
+          <BorderButton
+            label='Expense Manager'
+            icon = 'cash-outline'
+            onPress={() => navigation.navigate('CarExpenses')}
             style={{width: '48%', height: 50}}
           />
 
@@ -619,10 +735,57 @@ const CarDetailsPage = () => {
         {car && car.issues && car.issues.length > 0 && (
           <View style={styles.issuesCard}>
             <Text style={styles.cardTitle}>Active Issues</Text>
-            {car.issues?.map((issue, index) => (
-              <View key={index} style={styles.issueItem}>
-                <Icon name="warning" size={16} color={Colors.danger} />
-                <Text style={styles.issueText}>{issue}</Text>
+            {car.issues?.map((issue: any, index: number) => (
+              <View key={issue.id || index} style={styles.issueItem}>
+                <View style={styles.issueHeader}>
+                  <View style={styles.issueTitleRow}>
+                    <Icon
+                      name={issue.type === 'system' ? 'cog' : 'warning'}
+                      size={16}
+                      color={issue.priority === 'high' ? Colors.danger : issue.priority === 'medium' ? Colors.warning : Colors.success}
+                    />
+                    <Text style={styles.issueTitle}>{issue.title}</Text>
+                  </View>
+                  {issue.type === 'user' && (
+                    <TouchableOpacity
+                      style={styles.resolveButton}
+                      onPress={() => {
+                        // Mark user issue as resolved
+                        const updatedIssues = car.issues.map((i: any) =>
+                          i.id === issue.id ? { ...i, status: 'resolved' } : i
+                        );
+                        // Save back to storage and update state
+                        AsyncStorage.setItem(`car_issues_${car.id}`, JSON.stringify(updatedIssues));
+                        setCar({ ...car, issues: updatedIssues.filter((i: any) => i.status === 'active') });
+                      }}
+                    >
+                      <Icon name="checkmark-circle" size={16} color={Colors.success} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+                {issue.description && (
+                  <Text style={styles.issueDescription}>{issue.description}</Text>
+                )}
+                <View style={styles.issueMeta}>
+                  <Text style={styles.issueDate}>
+                    {issue.type === 'system' ? 'System detected' : 'User reported'} • {new Date(issue.createdAt).toLocaleDateString()}
+                  </Text>
+                  {issue.priority && (
+                    <View style={[styles.priorityBadge, {
+                      backgroundColor: issue.priority === 'high' ? Colors.danger + '20' :
+                                     issue.priority === 'medium' ? Colors.warning + '20' :
+                                     Colors.success + '20'
+                    }]}>
+                      <Text style={[styles.priorityText, {
+                        color: issue.priority === 'high' ? Colors.danger :
+                               issue.priority === 'medium' ? Colors.warning :
+                               Colors.success
+                      }]}>
+                        {issue.priority.toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
             ))}
           </View>
@@ -631,7 +794,19 @@ const CarDetailsPage = () => {
           <View style={styles.issuesCard}>
             <TouchableOpacity
               style={styles.deleteButton}
-              onPress={() => setShowDeleteConfirm(true)}
+              onPress={() => {
+                setAlertConfig({
+                  visible: true,
+                  title: "Delete Car",
+                  message: "Are you sure you want to delete this car? This action cannot be undone.",
+                  type: 'warning',
+                  buttonType: 'double',
+                  confirmText: 'Delete',
+                  cancelText: 'Cancel',
+                  onCancel: () => setAlertConfig(null),
+                  onClose: handleDeleteCar
+                });
+              }}
               disabled={isDeleting}
             >
               <Icon name="trash-outline" size={18} color="#fff" />
@@ -653,17 +828,11 @@ const CarDetailsPage = () => {
           setShowMileageModal(false);
         }}
       />
-      <ConfirmationPopup
-        visible={showDeleteConfirm}
-        title="Delete Car"
-        message="Are you sure you want to delete this car? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        confirmButtonColor={Colors.danger}
-        onConfirm={handleDeleteCar}
-        onCancel={() => setShowDeleteConfirm(false)}
-        iconType="warning"
-      />
+      {alertConfig && (
+        <CustomAlert
+          {...alertConfig}
+        />
+      )}
     </View>
   );
 };
@@ -770,12 +939,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.neutral900,
     marginBottom: 4,
-  },
-  carNickname: {
-    fontSize: 16,
-    color: Colors.neutral600,
-    fontStyle: 'italic',
-    marginBottom: 8,
   },
   carModel: {
     fontSize: 14,
@@ -991,15 +1154,58 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   issueItem: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral100,
+  },
+  issueHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  issueTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
-  },
-  issueText: {
     flex: 1,
+    marginRight: 12,
+  },
+  issueTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.neutral900,
+    marginLeft: 8,
+    flex: 1,
+  },
+  resolveButton: {
+    padding: 8,
+    backgroundColor: Colors.success + '20',
+    borderRadius: 8,
+  },
+  issueDescription: {
     fontSize: 14,
     color: Colors.neutral700,
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  issueMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  issueDate: {
+    fontSize: 12,
+    color: Colors.neutral500,
+  },
+  priorityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  priorityText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
   emptyState: {
     alignItems: 'center',

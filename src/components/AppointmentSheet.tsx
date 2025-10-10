@@ -15,19 +15,22 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from "../constants/colors";
 import Button from '../components/Button';
-import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import CustomAlert, { CustomAlertProps } from '../components/Alert';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BOTTOM_SHEET_HEIGHT = SCREEN_HEIGHT * 0.75;
 
 interface Vehicle {
-  id: string;
+  id: string | number;
+  name?: string;
   make: string;
   model: string;
   year: number;
   licensePlate?: string;
   color?: string;
+  imageUrl?: string;
+  vin?: string;
 }
 
 interface AvailableSlot {
@@ -45,6 +48,8 @@ interface AppointmentBottomSheetProps {
   serviceId?: string;
   serviceName?: string;
   servicePrice?: number;
+  isReschedule?: boolean;
+  existingAppointment?: any;
 }
 
 const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
@@ -54,6 +59,8 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
   serviceId,
   serviceName = "Service",
   servicePrice = 0,
+  isReschedule = false,
+  existingAppointment,
 }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState("");
@@ -63,6 +70,7 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [isCreatingAppointment, setIsCreatingAppointment] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<CustomAlertProps | null>(null);
 
   const translateY = useRef(new Animated.Value(BOTTOM_SHEET_HEIGHT)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -72,9 +80,23 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
     setIsLoadingVehicles(true);
     try {
       const token = await AsyncStorage.getItem('token');
-      if (!token) return;
+      const userStr = await AsyncStorage.getItem('user');
+      if (!token || !userStr) {
+        console.log('❌ No token or user found in AsyncStorage');
+        setIsLoadingVehicles(false);
+        return;
+      }
 
-      const response = await fetch('http://10.0.2.2:3000/vehicles', {
+      const user = JSON.parse(userStr);
+      const customerId = user.customerId;
+      if (!customerId) {
+        console.log('⚠️ No customer ID found in stored user data');
+        setVehicles([]);
+        setIsLoadingVehicles(false);
+        return;
+      }
+
+      const response = await fetch(`http://10.0.2.2:3000/vehicles/customer/${customerId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -82,14 +104,31 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
         },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setVehicles(data.data);
-        }
+      console.log('📡 Vehicles API response status:', response.status);
+      console.log('📡 Vehicles API response ok:', response.ok);
+
+      const data = await response.json();
+      console.log("📦 Vehicles API response data:", data);
+
+      const vehicles = data.vehicles || data.data || [];
+      console.log('🚗 Extracted vehicles array:', vehicles);
+      console.log('🚗 Vehicles array length:', vehicles.length);
+
+      if (response.ok && vehicles && vehicles.length > 0) {
+        console.log('✅ Setting vehicles:', vehicles.length, 'vehicles');
+        setVehicles(vehicles);
+      } else if (response.ok && vehicles && vehicles.length === 0) {
+        console.log('⚠️ API returned successfully but no vehicles found for this customer');
+        setVehicles([]);
+      } else {
+        console.error('❌ Failed to fetch vehicles - API error');
+        console.error('❌ Response status:', response.status);
+        console.error('❌ Response data:', data);
+        setVehicles([]);
       }
     } catch (error) {
-      console.error('Failed to fetch vehicles:', error);
+      console.error('💥 Exception in fetchVehicles:', error);
+      setVehicles([]);
     } finally {
       setIsLoadingVehicles(false);
     }
@@ -115,11 +154,20 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
         },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setAvailableSlots(data.data);
-        }
+      const data = await response.json();
+      const slots = data.slots || data.data || [];
+
+      if (response.ok && slots && slots.length > 0) {
+        console.log('✅ Setting available slots:', slots.length, 'slots');
+        setAvailableSlots(slots);
+      } else if (response.ok && slots && slots.length === 0) {
+        console.log('⚠️ API returned successfully but no slots found');
+        setAvailableSlots([]);
+      } else {
+        console.error('❌ Failed to fetch slots - API error');
+        console.error('❌ Response status:', response.status);
+        console.error('❌ Response data:', data);
+        setAvailableSlots([]);
       }
     } catch (error) {
       console.error('Failed to fetch available slots:', error);
@@ -133,7 +181,12 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
     setIsCreatingAppointment(true);
     try {
       const token = await AsyncStorage.getItem('token');
-      if (!token) return;
+      if (!token) {
+        console.error('❌ No token found for appointment creation');
+        return false;
+      }
+
+      console.log('📤 Sending appointment data:', JSON.stringify(appointmentData, null, 2));
 
       const response = await fetch('http://10.0.2.2:3000/appointments', {
         method: 'POST',
@@ -144,17 +197,56 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
         body: JSON.stringify(appointmentData),
       });
 
+      console.log('📡 Appointment creation response status:', response.status);
+      console.log('📡 Appointment creation response ok:', response.ok);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('📡 Create appointment response data:', data);
         if (data.success) {
-          Alert.alert('Success', 'Appointment booked successfully!');
-          onConfirm(data.data);
+          setAlertConfig({
+            visible: true,
+            title: 'Success',
+            message: 'Appointment booked successfully!',
+            type: 'success',
+            onClose: () => {
+              setAlertConfig(null);
+              onConfirm(data.data);
+            }
+          });
           return true;
+        } else {
+          // Backend returned success: false
+          console.error('❌ Backend returned success: false with error:', data.error);
+          setAlertConfig({
+            visible: true,
+            title: 'Error',
+            message: data.error || 'Failed to book appointment. Please try again.',
+            type: 'error',
+            onClose: () => setAlertConfig(null)
+          });
+          return false;
         }
+      } else {
+        // HTTP error response
+        let errorMessage = 'Failed to book appointment. Please try again.';
+        try {
+          const errorData = await response.json();
+          console.error('❌ HTTP error response:', response.status, errorData);
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          console.error('❌ HTTP error response:', response.status, 'Could not parse error response');
+        }
+
+        setAlertConfig({
+          visible: true,
+          title: 'Error',
+          message: errorMessage,
+          type: 'error',
+          onClose: () => setAlertConfig(null)
+        });
+        return false;
       }
-      
-      Alert.alert('Error', 'Failed to book appointment. Please try again.');
-      return false;
     } catch (error) {
       console.error('Failed to create appointment:', error);
       Alert.alert('Error', 'Failed to book appointment. Please try again.');
@@ -223,10 +315,26 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
       openBottomSheet();
       fetchVehicles();
       fetchAvailableSlots(selectedDate);
+
+      // Pre-select vehicle for rescheduling
+      if (isReschedule && existingAppointment) {
+        // Find the vehicle ID from the existing appointment
+        // The appointment data should have vehicleId
+        if (existingAppointment.vehicleId) {
+          setSelectedVehicle(String(existingAppointment.vehicleId));
+        }
+      }
     } else {
       closeBottomSheet();
+      // Reset selections when closing
+      if (!visible) {
+        setSelectedTime("");
+        if (!isReschedule) {
+          setSelectedVehicle("");
+        }
+      }
     }
-  }, [visible, fetchVehicles, fetchAvailableSlots, selectedDate, openBottomSheet, closeBottomSheet]);
+  }, [visible, fetchVehicles, fetchAvailableSlots, selectedDate, openBottomSheet, closeBottomSheet, isReschedule, existingAppointment]);
 
   // Fetch slots when date changes
   useEffect(() => {
@@ -237,32 +345,107 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
 
   const handleConfirm = async () => {
     if (!selectedTime) {
-      Alert.alert('Error', 'Please select a time slot');
+      setAlertConfig({
+        visible: true,
+        title: 'Error',
+        message: 'Please select a time slot',
+        type: 'error',
+        onClose: () => setAlertConfig(null)
+      });
       return;
     }
 
     if (!selectedVehicle) {
-      Alert.alert('Error', 'Please select a vehicle');
+      setAlertConfig({
+        visible: true,
+        title: 'Error',
+        message: 'Please select a vehicle',
+        type: 'error',
+        onClose: () => setAlertConfig(null)
+      });
       return;
     }
 
     const selectedSlot = availableSlots.find(slot => slot.startTime === selectedTime);
     if (!selectedSlot) {
-      Alert.alert('Error', 'Selected time slot is no longer available');
+      setAlertConfig({
+        visible: true,
+        title: 'Error',
+        message: 'Selected time slot is no longer available',
+        type: 'error',
+        onClose: () => setAlertConfig(null)
+      });
       return;
     }
 
-    const appointmentData: any = {
-      vehicleId: selectedVehicle,
-      requestedAt: new Date().toISOString(),
-      startTime: new Date(`${selectedDate.toISOString().split('T')[0]}T${selectedTime}`).toISOString(),
-      endTime: new Date(`${selectedDate.toISOString().split('T')[0]}T${selectedSlot.endTime}`).toISOString(),
-      notes: `Booking for ${serviceName || 'General Service'}`,
-    };
+    // Get user data for customerId
+    const userStr = await AsyncStorage.getItem('user');
+    if (!userStr) {
+      setAlertConfig({
+        visible: true,
+        title: 'Error',
+        message: 'User session expired. Please log in again.',
+        type: 'error',
+        onClose: () => setAlertConfig(null)
+      });
+      return;
+    }
+
+    const user = JSON.parse(userStr);
+
+    let appointmentData: any;
+
+    try {
+      const dateString = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD
+
+      // Construct start time - try different formats
+      let startDateTime;
+      if (selectedTime.includes('T')) {
+        // Already ISO format
+        startDateTime = new Date(selectedTime);
+      } else {
+        // Assume HH:MM or HH:MM:SS format
+        startDateTime = new Date(`${dateString}T${selectedTime}`);
+      }
+
+      // Construct end time - try different formats
+      let endDateTime;
+      if (selectedSlot.endTime.includes('T')) {
+        // Already ISO format
+        endDateTime = new Date(selectedSlot.endTime);
+      } else {
+        // Assume HH:MM or HH:MM:SS format
+        endDateTime = new Date(`${dateString}T${selectedSlot.endTime}`);
+      }
+
+      // Validate dates
+      if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+        throw new Error('Invalid date format');
+      }
+
+      appointmentData = {
+        customerId: String(user.customerId), // Convert to string
+        vehicleId: selectedVehicle, // Keep as string
+        requestedAt: new Date().toISOString(),
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        notes: `Booking for ${serviceName || 'General Service'}`,
+      };
+    } catch (error) {
+      console.error('Error constructing appointment dates:', error);
+      setAlertConfig({
+        visible: true,
+        title: 'Error',
+        message: 'Invalid date or time format. Please try again.',
+        type: 'error',
+        onClose: () => setAlertConfig(null)
+      });
+      return;
+    }
 
     // Only include service data if a specific service is selected
     if (serviceId) {
-      appointmentData.cannedServiceIds = [serviceId];
+      appointmentData.cannedServiceIds = [serviceId]; // Keep as string
       appointmentData.serviceNotes = [serviceName || 'Service'];
     }
 
@@ -272,12 +455,19 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
     }
   };
 
-  // Generate next 7 days for date selection
+  // Generate dates for selection (starting from tomorrow for new bookings, from next day for rescheduling)
   const generateDates = () => {
     const dates = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() + i);
+    const startDate = isReschedule && existingAppointment
+      ? new Date(existingAppointment.scheduledDate || existingAppointment.requestedAt)
+      : new Date();
+
+    // For reschedule, start from the next day after appointment date; for new booking, start from tomorrow
+    const startOffset = isReschedule ? 1 : 1;
+
+    for (let i = startOffset; i < startOffset + 7; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
       dates.push({
         day: date.toLocaleDateString('en-US', { weekday: 'short' }),
         date: date.getDate().toString().padStart(2, '0'),
@@ -291,17 +481,52 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
 
   // Format time for display
   const formatTime = (timeString: string) => {
-    const time = new Date(`2000-01-01T${timeString}`);
-    return time.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    });
+    // Handle special cases
+    if (!timeString || timeString === 'Invalid Date' || timeString.trim() === '') {
+      return 'Time not available';
+    }
+
+    try {
+      let time;
+
+      // If it contains 'T', it's likely an ISO string, parse directly
+      if (timeString.includes('T')) {
+        time = new Date(timeString);
+      }
+      // If it contains ':', assume it's HH:MM or HH:MM:SS format
+      else if (timeString.includes(':')) {
+        time = new Date(`2000-01-01T${timeString}`);
+      }
+      // Otherwise, return as is
+      else {
+        return timeString;
+      }
+
+      // Check if the date is valid
+      if (isNaN(time.getTime())) {
+        console.warn('Invalid time format:', timeString);
+        return timeString;
+      }
+
+      return time.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      console.error('Error formatting time:', timeString, error);
+      return 'Time not available'; // Better fallback
+    }
   };
 
   // Format vehicle display name
   const formatVehicleName = (vehicle: Vehicle) => {
-    return `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehicle.licensePlate ? ` (${vehicle.licensePlate})` : ''}`;
+    if (vehicle.name) {
+      return vehicle.name;
+    }
+    const make = vehicle.make || 'Unknown Make';
+    const model = vehicle.model || 'Unknown Model';
+    return `${make} ${model}`;
   };
 
   return (
@@ -334,7 +559,7 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {/* Title */}
-            <Text style={styles.title}>Schedule {serviceName}</Text>
+            <Text style={styles.title}>{isReschedule ? 'Reschedule' : 'Schedule'} {serviceName}</Text>
             {servicePrice > 0 && (
               <Text style={styles.priceText}>${servicePrice}</Text>
             )}
@@ -423,21 +648,24 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
                 <Text style={styles.loadingText}>Loading vehicles...</Text>
               </View>
             ) : vehicles.length > 0 ? (
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={selectedVehicle}
-                  onValueChange={(itemValue) => setSelectedVehicle(itemValue)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Select vehicle" value="" />
-                  {vehicles.map((vehicle) => (
-                    <Picker.Item 
-                      key={vehicle.id} 
-                      label={formatVehicleName(vehicle)} 
-                      value={vehicle.id} 
-                    />
-                  ))}
-                </Picker>
+              <View style={styles.vehicleGrid}>
+                {vehicles.map((vehicle) => (
+                  <TouchableOpacity
+                    key={String(vehicle.id)}
+                    style={[
+                      styles.vehicleCard,
+                      selectedVehicle === String(vehicle.id) && styles.selectedVehicleCard,
+                    ]}
+                    onPress={() => setSelectedVehicle(String(vehicle.id))}
+                  >
+                    <Text style={[
+                      styles.vehicleText,
+                      selectedVehicle === String(vehicle.id) && styles.selectedVehicleText,
+                    ]}>
+                      {formatVehicleName(vehicle)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             ) : (
               <View style={styles.noVehiclesContainer}>
@@ -452,12 +680,19 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
           {/* Confirm Button */}
           <View style={styles.confirmContainer}>
             <Button
-              label={isCreatingAppointment ? "Booking appointment..." : "Confirm appointment"}
+              label={isCreatingAppointment ? (isReschedule ? "Rescheduling..." : "Booking appointment...") : (isReschedule ? "Reschedule appointment" : "Confirm appointment")}
               onPress={handleConfirm}
             />
           </View>
         </Animated.View>
       </View>
+
+      {/* Custom Alert */}
+      {alertConfig && (
+        <CustomAlert
+          {...alertConfig}
+        />
+      )}
     </Modal>
   );
 };
@@ -611,21 +846,33 @@ const styles = StyleSheet.create({
   selectedCapacityText: {
     color: Colors.neutral0,
   },
-  pickerContainer: {
-    backgroundColor: Colors.neutral100,
-    borderRadius: 12,
-    marginBottom: 20,
-    overflow: 'hidden',
+  vehicleGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
   },
-  picker: {
-    height: 50,
+  vehicleCard: {
+    width: '48%',
+    height: 60,
+    backgroundColor: Colors.neutral100,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    padding: 8,
+  },
+  selectedVehicleCard: {
+    backgroundColor: Colors.primary,
   },
   vehicleText: {
-    fontSize: 16,
-    color: Colors.neutral900,
+    fontSize: 14,
+    color: Colors.neutral700,
+    fontWeight: '600',
+    textAlign: 'center',
   },
-  placeholderText: {
-    color: Colors.neutral500,
+  selectedVehicleText: {
+    color: Colors.neutral0,
   },
   bottomSpacing: {
     height: 20,

@@ -8,13 +8,15 @@ import {
   TouchableOpacity,
   Alert,
   FlatList,
+  Linking,
 } from 'react-native';
 import Colors from '../../constants/colors';
 import Header from '../../components/Header';
 import Button from '../../components/Button';
 import BorderButton from '../../components/BorderButton';
 import LoadingComponent from '../../components/Loading';
-import AppointmentSheet from '../../components/AppointmentSheet';
+import CustomAlert, { CustomAlertProps } from '../../components/Alert';
+import RescheduleSheet from '../../components/RescheduleSheet';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
@@ -24,52 +26,19 @@ const ReservationsScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming', 'ongoing', 'completed'
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [appointmentSheetVisible, setAppointmentSheetVisible] = useState(false);
+  const [rescheduleSheetVisible, setRescheduleSheetVisible] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
+  const [alertConfig, setAlertConfig] = useState<CustomAlertProps | null>(null);
   const [upcomingReservations, setUpcomingReservations] = useState<any[]>([]);
   const [ongoingReservations, setOngoingReservations] = useState<any[]>([]);
   const [completedReservations, setCompletedReservations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [serviceAdvisor, setServiceAdvisor] = useState<{name?: string, phone?: string} | null>(null);
 
   // Mock data for upcoming reservations - fallback when backend is unavailable
   const mockUpcomingReservations = [
-    {
-      id: 1,
-      customerName: 'John Smith',
-      vehicleInfo: '2020 Toyota Camry',
-      Numberplate: 'ABC123',
-      serviceType: 'Full Inspection',
-      scheduledDate: '2025-06-25',
-      scheduledTime: '09:00 AM',
-      estimatedDuration: '2 hours',
-      status: 'confirmed',
-      phone: '+1-555-0123',
-    },
-    {
-      id: 2,
-      customerName: 'Sarah Wilson',
-      vehicleInfo: '2019 Honda Civic',
-      Numberplate: 'XYZ789',
-      serviceType: 'Oil Change + Brake Check',
-      scheduledDate: '2025-06-25',
-      scheduledTime: '11:30 AM',
-      estimatedDuration: '1.5 hours',
-      status: 'pending_confirmation',
-      phone: '+1-555-0456',
-    },
-    {
-      id: 3,
-      customerName: 'Mike Johnson',
-      vehicleInfo: '2021 Ford F-150',
-      Numberplate: 'DEF456',
-      serviceType: 'Engine Diagnostic',
-      scheduledDate: '2025-06-26',
-      scheduledTime: '08:00 AM',
-      estimatedDuration: '3 hours',
-      status: 'confirmed',
-      phone: '+1-555-0789',
-    },
-  ];
+];
 
   const mockOngoingReservations = [
     {
@@ -142,14 +111,38 @@ const ReservationsScreen = () => {
     },
   ];
 
+  // Fetch service advisor info
+  const fetchServiceAdvisor = async () => {
+    try {
+      const response = await fetch('http://10.0.2.2:3000/appointments/service-advisor', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setServiceAdvisor(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching service advisor:', error);
+    }
+  };
+
   // Fetch appointments from backend
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
         setIsLoading(true);
+
         const userStr = await AsyncStorage.getItem('user');
+        console.log('📱 User string from AsyncStorage:', userStr);
+
         if (!userStr) {
-          console.log('No user found, using mock data');
+          console.log('❌ No user string found in AsyncStorage');
           setUpcomingReservations(mockUpcomingReservations);
           setOngoingReservations(mockOngoingReservations);
           setCompletedReservations(mockCompletedReservations);
@@ -157,19 +150,38 @@ const ReservationsScreen = () => {
         }
 
         const user = JSON.parse(userStr);
+        console.log('👤 Parsed user object:', user);
+        console.log('📧 User email:', user.email);
+        console.log('🆔 User ID:', user.id);
+        console.log('👥 Customer ID:', user.customerId);
+
         const token = await AsyncStorage.getItem('token');
+        console.log('🔑 Token from AsyncStorage:', token ? 'Token exists' : 'No token');
+
         if (!token) {
-          console.log('No token found, using mock data');
+          console.log('❌ No token found in AsyncStorage');
           setUpcomingReservations(mockUpcomingReservations);
           setOngoingReservations(mockOngoingReservations);
           setCompletedReservations(mockCompletedReservations);
           return;
         }
 
-        console.log('Fetching appointments for user:', user.id);
-        
+        // Get customer ID from stored user data
+        const customerId = user.customerId;
+        console.log("✅ Customer ID from stored user:", customerId);
+
+        if (!customerId) {
+          console.log('⚠️ No customer ID found in stored user data');
+          setUpcomingReservations(mockUpcomingReservations);
+          setOngoingReservations(mockOngoingReservations);
+          setCompletedReservations(mockCompletedReservations);
+          return;
+        }
+
+        console.log('Fetching appointments for user:', customerId);
+
         // Fetch appointments for this customer
-        const res = await fetch(`http://10.0.2.2:3000/appointments?customerId=${user.id}`, {
+        const res = await fetch(`http://10.0.2.2:3000/appointments?customerId=${user.customerId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -181,22 +193,42 @@ const ReservationsScreen = () => {
 
         if (res.ok && data.data) {
           const appointments = data.data;
-          
+          console.log('📅 Raw appointments from API:', appointments);
+
           // Categorize appointments by status
-          const upcoming = appointments.filter((apt: any) => 
+          const upcoming = appointments.filter((apt: any) =>
             apt.status === 'PENDING' || apt.status === 'CONFIRMED'
-          ).map((apt: any) => ({
-            id: apt.id,
-            customerName: apt.customer?.name || 'Customer',
-            vehicleInfo: apt.vehicle ? `${apt.vehicle.year} ${apt.vehicle.make} ${apt.vehicle.model}` : 'Unknown Vehicle',
-            Numberplate: apt.vehicle?.licensePlate || 'N/A',
-            serviceType: apt.cannedServices?.map((cs: any) => cs.cannedService?.name).join(', ') || 'Service',
-            scheduledDate: apt.requestedAt ? new Date(apt.requestedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-            scheduledTime: apt.startTime ? new Date(apt.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'TBD',
-            estimatedDuration: '2 hours', // Default duration
-            status: apt.status?.toLowerCase() === 'confirmed' ? 'confirmed' : 'pending_confirmation',
-            phone: apt.customer?.phone || 'N/A',
-          }));
+          ).map((apt: any) => {
+            console.log('📅 Processing appointment:', apt.id, 'startTime:', apt.startTime, 'requestedAt:', apt.requestedAt);
+
+            // Extract date and time from startTime
+            let scheduledDate = 'TBD';
+            let scheduledTime = 'TBD';
+
+            if (apt.startTime) {
+              const startDate = new Date(apt.startTime);
+              scheduledDate = startDate.toISOString().split('T')[0];
+              scheduledTime = startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              console.log('📅 Extracted from startTime - date:', scheduledDate, 'time:', scheduledTime);
+            } else {
+              console.log('📅 No startTime found, using fallback');
+            }
+
+            return {
+              id: apt.id,
+              customerName: apt.customer?.name || 'Customer',
+              vehicleInfo: apt.vehicle ? `${apt.vehicle.year} ${apt.vehicle.make} ${apt.vehicle.model}` : 'Unknown Vehicle',
+              Numberplate: apt.vehicle?.licensePlate || 'N/A',
+              serviceType: apt.cannedServices?.map((cs: any) => cs.cannedService?.name).join(', ') || 'Service',
+              scheduledDate: scheduledDate,
+              scheduledTime: scheduledTime,
+              estimatedDuration: '2 hours', // Default duration
+              status: apt.status?.toLowerCase() === 'confirmed' ? 'confirmed' : 'pending_confirmation',
+              phone: apt.customer?.phone || 'N/A',
+            };
+          });
+
+          console.log('📅 Final upcoming appointments:', upcoming);
 
           const ongoing = appointments.filter((apt: any) =>
             apt.status === 'IN_PROGRESS' || apt.status === 'CHECKED_IN'
@@ -252,7 +284,8 @@ const ReservationsScreen = () => {
     };
 
     fetchAppointments();
-  }, []);
+    fetchServiceAdvisor();
+  }, [refreshTrigger]);
 
   useEffect(() => {
     // Check for notifications from ongoing reservations
@@ -335,12 +368,104 @@ const ReservationsScreen = () => {
       </View>
       
       <View style={styles.cardActions}>
-        <Button label="Call" icon='call' containerStyle={{width: 100}} onPress={() => {}} />
-        <Button label="Chat" icon='chatbubble' containerStyle={{width: 100}} onPress={() => {navigation.navigate('ChatBox')}} />
-        <BorderButton label="Reschedule" icon="create-outline" style={{width: 140}} onPress={() => {
-          setSelectedReservation(item);
-          setAppointmentSheetVisible(true);
-        }} />
+        {/* Top row: Call and Chat */}
+        <View style={styles.topActions}>
+          <Button label="Call" icon='call' containerStyle={{flex: 1, marginRight: 4}} onPress={() => {}} />
+          <Button label="Chat" icon='chatbubble' containerStyle={{flex: 1, marginLeft: 4}} onPress={() => {navigation.navigate('ChatBox')}} />
+        </View>
+        {/* Bottom row: Delete and Reschedule */}
+        <View style={styles.bottomActions}>
+          <BorderButton
+            label="Delete"
+            icon="trash-outline"
+            style={{flex: 1, marginRight: 4}}
+            onPress={() => {
+              setAlertConfig({
+                visible: true,
+                title: 'Delete Appointment',
+                message: 'Are you sure you want to delete this appointment? This action cannot be undone.',
+                type: 'warning',
+                buttonType: 'double',
+                confirmText: 'Delete',
+                cancelText: 'Cancel',
+                onCancel: () => setAlertConfig(null),
+                onClose: async () => {
+                  setAlertConfig(null);
+                  try {
+                    const token = await AsyncStorage.getItem('token');
+                    if (!token) {
+                      setAlertConfig({
+                        visible: true,
+                        title: 'Error',
+                        message: 'Authentication required',
+                        type: 'error',
+                        buttonType: 'single',
+                        onClose: () => setAlertConfig(null),
+                      });
+                      return;
+                    }
+
+                    console.log('🗑️ Attempting to delete appointment:', item.id);
+                    const response = await fetch(`http://10.0.2.2:3000/appointments/${item.id}/cancel`, {
+                      method: 'DELETE',
+                      headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                      },
+                    });
+
+                    console.log('🗑️ Delete response status:', response.status);
+                    const responseData = await response.json().catch(() => ({}));
+                    console.log('🗑️ Delete response data:', responseData);
+
+                    if (response.ok) {
+                      setAlertConfig({
+                        visible: true,
+                        title: 'Success',
+                        message: 'Appointment cancelled successfully',
+                        type: 'success',
+                        buttonType: 'single',
+                        onClose: () => {
+                          setAlertConfig(null);
+                          setRefreshTrigger(prev => prev + 1); // Trigger refresh
+                        },
+                      });
+                    } else {
+                      const errorData = await response.json().catch(() => ({}));
+                      setAlertConfig({
+                        visible: true,
+                        title: 'Error',
+                        message: errorData.error || 'Failed to cancel appointment',
+                        type: 'error',
+                        buttonType: 'single',
+                        onClose: () => setAlertConfig(null),
+                      });
+                    }
+                  } catch (error) {
+                    console.error('Error cancelling appointment:', error);
+                    setAlertConfig({
+                      visible: true,
+                      title: 'Error',
+                      message: 'Failed to cancel appointment. Please try again.',
+                      type: 'error',
+                      buttonType: 'single',
+                      onClose: () => setAlertConfig(null),
+                    });
+                  }
+                },
+              });
+            }}
+          />
+          <BorderButton
+            label="Reschedule"
+            icon="create-outline"
+            style={{flex: 1, marginLeft: 4}}
+            onPress={() => {
+              setSelectedReservation(item);
+              setRescheduleSheetVisible(true);
+            }}
+          />
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -421,13 +546,108 @@ const ReservationsScreen = () => {
             label={carArrived ? "View Details" : "View Schedule"}
             icon="eye"
             style={{width: 140}}
-            onPress={() => {
-              if (carArrived) {
-                // Navigate to InspectionOngoing for arrived cars
-                navigation.navigate('InspectionOngoing');
-              } else {
-                // Could navigate to a schedule details screen or just show alert
+            onPress={async () => {
+              if (!carArrived) {
                 Alert.alert('Vehicle Not Arrived', 'Please arrive at the garage at your scheduled time.');
+                return;
+              }
+
+              try {
+                const userStr = await AsyncStorage.getItem('user');
+                const token = await AsyncStorage.getItem('token');
+
+                if (!userStr || !token) {
+                  Alert.alert('Error', 'Authentication required');
+                  return;
+                }
+
+                const user = JSON.parse(userStr);
+
+                // Fetch current work order for this customer
+                const workOrdersRes = await fetch(`http://10.0.2.2:3000/work-orders?customerId=${user.customerId}`, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                });
+
+                if (workOrdersRes.ok) {
+                  const workOrdersData = await workOrdersRes.json();
+                  const currentWorkOrder = workOrdersData.data?.find((wo: any) =>
+                    wo.status === 'IN_PROGRESS'
+                  );
+
+                  if (currentWorkOrder) {
+                    // Determine navigation based on workflow step
+                    const step = currentWorkOrder.workflowStep;
+                    let targetScreen = 'InspectionOngoing';
+
+                    switch (step) {
+                      case 'INSPECTION':
+                        targetScreen = 'InspectionOngoing';
+                        break;
+                      case 'ESTIMATE':
+                        // Check if services are selected
+                        const estimatesRes = await fetch(`http://10.0.2.2:3000/estimates?workOrderId=${currentWorkOrder.id}`, {
+                          headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                          },
+                        });
+                        if (estimatesRes.ok) {
+                          const estimatesData = await estimatesRes.json();
+                          const estimate = estimatesData.data?.[0];
+                          if (estimate && estimate.estimateLaborItems?.some((item: any) => item.customerApproved)) {
+                            // Services selected, go to parts
+                            targetScreen = 'PartsSelection';
+                          } else {
+                            // Services not selected, go to selection
+                            targetScreen = 'InspectionResults';
+                          }
+                        } else {
+                          targetScreen = 'InspectionResults';
+                        }
+                        break;
+                      case 'REPAIR':
+                        // Check if parts are selected
+                        const partsEstimatesRes = await fetch(`http://10.0.2.2:3000/estimates?workOrderId=${currentWorkOrder.id}`, {
+                          headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                          },
+                        });
+                        if (partsEstimatesRes.ok) {
+                          const partsEstimatesData = await partsEstimatesRes.json();
+                          const estimate = partsEstimatesData.data?.[0];
+                          if (estimate && estimate.estimatePartItems?.some((item: any) => item.customerApproved !== null)) {
+                            // Parts selected, go to flow diagram
+                            targetScreen = 'InspectionCar';
+                          } else {
+                            // Parts not selected, go to selection
+                            targetScreen = 'PartsSelection';
+                          }
+                        } else {
+                          targetScreen = 'PartsSelection';
+                        }
+                        break;
+                      default:
+                        // For other steps, go to flow diagram
+                        targetScreen = 'InspectionCar';
+                        break;
+                    }
+
+                    navigation.navigate(targetScreen as any);
+                  } else {
+                    // No work order, go to inspection
+                    navigation.navigate('InspectionOngoing');
+                  }
+                } else {
+                  // Fallback to mock navigation
+                  navigation.navigate('InspectionOngoing');
+                }
+              } catch (error) {
+                console.error('Error determining navigation:', error);
+                navigation.navigate('InspectionOngoing');
               }
             }}
           />
@@ -457,7 +677,33 @@ const ReservationsScreen = () => {
           ✅ Completed: {item.completedDate} at {item.completedTime}
         </Text>
       </View>
-      
+
+      {/* Service Advisor Contact Row */}
+      {serviceAdvisor && (
+        <View style={styles.serviceAdvisorRow}>
+          <View style={styles.advisorInfo}>
+            <Text style={styles.advisorLabel}>Service Advisor</Text>
+            <Text style={styles.advisorName}>{serviceAdvisor.name || 'Advisor'}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.callAdvisorButton}
+            onPress={() => {
+              if (serviceAdvisor.phone) {
+                const phoneUrl = `tel:${serviceAdvisor.phone}`;
+                Linking.openURL(phoneUrl).catch(err => {
+                  console.error('Error opening phone dialer:', err);
+                  Alert.alert('Error', 'Unable to open phone dialer');
+                });
+              } else {
+                Alert.alert('Contact Info', 'Phone number not available');
+              }
+            }}
+          >
+            <Text style={styles.callAdvisorText}>📞 Call Advisor</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <View style={styles.cardActions}>
         <BorderButton label="View Report" icon="eye" style={{width: '100%'}} onPress={() => navigation.navigate('PaidServiceBillSummary', {
           serviceType: item.serviceType,
@@ -590,16 +836,40 @@ const ReservationsScreen = () => {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Appointment Sheet */}
-      <AppointmentSheet
-        visible={appointmentSheetVisible}
-        onClose={() => setAppointmentSheetVisible(false)}
-        onConfirm={(appointmentData) => {
-          console.log('Appointment rescheduled:', appointmentData);
-          // Here you would call the API to reschedule the appointment
-          Alert.alert('Success', 'Appointment rescheduled successfully!');
+      {/* Reschedule Sheet */}
+      <RescheduleSheet
+        visible={rescheduleSheetVisible}
+        onClose={() => {
+          setRescheduleSheetVisible(false);
+          setSelectedReservation(null);
         }}
+        onConfirm={async (appointmentData) => {
+           if (!selectedReservation) return;
+
+           console.log('Appointment rescheduled successfully:', appointmentData);
+           setAlertConfig({
+             visible: true,
+             title: 'Success',
+             message: 'Appointment rescheduled successfully!',
+             type: 'success',
+             buttonType: 'single',
+             onClose: () => {
+               setAlertConfig(null);
+               setRescheduleSheetVisible(false);
+               setSelectedReservation(null);
+               setRefreshTrigger(prev => prev + 1); // Trigger refresh
+             },
+           });
+         }}
+        existingAppointment={selectedReservation}
       />
+
+      {/* Custom Alert */}
+      {alertConfig && (
+        <CustomAlert
+          {...alertConfig}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -858,8 +1128,13 @@ const styles = StyleSheet.create({
   },
   cardActions: {
     width: '100%',
+  },
+  topActions: {
     flexDirection: 'row',
-    gap: 8,
+    marginBottom: 8,
+  },
+  bottomActions: {
+    flexDirection: 'row',
   },
   actionButton: {
     flex: 1,
@@ -931,6 +1206,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.neutral900,
     fontWeight: '500',
+  },
+  // Service Advisor Row Styles
+  serviceAdvisorRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: Colors.neutral50,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  advisorInfo: {
+    flex: 1,
+  },
+  advisorLabel: {
+    fontSize: 12,
+    color: Colors.neutral500,
+    marginBottom: 2,
+  },
+  advisorName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.neutral900,
+  },
+  callAdvisorButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  callAdvisorText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.neutral0,
   },
 });
 

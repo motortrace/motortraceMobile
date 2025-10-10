@@ -25,133 +25,6 @@ const CarProducts = () => {
   const [usedProducts, setUsedProducts] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data - fallback when backend is unavailable
-  const mockUsedProducts = [
-    {
-      id: '1',
-      icon: 'battery-charging-outline',
-      name: 'AGM Battery',
-      brand: 'Optima',
-      partNumber: 'OPT-D35',
-      purchaseDate: '2024-05-20',
-      installationDate: '2024-05-20',
-      warrantyPeriod: 36,
-      warrantyStatus: 'active',
-      cost: 180.00,
-      supplier: 'AutoZone',
-      category: 'electrical',
-      condition: 'excellent',
-      notes: 'High-performance battery for extreme weather'
-    },
-    {
-      id: '2',
-      icon: 'car-outline',
-      name: 'Ceramic Brake Pads',
-      brand: 'Brembo',
-      partNumber: 'BRM-P85020',
-      purchaseDate: '2024-06-05',
-      installationDate: '2024-06-10',
-      warrantyPeriod: 24,
-      warrantyStatus: 'active',
-      cost: 320.00,
-      supplier: 'Brake Specialists',
-      category: 'brake',
-      condition: 'excellent'
-    },
-    {
-      id: '3',
-      icon: 'settings-outline',
-      name: 'Transmission Filter',
-      brand: 'OEM Toyota',
-      partNumber: 'TOY-35330-0W040',
-      purchaseDate: '2024-04-10',
-      installationDate: '2024-04-10',
-      warrantyPeriod: 12,
-      warrantyStatus: 'active',
-      cost: 45.00,
-      supplier: 'Toyota Dealership',
-      category: 'transmission',
-      condition: 'good'
-    },
-    {
-      id: '4',
-      icon: 'car-sport-outline',
-      name: 'Air Filter',
-      brand: 'K&N',
-      partNumber: 'KN-33-2364',
-      purchaseDate: '2024-04-30',
-      installationDate: '2024-04-30',
-      warrantyPeriod: 60,
-      warrantyStatus: 'active',
-      cost: 55.00,
-      supplier: 'Performance Parts Co.',
-      category: 'engine',
-      condition: 'excellent',
-      notes: 'High-flow reusable air filter'
-    },
-    {
-      id: '5',
-      icon: 'flash-outline',
-      name: 'Spark Plugs (Set of 4)',
-      brand: 'NGK',
-      partNumber: 'NGK-LZKAR6AP-11',
-      purchaseDate: '2024-04-25',
-      installationDate: '2024-04-30',
-      warrantyPeriod: 24,
-      warrantyStatus: 'active',
-      cost: 80.00,
-      supplier: 'Auto Parts Plus',
-      category: 'engine',
-      condition: 'excellent'
-    },
-    {
-      id: '6',
-      icon: 'thermometer-outline',
-      name: 'Cabin Air Filter',
-      brand: 'Fram',
-      partNumber: 'FRM-CF10285',
-      purchaseDate: '2024-05-15',
-      installationDate: '2024-05-15',
-      warrantyPeriod: 12,
-      warrantyStatus: 'active',
-      cost: 25.00,
-      supplier: 'Walmart Auto Center',
-      category: 'other',
-      condition: 'good'
-    },
-    {
-      id: '7',
-      icon: 'car-outline',
-      name: 'Brake Rotors (Front)',
-      brand: 'Wagner',
-      partNumber: 'WAG-BD125394',
-      purchaseDate: '2023-08-15',
-      installationDate: '2023-08-20',
-      warrantyPeriod: 24,
-      warrantyStatus: 'expiring-soon',
-      cost: 150.00,
-      supplier: 'NAPA Auto Parts',
-      category: 'brake',
-      condition: 'good'
-    },
-    {
-      id: '8',
-      icon: 'cog-outline',
-      name: 'Alternator',
-      brand: 'Bosch',
-      partNumber: 'BSH-AL0834X',
-      purchaseDate: '2022-12-10',
-      installationDate: '2022-12-15',
-      warrantyPeriod: 24,
-      warrantyStatus: 'expired',
-      cost: 250.00,
-      supplier: 'Bosch Service Center',
-      category: 'electrical',
-      condition: 'fair',
-      notes: 'Refurbished unit with limited warranty'
-    }
-  ]
-
   const filterOptions = [
     { key: 'all', label: 'All Parts', icon: 'list-outline' },
     { key: 'engine', label: 'Engine', icon: 'car-sport-outline' },
@@ -223,6 +96,133 @@ const CarProducts = () => {
   // Fetch parts/products from backend
   useEffect(() => {
     const fetchParts = async () => {
+      // Mock data - fallback when backend is unavailable
+      const mockUsedProducts = [
+        {
+          id: '1',
+          icon: 'battery-charging-outline',
+          name: 'AGM Battery',
+          brand: 'Optima',
+          partNumber: 'OPT-D35',
+          purchaseDate: '2024-05-20',
+          installationDate: '2024-05-20',
+          warrantyPeriod: 36,
+          warrantyStatus: 'active',
+          cost: 180.00,
+          supplier: 'AutoZone',
+          category: 'electrical',
+          condition: 'excellent',
+          notes: 'High-performance battery for extreme weather'
+        },
+        {
+          id: '2',
+          icon: 'car-outline',
+          name: 'Ceramic Brake Pads',
+          brand: 'Brembo',
+          partNumber: 'BRM-P85020',
+          purchaseDate: '2024-06-05',
+          installationDate: '2024-06-10',
+          warrantyPeriod: 24,
+          warrantyStatus: 'active',
+          cost: 320.00,
+          supplier: 'Brake Specialists',
+          category: 'brake',
+          condition: 'excellent'
+        },
+        {
+          id: '3',
+          icon: 'settings-outline',
+          name: 'Transmission Filter',
+          brand: 'OEM Toyota',
+          partNumber: 'TOY-35330-0W040',
+          purchaseDate: '2024-04-10',
+          installationDate: '2024-04-10',
+          warrantyPeriod: 12,
+          warrantyStatus: 'active',
+          cost: 45.00,
+          supplier: 'Toyota Dealership',
+          category: 'transmission',
+          condition: 'good'
+        },
+        {
+          id: '4',
+          icon: 'car-sport-outline',
+          name: 'Air Filter',
+          brand: 'K&N',
+          partNumber: 'KN-33-2364',
+          purchaseDate: '2024-04-30',
+          installationDate: '2024-04-30',
+          warrantyPeriod: 60,
+          warrantyStatus: 'active',
+          cost: 55.00,
+          supplier: 'Performance Parts Co.',
+          category: 'engine',
+          condition: 'excellent',
+          notes: 'High-flow reusable air filter'
+        },
+        {
+          id: '5',
+          icon: 'flash-outline',
+          name: 'Spark Plugs (Set of 4)',
+          brand: 'NGK',
+          partNumber: 'NGK-LZKAR6AP-11',
+          purchaseDate: '2024-04-25',
+          installationDate: '2024-04-30',
+          warrantyPeriod: 24,
+          warrantyStatus: 'active',
+          cost: 80.00,
+          supplier: 'Auto Parts Plus',
+          category: 'engine',
+          condition: 'excellent'
+        },
+        {
+          id: '6',
+          icon: 'thermometer-outline',
+          name: 'Cabin Air Filter',
+          brand: 'Fram',
+          partNumber: 'FRM-CF10285',
+          purchaseDate: '2024-05-15',
+          installationDate: '2024-05-15',
+          warrantyPeriod: 12,
+          warrantyStatus: 'active',
+          cost: 25.00,
+          supplier: 'Walmart Auto Center',
+          category: 'other',
+          condition: 'good'
+        },
+        {
+          id: '7',
+          icon: 'car-outline',
+          name: 'Brake Rotors (Front)',
+          brand: 'Wagner',
+          partNumber: 'WAG-BD125394',
+          purchaseDate: '2023-08-15',
+          installationDate: '2023-08-20',
+          warrantyPeriod: 24,
+          warrantyStatus: 'expiring-soon',
+          cost: 150.00,
+          supplier: 'NAPA Auto Parts',
+          category: 'brake',
+          condition: 'good'
+        },
+        {
+          id: '8',
+          icon: 'cog-outline',
+          name: 'Alternator',
+          brand: 'Bosch',
+          partNumber: 'BSH-AL0834X',
+          purchaseDate: '2022-12-10',
+          installationDate: '2022-12-15',
+          warrantyPeriod: 24,
+          warrantyStatus: 'expired',
+          cost: 250.00,
+          supplier: 'Bosch Service Center',
+          category: 'electrical',
+          condition: 'fair',
+          notes: 'Refurbished unit with limited warranty'
+        }
+      ];
+
       try {
         setIsLoading(true);
         const selectedCarId = await AsyncStorage.getItem('selectedCarId');
@@ -240,7 +240,7 @@ const CarProducts = () => {
         }
 
         console.log('Fetching parts for vehicle:', selectedCarId);
-        
+
         // Fetch work orders for this vehicle to get parts used
         const res = await fetch(`http://10.0.2.2:3000/work-orders?vehicleId=${selectedCarId}`, {
           headers: {
@@ -255,7 +255,7 @@ const CarProducts = () => {
         if (res.ok && data.data) {
           // Get all parts from work orders
           const allParts: any[] = [];
-          
+
           for (const workOrder of data.data) {
             // Fetch parts for each work order
             const partsRes = await fetch(`http://10.0.2.2:3000/work-orders/${workOrder.id}/parts`, {
@@ -304,7 +304,7 @@ const CarProducts = () => {
     };
 
     fetchParts();
-  }, [mockUsedProducts]);
+  }, []);
 
   // Helper function to get part icon based on category
   const getPartIcon = (category: string) => {
@@ -338,10 +338,9 @@ const CarProducts = () => {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor={Colors.neutral0} />
         
-        <Header 
+        <Header
           icon='back'
           name='Used Parts & Products'
-          onIconPress={() => navigation.navigate('CarDetails')}
         />
         
         <LoadingComponent 
@@ -358,10 +357,9 @@ const CarProducts = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.neutral0} />
       
-      <Header 
+      <Header
         icon='back'
         name='Used Parts & Products'
-        onIconPress={() => navigation.navigate('CarDetails')}
       />
 
       {/* Stats Cards */}

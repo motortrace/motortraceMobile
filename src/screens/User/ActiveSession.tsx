@@ -8,29 +8,30 @@ import {
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Colors from '../constants/colors';
-import Header from '../components/Header';
+import Colors from '../../constants/colors';
+import Header from '../../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface LoginActivity {
-  id: number;
+interface ActiveSessionData {
+  id: string;
   device: string;
   location: string;
   time: string;
   status: string;
   ip: string;
   userAgent?: string;
+  lastActivity: string;
 }
 
-const LoginActivitiesPage = () => {
+const ActiveSession = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const [activities, setActivities] = useState<LoginActivity[]>([]);
+  const [sessions, setSessions] = useState<ActiveSessionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchLoginActivity = useCallback(async () => {
+  const fetchActiveSessions = useCallback(async () => {
     try {
       setIsLoading(true);
 
@@ -41,7 +42,7 @@ const LoginActivitiesPage = () => {
         return;
       }
 
-      const response = await fetch('http://10.0.2.2:3000/auth/login-activity', {
+      const response = await fetch('http://10.0.2.2:3000/auth/active-sessions', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -52,21 +53,62 @@ const LoginActivitiesPage = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch login activity');
+        throw new Error(data.message || 'Failed to fetch active sessions');
       }
 
-      setActivities(data.data.activities || []);
+      setSessions(data.data.sessions || []);
     } catch (error) {
-      console.error('Error fetching login activity:', error);
-      Alert.alert('Error', 'Failed to load login activity. Please try again.');
+      console.error('Error fetching active sessions:', error);
+      Alert.alert('Error', 'Failed to load active sessions. Please try again.');
     } finally {
       setIsLoading(false);
     }
   }, [navigation]);
 
   useEffect(() => {
-    fetchLoginActivity();
-  }, [fetchLoginActivity]);
+    fetchActiveSessions();
+  }, [fetchActiveSessions]);
+
+  const handleTerminateSession = async (sessionId: string) => {
+    Alert.alert(
+      'Terminate Session',
+      'Are you sure you want to terminate this session? You will be logged out from that device.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Terminate',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('token');
+              if (!token) return;
+
+              const response = await fetch('http://10.0.2.2:3000/auth/logout-session', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ sessionId }),
+              });
+
+              const data = await response.json();
+
+              if (response.ok) {
+                Alert.alert('Success', 'Session terminated successfully');
+                fetchActiveSessions(); // Refresh the list
+              } else {
+                throw new Error(data.message || 'Failed to terminate session');
+              }
+            } catch (error) {
+              console.error('Error terminating session:', error);
+              Alert.alert('Error', 'Failed to terminate session. Please try again.');
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const getDeviceIcon = (device: string): string => {
     if (device.includes('iPhone') || device.includes('Android')) return 'phone-portrait-outline';
@@ -98,11 +140,11 @@ const LoginActivitiesPage = () => {
       <View style={styles.container}>
         <Header
           icon="back"
-          name="Login Activity"
+          name="Active Sessions"
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Loading login activity...</Text>
+          <Text style={styles.loadingText}>Loading active sessions...</Text>
         </View>
       </View>
     );
@@ -112,7 +154,7 @@ const LoginActivitiesPage = () => {
     <View style={styles.container}>
       <Header
         icon="back"
-        name="Login Activity"
+        name="Active Sessions"
       />
 
       {/* Content */}
@@ -123,17 +165,17 @@ const LoginActivitiesPage = () => {
         {/* Info Section */}
         <View style={styles.infoSection}>
           <Text style={styles.infoText}>
-            Review your recent login activities and manage your account security
+            Manage your active sessions and terminate suspicious activity
           </Text>
         </View>
 
-        {/* Activities List */}
+        {/* Sessions List */}
         <View style={styles.activitiesList}>
-          {activities.map((activity) => (
-            <View key={activity.id} style={styles.activityItem}>
+          {sessions.map((session) => (
+            <View key={session.id} style={styles.activityItem}>
               <View style={styles.activityIcon}>
                 <Icon
-                  name={getDeviceIcon(activity.device)}
+                  name={getDeviceIcon(session.device)}
                   size={20}
                   color={Colors.neutral600}
                 />
@@ -141,11 +183,11 @@ const LoginActivitiesPage = () => {
 
               <View style={styles.activityContent}>
                 <View style={styles.activityHeader}>
-                  <Text style={styles.deviceName}>{activity.device}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(activity.status) + '15' }]}>
-                    <View style={[styles.statusDot, { backgroundColor: getStatusColor(activity.status) }]} />
-                    <Text style={[styles.statusText, { color: getStatusColor(activity.status) }]}>
-                      {getStatusText(activity.status)}
+                  <Text style={styles.deviceName}>{session.device}</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(session.status) + '15' }]}>
+                    <View style={[styles.statusDot, { backgroundColor: getStatusColor(session.status) }]} />
+                    <Text style={[styles.statusText, { color: getStatusColor(session.status) }]}>
+                      {getStatusText(session.status)}
                     </Text>
                   </View>
                 </View>
@@ -153,17 +195,28 @@ const LoginActivitiesPage = () => {
                 <View style={styles.activityDetails}>
                   <View style={styles.detailRow}>
                     <Icon name="location-outline" size={14} color={Colors.neutral500} />
-                    <Text style={styles.detailText}>{activity.location}</Text>
+                    <Text style={styles.detailText}>{session.location}</Text>
                   </View>
                   <View style={styles.detailRow}>
                     <Icon name="time-outline" size={14} color={Colors.neutral500} />
-                    <Text style={styles.detailText}>{activity.time}</Text>
+                    <Text style={styles.detailText}>{session.time}</Text>
                   </View>
                   <View style={styles.detailRow}>
                     <Icon name="globe-outline" size={14} color={Colors.neutral500} />
-                    <Text style={styles.detailText}>{activity.ip}</Text>
+                    <Text style={styles.detailText}>{session.ip}</Text>
                   </View>
                 </View>
+
+                {session.status !== 'current' && (
+                  <View style={styles.actionRow}>
+                    <Text
+                      style={styles.terminateText}
+                      onPress={() => handleTerminateSession(session.id)}
+                    >
+                      Terminate Session
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           ))}
@@ -173,7 +226,7 @@ const LoginActivitiesPage = () => {
         <View style={styles.securityTip}>
           <Icon name="shield-checkmark-outline" size={20} color={Colors.info} />
           <Text style={styles.securityTipText}>
-            If you notice any suspicious activity, please change your password immediately
+            Terminating a session will log you out from that device. Use this feature if you suspect unauthorized access.
           </Text>
         </View>
       </ScrollView>
@@ -285,6 +338,20 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 
+  // Action Row
+  actionRow: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.neutral200,
+  },
+  terminateText: {
+    fontSize: 14,
+    color: Colors.danger,
+    fontWeight: '600',
+    textAlign: 'right',
+  },
+
   // Security Tip
   securityTip: {
     flexDirection: 'row',
@@ -303,4 +370,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginActivitiesPage;
+export default ActiveSession;

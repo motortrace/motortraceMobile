@@ -15,7 +15,7 @@ export interface UploadResult {
 class ImageUploadService {
   private baseUrl = 'http://10.0.2.2:3000'; // Android emulator localhost
 
-  /**
+  /*
    * Get upload configuration from backend
    */
   async getUploadConfig(): Promise<UploadConfig | null> {
@@ -119,14 +119,19 @@ class ImageUploadService {
       });
 
       const data = await response.json();
+      console.log('📥 Car image upload response:', { status: response.status, data });
+
       if (!response.ok) {
+        console.error('❌ Car image upload failed with status:', response.status);
         return { success: false, error: data.error || 'Upload failed' };
       }
 
       if (data.success) {
-        return { success: true, imageUrl: data.data.imageUrl };
+        console.log('✅ Car image upload successful, URL:', data.data?.imageUrl);
+        return { success: true, imageUrl: data.data?.imageUrl };
       }
 
+      console.error('❌ Car image upload failed - success is false');
       return { success: false, error: 'Upload failed' };
     } catch (error: any) {
       return { success: false, error: error.message || 'Upload failed' };

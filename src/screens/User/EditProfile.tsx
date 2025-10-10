@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,
   Image,
   ScrollView,
 } from "react-native";
@@ -19,8 +18,9 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { launchImageLibrary, launchCamera, ImagePickerResponse, MediaType, PhotoQuality } from 'react-native-image-picker';
 import { imageUploadService } from '../../services/imageUpload.service';
+import CustomAlert from '../../components/Alert';
 
 interface VerificationStatus {
   email: boolean;
@@ -42,6 +42,51 @@ const EditProfileScreen = () => {
     email: true,
     contact: true,
   });
+
+  // Custom Alert states
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    type: 'info' as 'success' | 'error' | 'warning' | 'info',
+    title: '',
+    message: '',
+    buttonType: 'single' as 'none' | 'single' | 'double' | 'triple',
+    confirmText: 'OK',
+    cancelText: 'Cancel',
+    option1Text: 'Camera',
+    option2Text: 'Gallery',
+    onConfirm: () => {},
+    onCancel: () => {},
+    onOption1: () => {},
+    onOption2: () => {},
+  });
+
+  const showAlert = useCallback((config: Partial<typeof alertConfig>) => {
+    const alertType = config.buttonType || 'single';
+
+    setAlertConfig({
+      type: config.type || 'info',
+      title: config.title || '',
+      message: config.message || '',
+      buttonType: alertType,
+      confirmText: config.confirmText || 'OK',
+      cancelText: config.cancelText || 'Cancel',
+      option1Text: config.option1Text || 'Camera',
+      option2Text: config.option2Text || 'Gallery',
+      onConfirm: config.onConfirm || (() => {}),
+      onCancel: config.onCancel || (() => {}),
+      onOption1: config.onOption1 || (() => {}),
+      onOption2: config.onOption2 || (() => {}),
+    });
+    setAlertVisible(true);
+  }, []);
+
+  const hideAlert = () => {
+    setAlertVisible(false);
+    // Execute the onConfirm action after hiding
+    setTimeout(() => {
+      alertConfig.onConfirm();
+    }, 100);
+  };
 
   // Fetch profile data on mount (use new /auth/profile)
   useEffect(() => {
@@ -67,36 +112,72 @@ const EditProfileScreen = () => {
           });
         }
       } catch (err) {
-        Alert.alert("Error", "Failed to fetch profile data.");
+        showAlert({
+          type: 'error',
+          title: 'Error',
+          message: 'Failed to fetch profile data.',
+          buttonType: 'single',
+          confirmText: 'OK',
+          onConfirm: () => {}
+        });
       }
     };
     fetchProfile();
-  }, []);
+  }, [showAlert]);
 
   // Removed redundant effects for verification flags
+
 
   const handleContactVerify = () => {
     if (verificationStatus.contact) {
       setVerificationStatus((prev) => ({ ...prev, contact: false }));
-      Alert.alert("Contact Reset", "You can now enter a new contact number and verify it.");
+      showAlert({
+        type: 'info',
+        title: 'Contact Reset',
+        message: 'You can now enter a new contact number and verify it.',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
       return;
     }
 
     const phone = profileData.phoneNumber || '';
 
     if (!phone.trim()) {
-      Alert.alert("Contact Required", "Please enter your contact number first.");
+      showAlert({
+        type: 'warning',
+        title: 'Contact Required',
+        message: 'Please enter your contact number first.',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
       return;
     }
 
     if (phone.length < 10) {
-      Alert.alert("Invalid Contact", "Please enter a valid contact number.");
+      showAlert({
+        type: 'warning',
+        title: 'Invalid Contact',
+        message: 'Please enter a valid contact number.',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
       return;
     }
 
     setTimeout(() => {
       setVerificationStatus((prev) => ({ ...prev, contact: true }));
-      Alert.alert("Contact Verified", "Your contact number has been successfully verified.");
+      showAlert({
+        type: 'success',
+        title: 'Contact Verified',
+        message: 'Your contact number has been successfully verified.',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
     }, 1000);
   };
 
@@ -108,54 +189,129 @@ const EditProfileScreen = () => {
     setHasChanges(true);
   };
 
+  const pickImageFromGallery = () => {
+    console.log('📱 Opening gallery...');
+    const options = {
+      mediaType: 'photo' as MediaType,
+      includeBase64: false,
+      maxHeight: 2000,
+      maxWidth: 2000,
+      quality: 1 as PhotoQuality,
+    }
+
+    launchImageLibrary(options, (response: ImagePickerResponse) => {
+      console.log('📱 Gallery response:', response);
+      if (response.didCancel || response.errorMessage) {
+        console.log('📱 Gallery cancelled or error:', response.errorMessage);
+        return
+      }
+
+      if (response.assets && response.assets[0]) {
+        console.log('📱 Image selected from gallery:', response.assets[0].uri);
+        console.log('📱 Image file size:', response.assets[0].fileSize);
+        console.log('📱 Image type:', response.assets[0].type);
+        handleInputChange("profileImage", response.assets[0].uri || "");
+        console.log('📱 Profile image state updated');
+      }
+    })
+  }
+
+  const takePhotoWithCamera = async () => {
+    console.log('📷 Opening camera...');
+
+    const options = {
+      mediaType: 'photo' as MediaType,
+      includeBase64: false,
+      maxHeight: 2000,
+      maxWidth: 2000,
+      quality: 1 as PhotoQuality,
+    }
+
+    console.log('📷 Camera options:', options);
+
+    try {
+      launchCamera(options, (response: ImagePickerResponse) => {
+        console.log('📷 Camera response:', response);
+
+        if (response.errorCode) {
+          console.error('📷 Camera error code:', response.errorCode);
+          console.error('📷 Camera error message:', response.errorMessage);
+
+          showAlert({
+            type: 'error',
+            title: 'Camera Error',
+            message: response.errorMessage || 'Failed to open camera',
+            buttonType: 'single',
+            confirmText: 'OK',
+            onConfirm: () => {}
+          });
+          return;
+        }
+
+        if (response.didCancel) {
+          console.log('📷 Camera cancelled by user');
+          return;
+        }
+
+        if (response.assets && response.assets[0]) {
+          console.log('📷 Photo taken:', response.assets[0].uri);
+          console.log('📷 Photo file size:', response.assets[0].fileSize);
+          console.log('📷 Photo type:', response.assets[0].type);
+          handleInputChange("profileImage", response.assets[0].uri || "");
+          console.log('📷 Profile image state updated');
+        } else {
+          console.error('📷 No photo assets in response');
+        }
+      });
+    } catch (error) {
+      console.error('📷 Camera launch error:', error);
+      showAlert({
+        type: 'error',
+        title: 'Camera Error',
+        message: 'Failed to open camera. Please check permissions.',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
+    }
+  }
+
   const handleChangeProfilePicture = () => {
-    Alert.alert("Change Profile Picture", "Choose an option", [
-      {
-        text: "Camera",
-        onPress: () => {
-          launchCamera(
-            { mediaType: 'photo', quality: 1 },
-            (response) => {
-              if (response.didCancel || response.errorMessage) return;
-              if (response.assets && response.assets[0]) {
-                // Store the local URI temporarily - will be uploaded when saving
-                handleInputChange("profileImage", response.assets[0].uri || "");
-              }
-            }
-          );
-        },
-      },
-      {
-        text: "Gallery",
-        onPress: () => {
-          launchImageLibrary(
-            { mediaType: 'photo', quality: 1 },
-            (response) => {
-              if (response.didCancel || response.errorMessage) return;
-              if (response.assets && response.assets[0]) {
-                // Store the local URI temporarily - will be uploaded when saving
-                handleInputChange("profileImage", response.assets[0].uri || "");
-              }
-            }
-          );
-        },
-      },
-      {
-        text: "Remove Photo",
-        style: "destructive",
-        onPress: () => handleInputChange("profileImage", ""),
-      },
-      { text: "Cancel", style: "cancel" },
-    ]);
+    showAlert({
+      type: 'info',
+      title: 'Change Profile Picture',
+      message: 'Choose an option',
+      buttonType: 'triple',
+      cancelText: 'Cancel',
+      option1Text: 'Camera',
+      option2Text: 'Gallery',
+      onCancel: () => {},
+      onOption1: takePhotoWithCamera,
+      onOption2: pickImageFromGallery,
+    });
   };
 
   const handleSave = async () => {
     if (!hasChanges) {
-      Alert.alert("No Changes", "No changes were made to save.");
+      showAlert({
+        type: 'info',
+        title: 'No Changes',
+        message: 'No changes were made to save.',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
       return;
     }
     if (!profileData.fullName.trim()) {
-      Alert.alert("Error", "Full name is required.");
+      showAlert({
+        type: 'error',
+        title: 'Error',
+        message: 'Full name is required.',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
       return;
     }
     setIsLoading(true);
@@ -171,7 +327,14 @@ const EditProfileScreen = () => {
         const uploadResult = await imageUploadService.uploadProfileImage(profileData.profileImage);
         
         if (!uploadResult.success) {
-          Alert.alert("Upload Failed", uploadResult.error || "Failed to upload profile image. Please try again.");
+          showAlert({
+            type: 'error',
+            title: 'Upload Failed',
+            message: uploadResult.error || "Failed to upload profile image. Please try again.",
+            buttonType: 'single',
+            confirmText: 'OK',
+            onConfirm: () => {}
+          });
           return;
         }
         
@@ -195,11 +358,26 @@ const EditProfileScreen = () => {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Failed to update profile");
-      Alert.alert("Success", "Profile updated successfully!");
-      setHasChanges(false);
-      navigation.navigate("Profile");
+      showAlert({
+        type: 'success',
+        title: 'Success',
+        message: 'Profile updated successfully!',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {
+          setHasChanges(false);
+          navigation.navigate("Profile");
+        }
+      });
     } catch (error) {
-      Alert.alert("Error", "Failed to update profile. Please try again.");
+      showAlert({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to update profile. Please try again.',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
     } finally {
       setIsLoading(false);
     }
@@ -225,7 +403,7 @@ const EditProfileScreen = () => {
         <View style={styles.imageSection}>
           <TouchableOpacity style={styles.imageContainer} onPress={handleChangeProfilePicture} activeOpacity={0.8}>
             {profileData.profileImage ? (
-              <Image source={{ uri: buildImageUrl(profileData.profileImage) }} style={styles.profileImage} onError={() => handleInputChange("profileImage", "")} />
+              <Image source={{ uri: buildImageUrl(profileData.profileImage) }} style={styles.profileImage} />
             ) : (
               <View style={styles.profileImagePlaceholder}>
                 <Icon name="person" size={50} color={Colors.primary} />
@@ -274,6 +452,23 @@ const EditProfileScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Custom Alert Component */}
+      <CustomAlert
+        visible={alertVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttonType={alertConfig.buttonType}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+        option1Text={alertConfig.option1Text}
+        option2Text={alertConfig.option2Text}
+        onClose={hideAlert}
+        onCancel={alertConfig.onCancel}
+        onOption1={alertConfig.onOption1}
+        onOption2={alertConfig.onOption2}
+      />
     </SafeAreaView>
   );
 };

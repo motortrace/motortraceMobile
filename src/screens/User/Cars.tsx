@@ -17,7 +17,8 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 
 // Local mock data for extra fields
 const localCarDetails = [
@@ -101,8 +102,7 @@ const Cars = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  useEffect(() => {
-    const fetchCars = async () => {
+  const fetchCars = useCallback(async () => {
       try {
         console.log('🚗 Starting fetchCars...');
         setIsLoading(true);
@@ -120,6 +120,7 @@ const Cars = () => {
         console.log('👤 Parsed user object:', user);
         console.log('📧 User email:', user.email);
         console.log('🆔 User ID:', user.id);
+        console.log('👥 Customer ID:', user.customerId);
 
         const token = await AsyncStorage.getItem('token');
         console.log('🔑 Token from AsyncStorage:', token ? 'Token exists' : 'No token');
@@ -130,51 +131,16 @@ const Cars = () => {
           return;
         }
 
-        console.log("🔍 Fetching customer info for email:", user.email);
+        // Get customer ID from stored user data
+        const customerId = user.customerId;
+        console.log("✅ Customer ID from stored user:", customerId);
 
-        // First, get the customer ID by email
-        const customerUrl = `http://10.0.2.2:3000/customers?email=${encodeURIComponent(user.email)}&limit=1`;
-        console.log('🌐 Customer API URL:', customerUrl);
-
-        const customerRes = await fetch(customerUrl, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        console.log('📡 Customer API response status:', customerRes.status);
-        console.log('📡 Customer API response ok:', customerRes.ok);
-
-        const customerData = await customerRes.json();
-        console.log('📦 Customer API response data:', customerData);
-
-        if (!customerRes.ok) {
-          console.error('❌ Customer API request failed with status:', customerRes.status);
-          console.error('❌ Customer API error response:', customerData);
+        if (!customerId) {
+          console.log('⚠️ No customer ID found in stored user data');
           setCars([]);
           setIsLoading(false);
           return;
         }
-
-        if (!customerData.success) {
-          console.error('❌ Customer API returned success=false:', customerData);
-          setCars([]);
-          setIsLoading(false);
-          return;
-        }
-
-        if (!customerData.data || customerData.data.length === 0) {
-          console.log('⚠️ No customer found for email:', user.email);
-          console.log('📋 Available customer data:', customerData.data);
-          setCars([]);
-          setIsLoading(false);
-          return;
-        }
-
-        const customerId = customerData.data[0].id;
-        console.log("✅ Found customer ID:", customerId);
-        console.log("🏢 Customer details:", customerData.data[0]);
 
         // Fetch vehicles from backend
         const vehiclesUrl = `http://10.0.2.2:3000/vehicles/customer/${customerId}`;
@@ -199,32 +165,55 @@ const Cars = () => {
 
         if (res.ok && vehicles && vehicles.length > 0) {
           console.log('✅ Processing', vehicles.length, 'vehicles from backend');
-          // Merge backend data with local mock data for enhanced UI
-          const merged = vehicles.map((car: any, index: number) => {
-            const local = localCarDetails[index % localCarDetails.length]; // Cycle through mock data
-            return {
-              id: car.id,
-              vehicleName: car.make || car.vehicleName || 'Unknown Vehicle',
-              name: car.make || car.vehicleName || 'Unknown Vehicle', // for CarCard
-              model: car.model || 'Unknown Model',
-              year: car.year || new Date().getFullYear(),
-              // Use backend imageUrl if available, otherwise fallback to mock
-              image: car.imageUrl || local?.image || '',
-              nickname: local?.nickname || `${car.make} ${car.model}`,
-              mileage: local?.mileage || '0 km',
-              fuelLevel: local?.fuelLevel || 0,
-              lastService: local?.lastService || 'No recent service',
-              status: local?.status || 'perfect',
-              statusText: local?.statusText || 'Good Condition',
-              issues: local?.issues || [],
-              // Additional backend fields
-              licensePlate: car.licensePlate || 'N/A',
-              vin: car.vin || 'N/A',
-              color: car.color || 'Unknown',
-            };
-          });
-          console.log('✅ Setting cars with merged data:', merged.length, 'cars');
-          setCars(merged);
+
+          // Fetch real mileage for each vehicle
+          const vehiclesWithMileage = await Promise.all(
+            vehicles.map(async (car: any) => {
+              let currentMileage = '0 km';
+              try {
+                const mileageRes = await fetch(`http://10.0.2.2:3000/vehicles/${car.id}/mileage`, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                });
+                if (mileageRes.ok) {
+                  const mileageData = await mileageRes.json();
+                  if (mileageData.currentMileage) {
+                    currentMileage = `${mileageData.currentMileage} km`;
+                  }
+                }
+              } catch (mileageErr) {
+                console.warn(`Could not fetch mileage for vehicle ${car.id}:`, mileageErr);
+              }
+
+              const local = localCarDetails.find(l => l.id === car.id) || localCarDetails[0]; // Try to match by ID, fallback to first
+
+              return {
+                id: car.id,
+                vehicleName: car.make || car.vehicleName || 'Unknown Vehicle',
+                name: car.make || car.vehicleName || 'Unknown Vehicle', // for CarCard
+                model: car.model || 'Unknown Model',
+                year: car.year || new Date().getFullYear(),
+                // Use backend imageUrl if available, otherwise fallback to mock
+                image: car.imageUrl || local?.image || '',
+                nickname: local?.nickname || `${car.make} ${car.model}`,
+                mileage: currentMileage, // Use real mileage from backend
+                fuelLevel: local?.fuelLevel || 0,
+                lastService: local?.lastService || 'No recent service',
+                status: local?.status || 'perfect',
+                statusText: local?.statusText || 'Good Condition',
+                issues: local?.issues || [],
+                // Additional backend fields
+                licensePlate: car.licensePlate || 'N/A',
+                vin: car.vin || 'N/A',
+                color: car.color || 'Unknown',
+              };
+            })
+          );
+
+          console.log('✅ Setting cars with real mileage data:', vehiclesWithMileage.length, 'cars');
+          setCars(vehiclesWithMileage);
         } else if (res.ok && vehicles && vehicles.length === 0) {
           // API returned successfully but no vehicles found
           console.log('⚠️ API returned successfully but no vehicles found for this customer');
@@ -274,9 +263,19 @@ const Cars = () => {
         console.log('🏁 fetchCars completed, setting loading to false');
         setIsLoading(false);
       }
-    };
-    fetchCars();
   }, []);
+
+  // Fetch cars on initial load
+  useEffect(() => {
+    fetchCars();
+  }, [fetchCars]);
+
+  // Refetch cars when screen comes into focus (e.g., after car onboarding)
+  useFocusEffect(
+    useCallback(() => {
+      fetchCars();
+    }, [fetchCars])
+  );
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -331,7 +330,6 @@ const Cars = () => {
       <Header
         icon="back"
         name="John Doe"
-        onIconPress={() => navigation.navigate('Home')}
       />
 
       {/* Search Bar */}
@@ -409,10 +407,10 @@ const Cars = () => {
                     }}
                     getStatusConfig={getStatusConfig}
                     onPress={async () => {
-                      console.log('Pressed car with id:', car.id);
-                      await AsyncStorage.setItem('selectedCarId', car.id);
-                      navigation.navigate('CarDetails');
-                    }}
+                       console.log('Pressed car with id:', car.id);
+                       await AsyncStorage.setItem('selectedCarId', car.id.toString());
+                       navigation.navigate('CarDetails');
+                     }}
                   />
                 );
               })}

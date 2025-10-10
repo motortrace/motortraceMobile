@@ -25,90 +25,6 @@ const CarServices = () => {
   const [services, setServices] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data - fallback when backend is unavailable
-  const mockServices = [
-    {
-      id: '1',
-      icon: 'build-outline',
-      title: 'Oil Change & Filter',
-      description: 'Full synthetic oil change with new filter. Next due: 15,000 km',
-      date: '2024-06-15',
-      cost: 85.00,
-      status: 'completed',
-      category: 'maintenance'
-    },
-    {
-      id: '2',
-      icon: 'car-outline',
-      title: 'Brake Pad Replacement',
-      description: 'Front brake pads replaced. Rotors inspected and cleaned',
-      date: '2024-06-10',
-      cost: 320.00,
-      status: 'completed',
-      category: 'repair'
-    },
-    {
-      id: '3',
-      icon: 'speedometer-outline',
-      title: 'Annual Safety Inspection',
-      description: 'Comprehensive safety inspection. Valid until June 2025',
-      date: '2024-06-01',
-      cost: 45.00,
-      status: 'completed',
-      category: 'inspection'
-    },
-    {
-      id: '4',
-      icon: 'battery-charging-outline',
-      title: 'Battery Replacement',
-      description: 'New AGM battery installed. 3-year warranty included',
-      date: '2024-05-20',
-      cost: 180.00,
-      status: 'completed',
-      category: 'repair'
-    },
-    {
-      id: '5',
-      icon: 'thermometer-outline',
-      title: 'A/C System Service',
-      description: 'A/C system recharged and leak tested. Cabin filter replaced',
-      date: '2024-05-15',
-      cost: 125.00,
-      status: 'completed',
-      category: 'maintenance'
-    },
-    {
-      id: '6',
-      icon: 'car-sport-outline',
-      title: 'Performance Tune-Up',
-      description: 'Spark plugs, air filter, and fuel system cleaning',
-      date: '2024-04-30',
-      cost: 280.00,
-      status: 'completed',
-      category: 'maintenance'
-    },
-    {
-      id: '7',
-      icon: 'checkmark-circle-outline',
-      title: 'Scheduled Maintenance',
-      description: 'Upcoming 60,000 km service appointment',
-      date: '2024-07-15',
-      cost: 450.00,
-      status: 'pending',
-      category: 'maintenance'
-    },
-    {
-      id: '8',
-      icon: 'settings-outline',
-      title: 'Transmission Service',
-      description: 'Transmission fluid change and filter replacement',
-      date: '2024-04-10',
-      cost: 195.00,
-      status: 'completed',
-      category: 'maintenance'
-    }
-  ]
-
   const filterOptions = [
     { key: 'all', label: 'All Services', icon: 'list-outline' },
     { key: 'maintenance', label: 'Maintenance', icon: 'build-outline' },
@@ -146,6 +62,90 @@ const CarServices = () => {
   // Fetch services from backend
   useEffect(() => {
     const fetchServices = async () => {
+      // Mock data - fallback when backend is unavailable
+      const mockServices = [
+        {
+          id: '1',
+          icon: 'build-outline',
+          title: 'Oil Change & Filter',
+          description: 'Full synthetic oil change with new filter. Next due: 15,000 km',
+          date: '2024-06-15',
+          cost: 85.00,
+          status: 'completed',
+          category: 'maintenance'
+        },
+        {
+          id: '2',
+          icon: 'car-outline',
+          title: 'Brake Pad Replacement',
+          description: 'Front brake pads replaced. Rotors inspected and cleaned',
+          date: '2024-06-10',
+          cost: 320.00,
+          status: 'completed',
+          category: 'repair'
+        },
+        {
+          id: '3',
+          icon: 'speedometer-outline',
+          title: 'Annual Safety Inspection',
+          description: 'Comprehensive safety inspection. Valid until June 2025',
+          date: '2024-06-01',
+          cost: 45.00,
+          status: 'completed',
+          category: 'inspection'
+        },
+        {
+          id: '4',
+          icon: 'battery-charging-outline',
+          title: 'Battery Replacement',
+          description: 'New AGM battery installed. 3-year warranty included',
+          date: '2024-05-20',
+          cost: 180.00,
+          status: 'completed',
+          category: 'repair'
+        },
+        {
+          id: '5',
+          icon: 'thermometer-outline',
+          title: 'A/C System Service',
+          description: 'A/C system recharged and leak tested. Cabin filter replaced',
+          date: '2024-05-15',
+          cost: 125.00,
+          status: 'completed',
+          category: 'maintenance'
+        },
+        {
+          id: '6',
+          icon: 'car-sport-outline',
+          title: 'Performance Tune-Up',
+          description: 'Spark plugs, air filter, and fuel system cleaning',
+          date: '2024-04-30',
+          cost: 280.00,
+          status: 'completed',
+          category: 'maintenance'
+        },
+        {
+          id: '7',
+          icon: 'checkmark-circle-outline',
+          title: 'Scheduled Maintenance',
+          description: 'Upcoming 60,000 km service appointment',
+          date: '2024-07-15',
+          cost: 450.00,
+          status: 'pending',
+          category: 'maintenance'
+        },
+        {
+          id: '8',
+          icon: 'settings-outline',
+          title: 'Transmission Service',
+          description: 'Transmission fluid change and filter replacement',
+          date: '2024-04-10',
+          cost: 195.00,
+          status: 'completed',
+          category: 'maintenance'
+        }
+      ];
+
       try {
         setIsLoading(true);
         const selectedCarId = await AsyncStorage.getItem('selectedCarId');
@@ -202,7 +202,7 @@ const CarServices = () => {
     };
 
     fetchServices();
-  }, [mockServices]);
+  }, []);
 
   // Helper function to get service icon based on job type
   const getServiceIcon = (jobType: string) => {
@@ -246,10 +246,9 @@ const CarServices = () => {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor={Colors.neutral0} />
         
-        <Header 
+        <Header
           icon = 'back'
           name='Jhon Doe'
-          onIconPress={() => navigation.navigate('CarDetails')}
         />
         
         <LoadingComponent 
@@ -266,10 +265,9 @@ const CarServices = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.neutral0} />
       
-      <Header 
+      <Header
         icon = 'back'
         name='Jhon Doe'
-        onIconPress={() => navigation.navigate('CarDetails')}
       />
 
       {/* Stats Cards */}

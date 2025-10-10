@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -46,6 +46,42 @@ const CarOnboardingForm = () => {
     confirmText: 'OK',
     onConfirm: () => {},
   });
+
+  // Debug state for displaying stored user data
+  const [debugUserData, setDebugUserData] = useState<any>(null);
+  const [debugToken, setDebugToken] = useState<string>('');
+
+  // Use debug variables to avoid linter warnings
+  console.log('🔍 Debug state loaded:', { debugUserData, debugToken });
+
+  // Load debug data on component mount
+  useEffect(() => {
+    const loadDebugData = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem('user');
+        const token = await AsyncStorage.getItem('token');
+
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setDebugUserData(user);
+          console.log('🔍 Debug - Stored User Data:', user);
+        } else {
+          console.log('🔍 Debug - No user data in AsyncStorage');
+        }
+
+        if (token) {
+          setDebugToken(token.substring(0, 20) + '...');
+          console.log('🔍 Debug - Token exists (first 20 chars):', token.substring(0, 20));
+        } else {
+          console.log('🔍 Debug - No token in AsyncStorage');
+        }
+      } catch (error) {
+        console.error('🔍 Debug - Error loading debug data:', error);
+      }
+    };
+
+    loadDebugData();
+  }, []);
   // Valid colors list
   const validColors = [
     'white', 'black', 'gray', 'grey', 'silver', 'red', 'blue', 'green', 
@@ -54,8 +90,12 @@ const CarOnboardingForm = () => {
   ];
 
   const updateField = (field: keyof typeof formData, value: string) => {
+    console.log(`📝 Updating field '${field}' from '${formData[field]}' to '${value}'`);
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors((prev: any) => ({ ...prev, [field]: undefined }));
+    if (errors[field]) {
+      console.log(`🧹 Clearing error for field '${field}':`, errors[field]);
+      setErrors((prev: any) => ({ ...prev, [field]: undefined }));
+    }
   };
 
   const validateLicensePlate = (plate: string): boolean => {
@@ -74,40 +114,65 @@ const CarOnboardingForm = () => {
   };
 
   const validate = () => {
+    console.log('🔍 Starting validation with formData:', formData);
     const newErrors: any = {};
-    
+
     if (!formData.name.trim()) {
       newErrors.name = 'Car name is required';
+      console.log('❌ Name validation failed: empty');
+    } else {
+      console.log('✅ Name validation passed:', formData.name);
     }
-    
+
     if (!formData.model.trim()) {
       newErrors.model = 'Model is required';
+      console.log('❌ Model validation failed: empty');
+    } else {
+      console.log('✅ Model validation passed:', formData.model);
     }
-    
+
     if (!formData.year.trim()) {
       newErrors.year = 'Year is required';
+      console.log('❌ Year validation failed: empty');
     } else if (!validateYear(formData.year)) {
       newErrors.year = 'Year must be between 1940 and 2025';
+      console.log('❌ Year validation failed: invalid year', formData.year);
+    } else {
+      console.log('✅ Year validation passed:', formData.year);
     }
-    
+
     if (!formData.number.trim()) {
       newErrors.number = 'License plate number is required';
+      console.log('❌ License plate validation failed: empty');
     } else if (!validateLicensePlate(formData.number)) {
       newErrors.number = 'License plate must be in format AB-1234 or ABC-1234';
+      console.log('❌ License plate validation failed: invalid format', formData.number);
+    } else {
+      console.log('✅ License plate validation passed:', formData.number);
     }
-    
+
     if (!formData.image.trim()) {
       newErrors.image = 'Car image is required';
     }
-    
+
     if (!formData.color.trim()) {
       newErrors.color = 'Color is required';
+      console.log('❌ Color validation failed: empty');
     } else if (!validateColor(formData.color)) {
       newErrors.color = `Color must be one of: ${validColors.join(', ')}`;
+      console.log('❌ Color validation failed: invalid color', formData.color);
+    } else {
+      console.log('✅ Color validation passed:', formData.color);
     }
-    
+
+    console.log('🔍 Validation result - newErrors:', newErrors);
+    console.log('🔍 Validation result - error count:', Object.keys(newErrors).length);
+
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.keys(newErrors).length === 0;
+    console.log('🔍 Final validation result:', isValid ? 'VALID' : 'INVALID');
+
+    return isValid;
   };
 
   const showAlert = (config: typeof alertConfig) => {
@@ -139,30 +204,6 @@ const CarOnboardingForm = () => {
     return true;
   };
 
-  const uploadImageToStorage = async (uri: string): Promise<string | null> => {
-    try {
-      setIsLoading(true);
-      // Use the car image upload service instead of profile image
-      const result = await imageUploadService.uploadCarImage(uri);
-      if (!result.success || !result.imageUrl) {
-        throw new Error(result.error || 'Upload failed');
-      }
-      return result.imageUrl;
-    } catch (err: any) {
-      console.error('Image upload error:', err);
-      showAlert({ 
-        type: 'error', 
-        title: 'Upload Failed', 
-        message: err.message || 'Could not upload image. Please try again.', 
-        buttonType: 'single', 
-        confirmText: 'OK', 
-        onConfirm: () => {} 
-      });
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const pickImageFromGallery = () => {
     console.log('Opening gallery...');
@@ -210,18 +251,8 @@ const CarOnboardingForm = () => {
       }
       
       console.log('Selected image URI:', uri);
-      const uploadedUrl = await uploadImageToStorage(uri);
-      if (uploadedUrl) {
-        setFormData((prev: any) => ({ ...prev, image: uploadedUrl }));
-        showAlert({ 
-          type: 'success', 
-          title: 'Image Uploaded', 
-          message: 'Your car image was uploaded successfully.', 
-          buttonType: 'single', 
-          confirmText: 'OK', 
-          onConfirm: () => {} 
-        });
-      }
+      setFormData((prev: any) => ({ ...prev, image: uri }));
+      console.log('📝 Updated formData with local URI:', uri);
     });
   };
 
@@ -244,14 +275,9 @@ const CarOnboardingForm = () => {
     const options = {
       mediaType: 'photo' as MediaType,
       includeBase64: false,
-      quality: 0.8,
       maxWidth: 1024,
       maxHeight: 1024,
       saveToPhotos: true,
-      storageOptions: {
-        skipBackup: true,
-        path: 'images',
-      },
     };
     
     launchCamera(options, async (response: ImagePickerResponse) => {
@@ -304,36 +330,42 @@ const CarOnboardingForm = () => {
       }
       
       console.log('Captured image URI:', uri);
-      const uploadedUrl = await uploadImageToStorage(uri);
-      if (uploadedUrl) {
-        setFormData((prev: any) => ({ ...prev, image: uploadedUrl }));
-        showAlert({ 
-          type: 'success', 
-          title: 'Image Uploaded', 
-          message: 'Your car image was uploaded successfully.', 
-          buttonType: 'single', 
-          confirmText: 'OK', 
-          onConfirm: () => {} 
-        });
-      }
+      setFormData((prev: any) => ({ ...prev, image: uri }));
+      console.log('📝 Updated formData with camera URI:', uri);
     });
   };
 
   const handleRegisterCar = async () => {
-    console.log('Attempting to register car with data:', formData);
-    
+    console.log('🚗 ===== CAR REGISTRATION ATTEMPT =====');
+    console.log('🚗 Current formData:', JSON.stringify(formData, null, 2));
+    console.log('🚗 Current errors state:', JSON.stringify(errors, null, 2));
+    console.log('🚗 Form data keys and values:');
+    Object.entries(formData).forEach(([key, value]) => {
+      console.log(`   ${key}: "${value}" (${typeof value})`);
+    });
+
     if (!validate()) {
-      console.log('Validation failed with errors:', errors);
-      showAlert({ 
-        type: 'error', 
-        title: 'Validation Error', 
-        message: 'Please fix all errors before submitting', 
-        buttonType: 'single', 
-        confirmText: 'OK', 
-        onConfirm: () => {} 
+      console.log('❌ Validation failed with errors:', errors);
+      console.log('❌ Form data at validation failure:', formData);
+
+      // Show specific error details
+      const errorMessages = Object.values(errors).filter((msg: any) => msg && typeof msg === 'string' && msg.trim() !== '');
+      console.log('❌ Filtered error messages:', errorMessages);
+
+      showAlert({
+        type: 'error',
+        title: 'Validation Error',
+        message: errorMessages.length > 0
+          ? `Please fix the following errors:\n${errorMessages.join('\n')}`
+          : 'Please fix all errors before submitting',
+        buttonType: 'single',
+        confirmText: 'OK',
+        onConfirm: () => {}
       });
       return;
     }
+
+    console.log('✅ Validation passed, proceeding with submission');
 
     showAlert({
       type: 'info',
@@ -348,37 +380,50 @@ const CarOnboardingForm = () => {
     try {
       const userStr = await AsyncStorage.getItem('user');
       console.log('Retrieved user from storage:', userStr);
-      
+
       if (!userStr) {
         throw new Error('User not found. Please login again.');
       }
-      
+
       const user = JSON.parse(userStr);
       const token = await AsyncStorage.getItem('token');
       console.log('Retrieved token:', token ? 'Token exists' : 'No token');
-      
+
       if (!token) {
         throw new Error('Authentication token not found. Please login again.');
       }
 
-      // Get customer ID by email
-      console.log('Fetching customer info for user:', user.email);
-      const customerRes = await fetch(`http://10.0.2.2:3000/customers?email=${encodeURIComponent(user.email)}&limit=1`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      // Get customer ID from stored user data
+      const customerId = user.customerId;
+      console.log('Customer ID from stored user:', customerId);
 
-      const customerData = await customerRes.json();
-      console.log('Customer data:', customerData);
-
-      if (!customerRes.ok || !customerData.success || !customerData.data || customerData.data.length === 0) {
-        throw new Error('Could not find customer information. Please complete your profile setup.');
+      if (!customerId) {
+        throw new Error('Customer ID not found. Please complete your profile setup.');
       }
 
-      const customerId = customerData.data[0].id;
-      console.log('Customer ID:', customerId);
+      let imageUrl = '';
+
+      if (formData.image) {
+        console.log('📤 Uploading car image...');
+        // TEMPORARY: Try using profile image upload to see if it works
+        const uploadResult = await imageUploadService.uploadProfileImage(formData.image);
+
+        if (!uploadResult.success) {
+          showAlert({
+            type: 'error',
+            title: 'Image Upload Failed',
+            message: uploadResult.error || 'Failed to upload car image. Please try again.',
+            buttonType: 'single',
+            confirmText: 'OK',
+            onConfirm: () => {}
+          });
+          return;
+        }
+
+        // Store the full Supabase URL directly
+        imageUrl = uploadResult.imageUrl || '';
+        console.log('✅ Car image uploaded successfully:', imageUrl);
+      }
 
       const requestBody = {
         customerId: customerId,
@@ -386,12 +431,19 @@ const CarOnboardingForm = () => {
         model: formData.model,
         year: Number(formData.year),
         licensePlate: formData.number,
-        color: formData.color,
-        imageUrl: formData.image,
+        imageUrl: imageUrl,
       };
-      
-      console.log('Sending request with body:', requestBody);
-      
+
+
+      console.log('📤 Sending request to backend:');
+      console.log('📤 URL: http://10.0.2.2:3000/vehicles');
+      console.log('📤 Method: POST');
+      console.log('📤 Headers:', {
+        'Authorization': `Bearer ${token.substring(0, 20)}...`,
+        'Content-Type': 'application/json',
+      });
+      console.log('📤 Request Body:', JSON.stringify(requestBody, null, 2));
+
       const response = await fetch(`http://10.0.2.2:3000/vehicles`, {
         method: 'POST',
         headers: {
@@ -400,10 +452,14 @@ const CarOnboardingForm = () => {
         },
         body: JSON.stringify(requestBody),
       });
-      
-      console.log('Response status:', response.status);
+
+      console.log('📥 Backend Response:');
+      console.log('📥 Status:', response.status);
+      console.log('📥 Status Text:', response.statusText);
+      console.log('📥 Headers:', Object.fromEntries(response.headers.entries()));
+
       const data = await response.json();
-      console.log('Response data:', data);
+      console.log('📥 Response Data:', JSON.stringify(data, null, 2));
       
       if (!response.ok) {
         throw new Error(data.message || data.error || 'Failed to register car');
@@ -438,6 +494,29 @@ const CarOnboardingForm = () => {
       <Header
         icon='back'
       />
+
+      {/* Debug Panel - Remove this in production */}
+        {/* <View style={styles.debugPanel}>
+          <Text style={styles.debugTitle}>🔍 Debug Info</Text>
+          <Text style={styles.debugText}>
+            User ID: {debugUserData?.id || 'Not found'}
+          </Text>
+          <Text style={styles.debugText}>
+            Email: {debugUserData?.email || 'Not found'}
+          </Text>
+          <Text style={styles.debugText}>
+            Role: {debugUserData?.role || 'Not found'}
+          </Text>
+          <Text style={styles.debugText}>
+            Customer ID: {debugUserData?.customerId || 'Not found'}
+          </Text>
+          <Text style={styles.debugText}>
+            Token: {debugToken || 'Not found'}
+          </Text>
+          <Text style={styles.debugText}>
+            Registration Complete: {debugUserData?.isRegistrationComplete ? 'Yes' : 'No'}
+          </Text>
+        </View> */}
 
       <View style={styles.imageSection}>
         {formData.image ? (
@@ -488,7 +567,6 @@ const CarOnboardingForm = () => {
         bounces={false}
         keyboardShouldPersistTaps="handled"
       >
-
 
         <FormInput
           label="Car Name"
@@ -545,7 +623,6 @@ const CarOnboardingForm = () => {
         label={isLoading ? 'Registering...' : 'Register Car'}
         onPress={handleRegisterCar}
         containerStyle={{marginBottom: 30, marginHorizontal: 25}}
-        disabled={isLoading}
       />
 
       <CustomAlert
@@ -556,7 +633,6 @@ const CarOnboardingForm = () => {
         buttonType={alertConfig.buttonType}
         confirmText={alertConfig.confirmText}
         onClose={hideAlert}
-        onConfirm={alertConfig.onConfirm}
       />
       
       {isLoading && (
@@ -655,6 +731,28 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.8)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  debugPanel: {
+    backgroundColor: '#f0f9ff',
+    borderWidth: 1,
+    borderColor: '#0ea5e9',
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#0ea5e9',
+    marginBottom: 8,
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#374151',
+    fontFamily: 'monospace',
+    marginBottom: 2,
   },
 });
 

@@ -17,22 +17,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import CustomAlert from '../../components/Alert';
 import LoadingComponent from '../../components/Loading';
 import { launchImageLibrary, launchCamera, ImagePickerResponse, MediaType, PhotoQuality } from 'react-native-image-picker';
-import FormInput from '../../components/FormInput';
+import { imageUploadService } from '../../services/imageUpload.service';
 
 const EditCarDetailsPage = ({ route, navigation }: any) => {
-  const { carData: _carData } = route?.params || {};
+  const { carData } = route?.params || {};
 
   const [formData, setFormData] = useState({
-    name: 'Toyota Camry',
-    nickname: 'Speedster',
-    model: 'XSE',
-    year: '2021',
-    number: 'MH 12 AB 1234',
-    image: '',
-    status: 'active',
+    image: carData?.image || '',
+    status: carData?.status || 'ACTIVE',
   });
 
-  const [_errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState({
@@ -44,23 +38,12 @@ const EditCarDetailsPage = ({ route, navigation }: any) => {
     onConfirm: () => {},
   });
 
-  const _statusOptions = [
-    { value: 'active', label: 'Active', icon: 'checkmark-circle', color: Colors.success },
-    { value: 'maintenance', label: 'Maintenance', icon: 'build', color: Colors.warning },
-    { value: 'inactive', label: 'Inactive', icon: 'pause-circle', color: Colors.Purple },
-    { value: 'issues', label: 'Has Issues', icon: 'warning', color: Colors.danger },
+  const statusOptions = [
+    { value: 'ACTIVE', label: 'Active', icon: 'checkmark-circle', color: Colors.success },
+    { value: 'MAINTENANCE', label: 'Maintenance', icon: 'build', color: Colors.warning },
+    { value: 'INACTIVE', label: 'Inactive', icon: 'pause-circle', color: Colors.Purple },
+    { value: 'ISSUES', label: 'Has Issues', icon: 'warning', color: Colors.danger },
   ];
-
-  const _validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.image.trim()) {
-      newErrors.image = 'Car image URL is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   const showAlert = (c: typeof alertConfig) => { setAlertConfig(c); setAlertVisible(true); };
   const hideAlert = () => setAlertVisible(false);
@@ -68,24 +51,11 @@ const EditCarDetailsPage = ({ route, navigation }: any) => {
   const uploadImageToStorage = async (uri: string): Promise<string | null> => {
     try {
       setIsLoading(true);
-      const token = await AsyncStorage.getItem('token');
-      if (!token) throw new Error('No token found');
-      
-      // Use car image upload service instead of profile image
-      const form = new FormData();
-      const name = uri.split('/').pop() || `car_image_${Date.now()}.jpg`;
-      const type = name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
-      form.append('carImage', { uri, name, type } as any);
-      
-      const res = await fetch('http://10.0.2.2:3000/storage/car-image', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
-        body: form,
-      });
-      
-      const data = await res.json();
-      if (!res.ok || !data?.success) throw new Error(data?.error || 'Upload failed');
-      return data.data?.imageUrl || null;
+      const result = await imageUploadService.uploadCarImage(uri);
+      if (!result.success || !result.imageUrl) {
+        throw new Error(result.error || 'Upload failed');
+      }
+      return result.imageUrl;
     } catch (e: any) {
       showAlert({ type: 'error', title: 'Upload Failed', message: e.message || 'Try again', buttonType: 'single', confirmText: 'OK', onConfirm: () => {} });
       return null;
@@ -124,11 +94,15 @@ const EditCarDetailsPage = ({ route, navigation }: any) => {
       const selectedCarId = await AsyncStorage.getItem('selectedCarId');
       if (!selectedCarId) throw new Error('No car selected');
 
-      // Update vehicle with new nickname and image
-      const updateData = {
-        nickname: formData.nickname,
-        imageUrl: formData.image,
+      // Update vehicle with new image and status (only if changed)
+      const updateData: any = {
+        status: formData.status,
       };
+
+      // Only include imageUrl if it has changed
+      if (formData.image !== carData?.image) {
+        updateData.imageUrl = formData.image;
+      }
 
       const res = await fetch(`http://10.0.2.2:3000/vehicles/${selectedCarId}`, {
         method: 'PUT',
@@ -144,17 +118,18 @@ const EditCarDetailsPage = ({ route, navigation }: any) => {
 
       showAlert({
         type: 'success',
-        title: 'Success',
-        message: 'Vehicle updated successfully!',
+        title: 'Vehicle Updated',
+        message: 'Your vehicle details have been updated successfully.',
         buttonType: 'single',
         confirmText: 'OK',
         onConfirm: () => navigation.goBack(),
       });
     } catch (error: any) {
+      console.error('Update error:', error);
       showAlert({
         type: 'error',
-        title: 'Error',
-        message: error.message || 'Failed to update vehicle',
+        title: 'Update Failed',
+        message: error.message || 'Failed to update vehicle. Please try again.',
         buttonType: 'single',
         confirmText: 'OK',
         onConfirm: () => {},
@@ -171,7 +146,6 @@ const EditCarDetailsPage = ({ route, navigation }: any) => {
     >
       <Header
         icon="back"
-        onIconPress={() => navigation.goBack()}
       />
 
       <ScrollView
@@ -194,11 +168,8 @@ const EditCarDetailsPage = ({ route, navigation }: any) => {
                 source={{ uri: formData.image }}
                 style={styles.carImagePreview}
                 onError={() => {
-                setErrors(prev => ({
-                    ...prev,
-                    image: 'Invalid image URL',
-                }));
-                }}
+                    // Image failed to load
+                    }}
             />
             ) : (
             <View style={styles.imagePlaceholder}>
@@ -215,19 +186,26 @@ const EditCarDetailsPage = ({ route, navigation }: any) => {
         </View>
 
         <View style={styles.formCard}>
-          <Text style={styles.sectionTitle}>Edit Car</Text>
-          <FormInput 
-            label='Nickname'
-            value={formData.nickname}
-            onChangeText={(text: string) => setFormData(prev => ({ ...prev, nickname: text }))}
-            inputWrapperStyle={{marginTop: 10, marginBottom: -15}}
-          />
-        </View>
-
-        <View style={styles.formCard}>
           <Text style={styles.sectionTitle}>Car Status</Text>
           <View style={styles.statusGrid}>
-            <Text style={{ color: Colors.neutral500 }}>Status cannot be edited here.</Text>
+            {statusOptions.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.statusOption,
+                  formData.status === option.value && styles.statusOptionActive
+                ]}
+                onPress={() => setFormData(prev => ({ ...prev, status: option.value }))}
+              >
+                <Icon name={option.icon} size={20} color={formData.status === option.value ? Colors.neutral0 : option.color} />
+                <Text style={[
+                  styles.statusOptionText,
+                  formData.status === option.value && styles.statusOptionTextActive
+                ]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
@@ -260,7 +238,7 @@ const EditCarDetailsPage = ({ route, navigation }: any) => {
         message={alertConfig.message}
         buttonType={alertConfig.buttonType}
         confirmText={alertConfig.confirmText}
-        onClose={hideAlert}
+        onClose={alertConfig.onConfirm || hideAlert}
       />
     </KeyboardAvoidingView>
   );

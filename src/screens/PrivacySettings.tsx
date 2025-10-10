@@ -64,7 +64,6 @@ const PrivacySettingsScreen = () => {
       <Header 
         icon="back"
         name="Privacy Settings"
-        onIconPress={() => navigation.navigate('Profile')}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
