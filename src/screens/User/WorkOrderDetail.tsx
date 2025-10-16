@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -127,28 +128,14 @@ const WorkOrderDetail = () => {
         </View>
       </View>
 
-      {/* Customer Info */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Customer Information</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Name:</Text>
-          <Text style={styles.value}>
-            {wo.customer?.firstName} {wo.customer?.lastName}
-          </Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Email:</Text>
-          <Text style={styles.value}>{wo.customer?.email}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Phone:</Text>
-          <Text style={styles.value}>{wo.customer?.phone}</Text>
-        </View>
-      </View>
-
       {/* Vehicle Info */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Vehicle Information</Text>
+        {wo.vehicle?.imageUrl && (
+          <View style={styles.imageContainer}>
+            <Image source={{ uri: wo.vehicle.imageUrl }} style={styles.vehicleImage} />
+          </View>
+        )}
         <View style={styles.row}>
           <Text style={styles.label}>Make/Model:</Text>
           <Text style={styles.value}>
@@ -180,18 +167,6 @@ const WorkOrderDetail = () => {
           <Text style={styles.label}>Updated:</Text>
           <Text style={styles.value}>{formatDate(wo.updatedAt)}</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Opened:</Text>
-          <Text style={styles.value}>{formatDate(wo.openedAt)}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Promised:</Text>
-          <Text style={styles.value}>{formatDate(wo.promisedAt)}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Closed:</Text>
-          <Text style={styles.value}>{formatDate(wo.closedAt)}</Text>
-        </View>
       </View>
 
       {/* Financial Summary */}
@@ -214,13 +189,24 @@ const WorkOrderDetail = () => {
       {/* Service Advisor */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Service Advisor</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Name:</Text>
-          <Text style={styles.value}>{wo.serviceAdvisor?.userProfile?.firstName} {wo.serviceAdvisor?.userProfile?.lastName}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Phone:</Text>
-          <Text style={styles.value}>{wo.serviceAdvisor?.userProfile?.phone || 'N/A'}</Text>
+        <View style={styles.advisorCard}>
+          {wo.serviceAdvisor?.userProfile?.profileImage ? (
+            <Image source={{ uri: wo.serviceAdvisor.userProfile.profileImage }} style={styles.advisorImage} />
+          ) : (
+            <View style={styles.advisorPlaceholder}>
+              <Text style={styles.advisorInitial}>
+                {wo.serviceAdvisor?.userProfile?.firstName?.charAt(0)?.toUpperCase() || 'A'}
+              </Text>
+            </View>
+          )}
+          <View style={styles.advisorDetails}>
+            <Text style={styles.advisorName}>
+              {wo.serviceAdvisor?.userProfile?.firstName} {wo.serviceAdvisor?.userProfile?.lastName}
+            </Text>
+            <Text style={styles.advisorPhone}>
+              {wo.serviceAdvisor?.userProfile?.phone || 'N/A'}
+            </Text>
+          </View>
         </View>
       </View>
     </ScrollView>
@@ -442,7 +428,6 @@ const WorkOrderDetail = () => {
           icon="back"
           name="Work Order Details"
           image=""
-          onIconPress={() => navigation.goBack()}
         />
         <LoadingComponent
           loadingText="Loading work order details..."
@@ -466,7 +451,6 @@ const WorkOrderDetail = () => {
         icon="back"
         name="Work Order Details"
         image=""
-        onIconPress={() => navigation.goBack()}
       />
 
       {/* Tab Navigation */}
@@ -567,6 +551,56 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.neutral700,
     lineHeight: 20,
+  },
+  imageContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  vehicleImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 8,
+    resizeMode: 'cover',
+  },
+  advisorImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    resizeMode: 'cover',
+  },
+  advisorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.neutral50,
+    borderRadius: 12,
+    padding: 16,
+  },
+  advisorPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  advisorInitial: {
+    color: Colors.neutral50,
+    fontSize: 32,
+    fontWeight: '600',
+  },
+  advisorDetails: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  advisorName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.neutral900,
+    marginBottom: 4,
+  },
+  advisorPhone: {
+    fontSize: 14,
+    color: Colors.neutral600,
   },
   // Loading state styles
   loadingContainer: {
