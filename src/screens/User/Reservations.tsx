@@ -24,7 +24,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ReservationsScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming', 'ongoing', 'completed'
+  // Default to 'ongoing' and remove the Upcoming tab from the UI
+  const [activeTab, setActiveTab] = useState('ongoing'); // 'ongoing', 'completed'
   const [notifications, setNotifications] = useState<any[]>([]);
   const [rescheduleSheetVisible, setRescheduleSheetVisible] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
@@ -37,8 +38,7 @@ const ReservationsScreen = () => {
   const [serviceAdvisor, setServiceAdvisor] = useState<{name?: string, phone?: string} | null>(null);
 
   // Mock data for upcoming reservations - fallback when backend is unavailable
-  const mockUpcomingReservations = [
-];
+  const mockUpcomingReservations: any[] = [];
 
   const mockOngoingReservations = [
     {
@@ -302,7 +302,7 @@ const ReservationsScreen = () => {
     setNotifications(activeNotifications);
   }, [ongoingReservations]);
 
-  const getNotificationMessage = (reservation) => {
+  const getNotificationMessage = (reservation: any) => {
     switch (reservation.notificationType) {
       case 'inspection_results':
         return 'Inspection results are ready for review';
@@ -747,27 +747,23 @@ const ReservationsScreen = () => {
 
   const getCurrentData = () => {
     switch (activeTab) {
-      case 'upcoming':
-        return upcomingReservations;
       case 'ongoing':
         return ongoingReservations;
       case 'completed':
         return completedReservations;
       default:
-        return [];
+        return ongoingReservations;
     }
   };
 
   const getCurrentRenderItem = () => {
     switch (activeTab) {
-      case 'upcoming':
-        return renderUpcomingReservation;
       case 'ongoing':
         return renderOngoingReservation;
       case 'completed':
         return renderCompletedReservation;
       default:
-        return renderUpcomingReservation;
+        return renderOngoingReservation;
     }
   };
 
@@ -801,9 +797,8 @@ const ReservationsScreen = () => {
         onIconPress={() => navigation.navigate('Home')}
       />
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation (Upcoming tab removed) */}
       <View style={styles.tabContainer}>
-        {renderTabButton('upcoming', 'Upcoming', upcomingReservations.length)}
         {renderTabButton('ongoing', 'In Garage', ongoingReservations.length)}
         {renderTabButton('completed', 'Completed', completedReservations.length)}
       </View>
