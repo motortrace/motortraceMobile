@@ -55,6 +55,13 @@ const WorkOrderDetail = () => {
 
         if (response.ok && data.success) {
           setDetailedWorkOrder(data.data);
+          console.log('🔍 Work order data received');
+          console.log('🔍 Approvals in data:', data.data?.approvals);
+          console.log('🔍 Number of approvals:', data.data?.approvals?.length);
+          if (data.data?.approvals?.length > 0) {
+            console.log('🔍 First approval ID:', data.data.approvals[0].id);
+            console.log('🔍 Last approval ID:', data.data.approvals[data.data.approvals.length - 1].id);
+          }
         } else {
           Alert.alert('Error', 'Failed to fetch work order details');
           navigation.goBack();
@@ -89,7 +96,7 @@ const WorkOrderDetail = () => {
 
   const downloadInspectionPdf = async (pdfUrl: string) => {
     try {
-      console.log('🔍 Original PDF URL:', pdfUrl);
+      // console.log('🔍 Original PDF URL:', pdfUrl);
 
       // Convert localhost URLs for mobile devices
       let adjustedUrl = pdfUrl;
@@ -130,6 +137,107 @@ const WorkOrderDetail = () => {
     } catch (error) {
       console.error('❌ Error opening PDF:', error);
       Alert.alert('Error', 'Failed to open PDF');
+    }
+  };
+
+  const approveApproval = async (approvalId: string) => {
+    try {
+      console.log('🔍 approveApproval called with approvalId:', approvalId);
+      console.log('🔍 Type of approvalId:', typeof approvalId);
+      console.log('🔍 Length of approvalId:', approvalId?.length);
+
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'Authentication required');
+        return;
+      }
+
+      console.log('🔍 Token retrieved, length:', token.length);
+      console.log('🔍 Sending request to:', `http://10.0.2.2:3000/work-orders/approvals/${approvalId}/approve`);
+
+      const response = await fetch(`http://10.0.2.2:3000/work-orders/approvals/${approvalId}/approve`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          notes: 'Approved via mobile app',
+        }),
+      });
+
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response ok:', response.ok);
+
+      const responseText = await response.text();
+      console.log('🔍 Response body:', responseText);
+
+      if (response.ok) {
+        // Refresh the work order data
+        const updatedResponse = await fetch(`http://10.0.2.2:3000/work-orders/${wo.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (updatedResponse.ok) {
+          const updatedData = await updatedResponse.json();
+          if (updatedData.success) {
+            setDetailedWorkOrder(updatedData.data);
+            Alert.alert('Success', 'Estimate approved successfully');
+          }
+        }
+      } else {
+        Alert.alert('Error', `Failed to approve estimate (${response.status})`);
+      }
+    } catch (error) {
+      console.error('Error approving estimate:', error);
+      Alert.alert('Error', 'Failed to approve estimate');
+    }
+  };
+
+  const rejectApproval = async (approvalId: string) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'Authentication required');
+        return;
+      }
+
+      const response = await fetch(`http://10.0.2.2:3000/work-orders/approvals/${approvalId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reason: 'Rejected via mobile app',
+        }),
+      });
+
+      if (response.ok) {
+        // Refresh the work order data
+        const updatedResponse = await fetch(`http://10.0.2.2:3000/work-orders/${wo.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (updatedResponse.ok) {
+          const updatedData = await updatedResponse.json();
+          if (updatedData.success) {
+            setDetailedWorkOrder(updatedData.data);
+            Alert.alert('Success', 'Estimate rejected successfully');
+          }
+        }
+      } else {
+        Alert.alert('Error', 'Failed to reject estimate');
+      }
+    } catch (error) {
+      console.error('Error rejecting estimate:', error);
+      Alert.alert('Error', 'Failed to reject estimate');
     }
   };
 
@@ -326,23 +434,75 @@ const WorkOrderDetail = () => {
         <Text style={styles.sectionTitle}>Services</Text>
         {wo.services && wo.services.length > 0 ? (
           wo.services.map((service: any, index: number) => (
-            <View key={service.id || index} style={styles.serviceItem}>
-              <View style={styles.row}>
-                <Text style={styles.label}>{service.cannedService?.name || service.description}</Text>
-                <Text style={styles.value}>{formatCurrency(service.subtotal)}</Text>
+            <View key={service.id || index} style={styles.serviceCard}>
+              {/* Service Header */}
+              <View style={styles.serviceHeader}>
+                <View style={styles.serviceInfo}>
+                  <Text style={styles.serviceName}>{service.cannedService?.name || service.description}</Text>
+                  <Text style={styles.serviceDescription}>{service.description}</Text>
+                </View>
+                <View style={styles.serviceMeta}>
+                  <Text style={styles.serviceSubtotal}>{formatCurrency(service.subtotal)}</Text>
+                  <Text style={[styles.serviceStatus, { color: service.status === 'approved' ? Colors.success : service.status === 'pending' ? Colors.warning : Colors.neutral600 }]}>
+                    {service.status}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Quantity:</Text>
-                <Text style={styles.value}>{service.quantity}</Text>
+
+              {/* Service Details */}
+              <View style={styles.serviceDetails}>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Quantity:</Text>
+                  <Text style={styles.value}>{service.quantity}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Unit Price:</Text>
+                  <Text style={styles.value}>{formatCurrency(service.unitPrice)}</Text>
+                </View>
               </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Unit Price:</Text>
-                <Text style={styles.value}>{formatCurrency(service.unitPrice)}</Text>
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Status:</Text>
-                <Text style={styles.value}>{service.status}</Text>
-              </View>
+
+              {/* Labor Items for this Service */}
+              {wo.laborItems && wo.laborItems.filter((labor: any) => labor.serviceId === service.id).length > 0 && (
+                <View style={styles.laborSection}>
+                  <Text style={styles.laborSectionTitle}>Labor Items</Text>
+                  {wo.laborItems
+                    .filter((labor: any) => labor.serviceId === service.id)
+                    .map((labor: any, laborIndex: number) => (
+                      <View key={labor.id || laborIndex} style={styles.laborItem}>
+                        <View style={styles.laborHeader}>
+                          <Text style={styles.laborDescription}>{labor.description}</Text>
+                          <Text style={styles.laborHours}>{labor.hours} hrs</Text>
+                        </View>
+                        <View style={styles.laborDetails}>
+                          <View style={styles.row}>
+                            <Text style={styles.label}>Rate:</Text>
+                            <Text style={styles.value}>{formatCurrency(labor.rate)}</Text>
+                          </View>
+                          <View style={styles.row}>
+                            <Text style={styles.label}>Technician:</Text>
+                            <Text style={styles.value}>{labor.technician?.userProfile?.firstName} {labor.technician?.userProfile?.lastName}</Text>
+                          </View>
+                          <View style={styles.row}>
+                            <Text style={styles.label}>Status:</Text>
+                            <Text style={styles.value}>{labor.status}</Text>
+                          </View>
+                          {labor.estimatedTime && (
+                            <View style={styles.row}>
+                              <Text style={styles.label}>Estimated Time:</Text>
+                              <Text style={styles.value}>{labor.estimatedTime} hrs</Text>
+                            </View>
+                          )}
+                          {labor.actualTime && (
+                            <View style={styles.row}>
+                              <Text style={styles.label}>Actual Time:</Text>
+                              <Text style={styles.value}>{labor.actualTime} hrs</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    ))}
+                </View>
+              )}
             </View>
           ))
         ) : (
@@ -350,77 +510,113 @@ const WorkOrderDetail = () => {
         )}
       </View>
 
-      {/* Labor Items */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Labor Items</Text>
-        {wo.laborItems && wo.laborItems.length > 0 ? (
-          wo.laborItems.map((labor: any, index: number) => (
-            <View key={labor.id || index} style={styles.serviceItem}>
-              <View style={styles.row}>
-                <Text style={styles.label}>{labor.description}</Text>
-                <Text style={styles.value}>{labor.hours} hrs</Text>
+      {/* Labor Items without Service Association */}
+      {wo.laborItems && wo.laborItems.filter((labor: any) => !labor.serviceId).length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Unassigned Labor Items</Text>
+          {wo.laborItems
+            .filter((labor: any) => !labor.serviceId)
+            .map((labor: any, index: number) => (
+              <View key={labor.id || index} style={styles.serviceItem}>
+                <View style={styles.row}>
+                  <Text style={styles.label}>{labor.description}</Text>
+                  <Text style={styles.value}>{labor.hours} hrs</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Rate:</Text>
+                  <Text style={styles.value}>{formatCurrency(labor.rate)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Technician:</Text>
+                  <Text style={styles.value}>{labor.technician?.userProfile?.firstName} {labor.technician?.userProfile?.lastName}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Status:</Text>
+                  <Text style={styles.value}>{labor.status}</Text>
+                </View>
               </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Rate:</Text>
-                <Text style={styles.value}>{formatCurrency(labor.rate)}</Text>
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Technician:</Text>
-                <Text style={styles.value}>{labor.technician?.userProfile?.firstName} {labor.technician?.userProfile?.lastName}</Text>
-              </View>
-            </View>
-          ))
-        ) : (
-          <Text style={styles.emptyText}>No labor items found</Text>
-        )}
-      </View>
+            ))}
+        </View>
+      )}
     </ScrollView>
   );
 
   const renderEstimatesTab = () => (
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Estimate Information</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Estimated Total:</Text>
-          <Text style={styles.value}>{formatCurrency(wo.estimatedTotal)}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Estimate Approved:</Text>
-          <Text style={styles.value}>{wo.estimateApproved ? 'Yes' : 'No'}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Estimate Notes:</Text>
-          <Text style={styles.value}>{wo.estimateNotes || 'N/A'}</Text>
-        </View>
-      </View>
-
-      {/* Parts Used */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Parts Used</Text>
-        {wo.partsUsed && wo.partsUsed.length > 0 ? (
-          wo.partsUsed.map((part: any, index: number) => (
-            <View key={part.id || index} style={styles.serviceItem}>
-              <View style={styles.row}>
-                <Text style={styles.label}>{part.part?.name || part.part?.sku}</Text>
-                <Text style={styles.value}>{formatCurrency(part.subtotal)}</Text>
+        <Text style={styles.sectionTitle}>Estimates & Approvals</Text>
+        {(() => {
+          console.log('🔍 renderEstimatesTab - wo.approvals:', wo.approvals);
+          console.log('🔍 renderEstimatesTab - approvals length:', wo.approvals?.length);
+          return null;
+        })()}
+        {wo.approvals && wo.approvals.length > 0 ? (
+          wo.approvals.map((approval: any, idx: number) => {
+            const isLatest = idx === wo.approvals.length - 1;
+            console.log('Approval:', idx, 'Status:', approval.status, 'isLatest:', isLatest);
+            return (
+              <View key={approval.id} style={[styles.serviceItem, { marginBottom: 16 }]}> 
+                <View style={styles.row}>
+                  <Text style={styles.label}>Status:</Text>
+                  <Text style={styles.value}>{approval.status}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Requested At:</Text>
+                  <Text style={styles.value}>{formatDate(approval.requestedAt)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Approved At:</Text>
+                  <Text style={styles.value}>{approval.approvedAt ? formatDate(approval.approvedAt) : 'Not Approved'}</Text>
+                </View>
+                {approval.approvedBy && (
+                  <View style={styles.row}>
+                    <Text style={styles.label}>Approved By:</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 2, justifyContent: 'flex-end' }}>
+                      {approval.approvedBy.profileImage && (
+                        <Image source={{ uri: approval.approvedBy.profileImage }} style={{ width: 28, height: 28, borderRadius: 14, marginRight: 8 }} />
+                      )}
+                      <Text style={styles.value}>{approval.approvedBy.name}</Text>
+                    </View>
+                  </View>
+                )}
+                {approval.pdfUrl && (
+                  <TouchableOpacity
+                    style={styles.downloadButton}
+                    onPress={() => downloadInspectionPdf(approval.pdfUrl)}
+                  >
+                    <Icon name="download-outline" size={20} color={Colors.neutral0} />
+                    <Text style={styles.downloadButtonText}>Download Estimate</Text>
+                  </TouchableOpacity>
+                )}
+                {/* Only show approve and reject buttons for latest and if not approved */}
+                {isLatest && approval.status && approval.status.toLowerCase() === 'pending' && (
+                  <View style={styles.buttonContainer}>
+                    {(() => {
+                      console.log('🔍 Rendering approve button for approval ID:', approval.id);
+                      return null;
+                    })()}
+                    <TouchableOpacity
+                      style={styles.approveButton}
+                      onPress={() => {
+                        console.log('🔍 Approve button pressed, calling approveApproval with:', approval.id);
+                        approveApproval(approval.id);
+                      }}
+                    >
+                      <Icon name="checkmark-circle-outline" size={24} color={Colors.neutral900} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.rejectButton}
+                      onPress={() => rejectApproval(approval.id)}
+                    >
+                      <Icon name="close-circle-outline" size={24} color={Colors.neutral900} />
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Quantity:</Text>
-                <Text style={styles.value}>{part.quantity}</Text>
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Unit Price:</Text>
-                <Text style={styles.value}>{formatCurrency(part.unitPrice)}</Text>
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Source:</Text>
-                <Text style={styles.value}>{part.source}</Text>
-              </View>
-            </View>
-          ))
+            );
+          })
         ) : (
-          <Text style={styles.emptyText}>No parts used</Text>
+          <Text style={styles.emptyText}>No estimates found</Text>
         )}
       </View>
     </ScrollView>
@@ -776,6 +972,132 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.neutral600,
     fontWeight: '500',
+  },
+  // Service card styles
+  serviceCard: {
+    backgroundColor: Colors.neutral50,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: Colors.shadowMd,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  serviceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  serviceInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  serviceName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.neutral900,
+    marginBottom: 4,
+  },
+  serviceDescription: {
+    fontSize: 14,
+    color: Colors.neutral600,
+    lineHeight: 20,
+  },
+  serviceMeta: {
+    alignItems: 'flex-end',
+  },
+  serviceSubtotal: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.primary,
+    marginBottom: 4,
+  },
+  serviceStatus: {
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+  },
+  serviceDetails: {
+    marginBottom: 12,
+  },
+  approveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#dcfce7', // Light green
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    flex: 1,
+    marginRight: 8,
+  },
+  approveButtonText: {
+    color: Colors.neutral0,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  rejectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fecaca', // Light red
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    flex: 1,
+    marginLeft: 8,
+  },
+  rejectButtonText: {
+    color: Colors.neutral0,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  laborSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.neutral200,
+  },
+  laborSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.neutral700,
+    marginBottom: 8,
+  },
+  laborItem: {
+    backgroundColor: Colors.neutral0,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  laborHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  laborDescription: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.neutral900,
+    flex: 1,
+  },
+  laborHours: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  laborDetails: {
+    // Additional styling for labor details if needed
   },
 });
 
