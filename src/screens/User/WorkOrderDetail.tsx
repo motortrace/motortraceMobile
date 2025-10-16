@@ -15,6 +15,7 @@ import Colors from '../../constants/colors';
 import Header from '../../components/Header';
 import LoadingComponent from '../../components/Loading';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 type WorkOrderDetailRouteProp = RouteProp<RootStackParamList, 'WorkOrderDetail'>;
 type WorkOrderDetailNavigationProp = StackNavigationProp<RootStackParamList, 'WorkOrderDetail'>;
@@ -82,14 +83,16 @@ const WorkOrderDetail = () => {
     return `$${Number(amount).toFixed(2)}`;
   };
 
-  const renderTabButton = (tabName: string, label: string) => (
+  const renderTabButton = (tabName: string, iconName: string) => (
     <TouchableOpacity
       style={[styles.tabButton, activeTab === tabName && styles.activeTab]}
       onPress={() => setActiveTab(tabName)}
     >
-      <Text style={[styles.tabText, activeTab === tabName && styles.activeTabText]}>
-        {label}
-      </Text>
+      <Icon
+        name={iconName}
+        size={20}
+        color={activeTab === tabName ? Colors.neutral0 : Colors.neutral600}
+      />
     </TouchableOpacity>
   );
 
@@ -468,12 +471,12 @@ const WorkOrderDetail = () => {
 
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
-        {renderTabButton('overview', 'Overview')}
-        {renderTabButton('inspections', 'Inspections')}
-        {renderTabButton('services', 'Services')}
-        {renderTabButton('estimates', 'Estimates')}
-        {renderTabButton('payments', 'Payments')}
-        {renderTabButton('notes', 'Notes')}
+        {renderTabButton('overview', 'information-circle-outline')}
+        {renderTabButton('inspections', 'search-outline')}
+        {renderTabButton('services', 'construct-outline')}
+        {renderTabButton('estimates', 'calculator-outline')}
+        {renderTabButton('payments', 'card-outline')}
+        {renderTabButton('notes', 'document-text-outline')}
       </View>
 
       {/* Tab Content */}
@@ -501,18 +504,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   activeTab: {
     backgroundColor: Colors.primary,
-  },
-  tabText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.neutral600,
-    textAlign: 'center',
-  },
-  activeTabText: {
-    color: Colors.neutral0,
   },
   scrollView: {
     flex: 1,
