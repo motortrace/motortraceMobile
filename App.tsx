@@ -87,6 +87,7 @@ import InspectionOngoing from './src/screens/User/InspectionOngoing';
 // import Rewards from './src/screens/User/Rewards';
 // import RewardHistory from './src/screens/User/RewardHistory';
 import InspectionCar from './src/screens/User/InspectionsCar';
+import WorkOrderDetail from './src/screens/User/WorkOrderDetail';
 
 import TechnicianHome from './src/screens/Technician/Home';
 import AssignedWork from './src/screens/Technician/AssignedWork';
@@ -195,6 +196,8 @@ export type RootStackParamList = {
 
   // Rewards: undefined;
   // RewardHistory: undefined;
+
+  WorkOrderDetail: { workOrder: any };
 
   TechnicianHome: undefined;
   AssignedWork: undefined;
@@ -325,6 +328,8 @@ function App(): React.ReactElement {
           {/* Rewards */}
           {/* <Stack.Screen name="Rewards" component={Rewards} />
           <Stack.Screen name="RewardHistory" component={RewardHistory} /> */}
+
+          <Stack.Screen name="WorkOrderDetail" component={WorkOrderDetail} />
 
           {/* Technician */}
           <Stack.Screen name="TechnicianHome" component={TechnicianHome}/>

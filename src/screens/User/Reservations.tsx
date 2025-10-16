@@ -429,8 +429,7 @@ const ReservationsScreen = () => {
       
       <View style={styles.cardActions}>
         <BorderButton label="View" icon="eye" style={{width: '100%'}} onPress={() => {
-          // Placeholder for view action
-          Alert.alert('View Work Order', `Viewing details for ${item.workOrderNumber}`);
+          navigation.navigate('WorkOrderDetail', { workOrder: item });
         }} />
       </View>
     </View>
