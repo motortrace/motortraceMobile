@@ -9,6 +9,7 @@ import {
   Alert,
   Image,
   Linking,
+  Platform,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -87,9 +88,15 @@ const WorkOrderDetail = () => {
 
   const downloadInspectionPdf = async (pdfUrl: string) => {
     try {
-      const supported = await Linking.canOpenURL(pdfUrl);
+      // Convert localhost URLs for mobile devices
+      let adjustedUrl = pdfUrl;
+      if (Platform.OS === 'android' && pdfUrl.includes('127.0.0.1')) {
+        adjustedUrl = pdfUrl.replace('127.0.0.1', '10.0.2.2');
+      }
+
+      const supported = await Linking.canOpenURL(adjustedUrl);
       if (supported) {
-        await Linking.openURL(pdfUrl);
+        await Linking.openURL(adjustedUrl);
       } else {
         Alert.alert('Error', 'Cannot open PDF. Please check your browser settings.');
       }
