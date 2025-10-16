@@ -11,6 +11,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
+import InAppBrowser from 'react-native-inappbrowser-reborn';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
@@ -88,20 +89,46 @@ const WorkOrderDetail = () => {
 
   const downloadInspectionPdf = async (pdfUrl: string) => {
     try {
+      console.log('🔍 Original PDF URL:', pdfUrl);
+
       // Convert localhost URLs for mobile devices
       let adjustedUrl = pdfUrl;
       if (Platform.OS === 'android' && pdfUrl.includes('127.0.0.1')) {
         adjustedUrl = pdfUrl.replace('127.0.0.1', '10.0.2.2');
+        console.log('🔍 Adjusted URL for Android:', adjustedUrl);
       }
 
-      const supported = await Linking.canOpenURL(adjustedUrl);
-      if (supported) {
-        await Linking.openURL(adjustedUrl);
+      console.log('🔍 Platform:', Platform.OS);
+      console.log('🔍 Final URL to open:', adjustedUrl);
+
+      // Try to open in InAppBrowser first (better UX)
+      if (await InAppBrowser.isAvailable()) {
+        console.log('🔍 Opening PDF in InAppBrowser...');
+        await InAppBrowser.open(adjustedUrl, {
+          showTitle: true,
+          toolbarColor: Colors.primary,
+          secondaryToolbarColor: Colors.neutral900,
+          enableUrlBarHiding: true,
+          enableDefaultShare: true,
+          forceCloseOnRedirection: false,
+        });
+        console.log('🔍 PDF opened successfully in InAppBrowser');
       } else {
-        Alert.alert('Error', 'Cannot open PDF. Please check your browser settings.');
+        console.log('🔍 InAppBrowser not available, falling back to Linking');
+        const supported = await Linking.canOpenURL(adjustedUrl);
+        console.log('🔍 Linking.canOpenURL result:', supported);
+
+        if (supported) {
+          console.log('🔍 Opening URL with Linking...');
+          await Linking.openURL(adjustedUrl);
+          console.log('🔍 URL opened successfully with Linking');
+        } else {
+          console.log('🔍 URL not supported by Linking');
+          Alert.alert('Error', 'Cannot open PDF. Please check your browser settings.');
+        }
       }
     } catch (error) {
-      console.error('Error opening PDF:', error);
+      console.error('❌ Error opening PDF:', error);
       Alert.alert('Error', 'Failed to open PDF');
     }
   };
