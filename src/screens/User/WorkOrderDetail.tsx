@@ -94,6 +94,215 @@ const WorkOrderDetail = () => {
     return `රු${Number(amount).toFixed(2)}`;
   };
 
+  // Badge rendering functions for enum values
+  const renderStatusBadge = (status: string) => {
+    let backgroundColor = Colors.neutral200;
+    let textColor = Colors.neutral700;
+
+    switch (status?.toUpperCase()) {
+      case 'PENDING':
+        backgroundColor = '#fef3c7'; // Light yellow
+        textColor = '#d97706'; // Dark yellow
+        break;
+      case 'AWAITING_APPROVAL':
+        backgroundColor = '#dbeafe'; // Light blue
+        textColor = '#2563eb'; // Dark blue
+        break;
+      case 'APPROVED':
+        backgroundColor = '#dcfce7'; // Light green
+        textColor = '#16a34a'; // Dark green
+        break;
+      case 'IN_PROGRESS':
+        backgroundColor = '#fed7aa'; // Light orange
+        textColor = '#ea580c'; // Dark orange
+        break;
+      case 'COMPLETED':
+        backgroundColor = '#dcfce7'; // Light green
+        textColor = '#16a34a'; // Dark green
+        break;
+      case 'INVOICED':
+        backgroundColor = '#e0e7ff'; // Light indigo
+        textColor = '#3730a3'; // Dark indigo
+        break;
+      case 'PAID':
+        backgroundColor = '#dcfce7'; // Light green
+        textColor = '#16a34a'; // Dark green
+        break;
+      case 'CANCELLED':
+        backgroundColor = '#fecaca'; // Light red
+        textColor = '#dc2626'; // Dark red
+        break;
+    }
+
+    return (
+      <View style={[styles.badge, { backgroundColor }]}>
+        <Text style={[styles.badgeText, { color: textColor }]}>{status}</Text>
+      </View>
+    );
+  };
+
+  const renderJobTypeBadge = (jobType: string) => {
+    let backgroundColor = Colors.neutral200;
+    let textColor = Colors.neutral700;
+
+    switch (jobType?.toUpperCase()) {
+      case 'REPAIR':
+        backgroundColor = '#fee2e2'; // Light red
+        textColor = '#dc2626'; // Dark red
+        break;
+      case 'MAINTENANCE':
+        backgroundColor = '#dbeafe'; // Light blue
+        textColor = '#2563eb'; // Dark blue
+        break;
+      case 'INSPECTION':
+        backgroundColor = '#fef3c7'; // Light yellow
+        textColor = '#d97706'; // Dark yellow
+        break;
+      case 'WARRANTY':
+        backgroundColor = '#dcfce7'; // Light green
+        textColor = '#16a34a'; // Dark green
+        break;
+      case 'RECALL':
+        backgroundColor = '#fed7aa'; // Light orange
+        textColor = '#ea580c'; // Dark orange
+        break;
+    }
+
+    return (
+      <View style={[styles.badge, { backgroundColor }]}>
+        <Text style={[styles.badgeText, { color: textColor }]}>{jobType}</Text>
+      </View>
+    );
+  };
+
+  const renderPriorityBadge = (priority: string) => {
+    let backgroundColor = Colors.neutral200;
+    let textColor = Colors.neutral700;
+
+    switch (priority?.toUpperCase()) {
+      case 'LOW':
+        backgroundColor = '#f3f4f6'; // Light gray
+        textColor = '#374151'; // Dark gray
+        break;
+      case 'NORMAL':
+        backgroundColor = '#dbeafe'; // Light blue
+        textColor = '#2563eb'; // Dark blue
+        break;
+      case 'HIGH':
+        backgroundColor = '#fed7aa'; // Light orange
+        textColor = '#ea580c'; // Dark orange
+        break;
+      case 'URGENT':
+        backgroundColor = '#fecaca'; // Light red
+        textColor = '#dc2626'; // Dark red
+        break;
+    }
+
+    return (
+      <View style={[styles.badge, { backgroundColor }]}>
+        <Text style={[styles.badgeText, { color: textColor }]}>{priority}</Text>
+      </View>
+    );
+  };
+
+  const renderSourceBadge = (source: string) => {
+    let backgroundColor = Colors.neutral200;
+    let textColor = Colors.neutral700;
+
+    switch (source?.toUpperCase()) {
+      case 'WALK_IN':
+        backgroundColor = '#f3f4f6'; // Light gray
+        textColor = '#374151'; // Dark gray
+        break;
+      case 'APPOINTMENT':
+        backgroundColor = '#dbeafe'; // Light blue
+        textColor = '#2563eb'; // Dark blue
+        break;
+      case 'PHONE':
+        backgroundColor = '#dcfce7'; // Light green
+        textColor = '#16a34a'; // Dark green
+        break;
+      case 'ROADSIDE_ASSIST':
+        backgroundColor = '#fed7aa'; // Light orange
+        textColor = '#ea580c'; // Dark orange
+        break;
+    }
+
+    return (
+      <View style={[styles.badge, { backgroundColor }]}>
+        <Text style={[styles.badgeText, { color: textColor }]}>{source?.replace('_', ' ')}</Text>
+      </View>
+    );
+  };
+
+  const renderApprovalStatusBadge = (status: string) => {
+    let backgroundColor = Colors.neutral200;
+    let textColor = Colors.neutral700;
+
+    switch (status?.toUpperCase()) {
+      case 'PENDING':
+        backgroundColor = '#fef3c7'; // Light yellow
+        textColor = '#d97706'; // Dark yellow
+        break;
+      case 'APPROVED':
+        backgroundColor = '#dcfce7'; // Light green
+        textColor = '#16a34a'; // Dark green
+        break;
+      case 'DECLINED':
+        backgroundColor = '#fecaca'; // Light red
+        textColor = '#dc2626'; // Dark red
+        break;
+      case 'EXPIRED':
+        backgroundColor = '#f3f4f6'; // Light gray
+        textColor = '#374151'; // Dark gray
+        break;
+    }
+
+    return (
+      <View style={[styles.badge, { backgroundColor }]}>
+        <Text style={[styles.badgeText, { color: textColor }]}>{status}</Text>
+      </View>
+    );
+  };
+
+  const renderApprovalMethodBadge = (method: string) => {
+    let backgroundColor = Colors.neutral200;
+    let textColor = Colors.neutral700;
+
+    switch (method?.toUpperCase()) {
+      case 'IN_PERSON':
+        backgroundColor = '#f3f4f6'; // Light gray
+        textColor = '#374151'; // Dark gray
+        break;
+      case 'PHONE':
+        backgroundColor = '#dbeafe'; // Light blue
+        textColor = '#2563eb'; // Dark blue
+        break;
+      case 'EMAIL':
+        backgroundColor = '#dcfce7'; // Light green
+        textColor = '#16a34a'; // Dark green
+        break;
+      case 'APP':
+        backgroundColor = '#e0e7ff'; // Light indigo
+        textColor = '#3730a3'; // Dark indigo
+        break;
+      case 'SMS':
+        backgroundColor = '#fef3c7'; // Light yellow
+        textColor = '#d97706'; // Dark yellow
+        break;
+      case 'DIGITAL_SIGNATURE':
+        backgroundColor = '#fed7aa'; // Light orange
+        textColor = '#ea580c'; // Dark orange
+        break;
+    }
+
+    return (
+      <View style={[styles.badge, { backgroundColor }]}>
+        <Text style={[styles.badgeText, { color: textColor }]}>{method?.replace('_', ' ')}</Text>
+      </View>
+    );
+  };
+
   const downloadInspectionPdf = async (pdfUrl: string) => {
     try {
       // console.log('🔍 Original PDF URL:', pdfUrl);
@@ -265,19 +474,27 @@ const WorkOrderDetail = () => {
         </View>
         <View style={styles.row}>
           <Text style={styles.label}>Status:</Text>
-          <Text style={styles.value}>{wo.status}</Text>
+          <View style={{ flex: 2, alignItems: 'flex-end' }}>
+            {renderStatusBadge(wo.status)}
+          </View>
         </View>
         <View style={styles.row}>
           <Text style={styles.label}>Job Type:</Text>
-          <Text style={styles.value}>{wo.jobType}</Text>
+          <View style={{ flex: 2, alignItems: 'flex-end' }}>
+            {renderJobTypeBadge(wo.jobType)}
+          </View>
         </View>
         <View style={styles.row}>
           <Text style={styles.label}>Priority:</Text>
-          <Text style={styles.value}>{wo.priority}</Text>
+          <View style={{ flex: 2, alignItems: 'flex-end' }}>
+            {renderPriorityBadge(wo.priority)}
+          </View>
         </View>
         <View style={styles.row}>
           <Text style={styles.label}>Source:</Text>
-          <Text style={styles.value}>{wo.source}</Text>
+          <View style={{ flex: 2, alignItems: 'flex-end' }}>
+            {renderSourceBadge(wo.source)}
+          </View>
         </View>
       </View>
 
@@ -443,9 +660,9 @@ const WorkOrderDetail = () => {
                 </View>
                 <View style={styles.serviceMeta}>
                   <Text style={styles.serviceSubtotal}>{formatCurrency(service.subtotal)}</Text>
-                  <Text style={[styles.serviceStatus, { color: service.status === 'approved' ? Colors.success : service.status === 'pending' ? Colors.warning : Colors.neutral600 }]}>
-                    {service.status}
-                  </Text>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    {renderApprovalStatusBadge(service.status)}
+                  </View>
                 </View>
               </View>
 
@@ -484,7 +701,9 @@ const WorkOrderDetail = () => {
                           </View>
                           <View style={styles.row}>
                             <Text style={styles.label}>Status:</Text>
-                            <Text style={styles.value}>{labor.status}</Text>
+                            <View style={{ flex: 2, alignItems: 'flex-end' }}>
+                              {renderApprovalStatusBadge(labor.status)}
+                            </View>
                           </View>
                           {labor.estimatedTime && (
                             <View style={styles.row}>
@@ -532,7 +751,9 @@ const WorkOrderDetail = () => {
                 </View>
                 <View style={styles.row}>
                   <Text style={styles.label}>Status:</Text>
-                  <Text style={styles.value}>{labor.status}</Text>
+                  <View style={{ flex: 2, alignItems: 'flex-end' }}>
+                    {renderApprovalStatusBadge(labor.status)}
+                  </View>
                 </View>
               </View>
             ))}
@@ -558,7 +779,9 @@ const WorkOrderDetail = () => {
               <View key={approval.id} style={[styles.serviceItem, { marginBottom: 16 }]}> 
                 <View style={styles.row}>
                   <Text style={styles.label}>Status:</Text>
-                  <Text style={styles.value}>{approval.status}</Text>
+                  <View style={{ flex: 2, alignItems: 'flex-end' }}>
+                    {renderApprovalStatusBadge(approval.status)}
+                  </View>
                 </View>
                 <View style={styles.row}>
                   <Text style={styles.label}>Requested At:</Text>
@@ -635,7 +858,9 @@ const WorkOrderDetail = () => {
               </View>
               <View style={styles.row}>
                 <Text style={styles.label}>Status:</Text>
-                <Text style={styles.value}>{payment.status}</Text>
+                <View style={{ flex: 2, alignItems: 'flex-end' }}>
+                  {renderApprovalStatusBadge(payment.status)}
+                </View>
               </View>
               <View style={styles.row}>
                 <Text style={styles.label}>Paid At:</Text>
@@ -1098,6 +1323,19 @@ const styles = StyleSheet.create({
   },
   laborDetails: {
     // Additional styling for labor details if needed
+  },
+  // Badge styles
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
 
