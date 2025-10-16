@@ -122,10 +122,6 @@ const WorkOrderDetail = () => {
           <Text style={styles.label}>Source:</Text>
           <Text style={styles.value}>{wo.source}</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Workflow Step:</Text>
-          <Text style={styles.value}>{wo.workflowStep}</Text>
-        </View>
       </View>
 
       {/* Vehicle Info */}
