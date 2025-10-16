@@ -1,84 +1,73 @@
 // src/screens/Technician/WorkOrderList.tsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  TouchableOpacity,
   ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import FeatherIcon from "react-native-vector-icons/Feather";
+import { fetchUserProfileId, fetchTechnicianId, fetchTechnicianWorkOrders } from "../../api/technicianApi";
+import { getToken } from "../../utils/authStorage";
 import Colors from "../../constants/colors";
 
-export default function WorkOrderListScreen({ navigation }) {
-  const [tab, setTab] = useState("All");
+// Define WorkOrder type based on expected backend response
+interface Labor {
+  id: string;
+  status: string;
+  // ...other labor fields
+}
 
-const workOrders = [
-  {
-    id: "WO-20241201-001",
-    system: "Brake System Inspection",
-    carModel: "Toyota Corolla 2023",
-    carPlate: "ABC-1234",
-    date: "2025-09-05",
-    technician: "John Doe",
-    tasks: [
-      { taskId: "task-001", description: "Remove front wheels", status: "COMPLETED", estimatedTime: 0.5, actualTime: 0.5 },
-      { taskId: "task-002", description: "Remove old brake pads", status: "PENDING", estimatedTime: 0.5, actualTime: 0 },
-    ],
-    parts: [
-      {
-        inventoryItemId: "PART001",
-        name: "Ceramic Brake Pads",
-        quantity: 2,
-        unitPrice: 45.0,
-        notes: "",
-        installed: false, // <-- UNINSTALLED
-      },
-      {
-        inventoryItemId: "PART002",
-        name: "Brake Rotors",
-        quantity: 2,
-        unitPrice: 80.0,
-        notes: "Replace due to warping",
-        installed: true,
-        installedAt: "2024-12-01T18:00:00Z", // <-- INSTALLED
-      },
-      {
-        inventoryItemId: "PART003",
-        name: "Brake Caliper Lubricant",
-        quantity: 1,
-        unitPrice: 15.0,
-        notes: "",
-        installed: false, // <-- UNINSTALLED
-      },
-    ],
-  },
-  {
-    id: "WO-20241201-002",
-    system: "Brake Fluid Replacement",
-    carModel: "Honda Civic 2022",
-    carPlate: "XYZ-5678",
-    date: "2025-09-06",
-    technician: "John Doe",
-    tasks: [
-      { taskId: "task-003", description: "Drain brake fluid", status: "PENDING", estimatedTime: 0.3, actualTime: 0 },
-    ],
-    parts: [
-      {
-        inventoryItemId: "PART004",
-        name: "Brake Fluid DOT4",
-        quantity: 1,
-        unitPrice: 25.0,
-        notes: "High-quality brake fluid",
-        installed: false, // UNINSTALLED
-      },
-    ],
-  },
-];
+interface WorkOrder {
+  id: string;
+  system?: string;
+  carModel?: string;
+  carPlate?: string;
+  labors?: Labor[];
+  // ...other work order fields
+}
 
-  const getWorkOrderProgress = (tasks) => {
+// Accept supabaseUserId as a prop (pass from parent or context)
+import { useRoute } from '@react-navigation/native';
+
+export default function WorkOrderListScreen({ navigation }: { navigation: any }) {
+  const route = useRoute();
+  const supabaseUserId = (route.params as any)?.supabaseUserId;
+  const [tab, setTab] = useState<string>("All");
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    async function fetchWorkOrders() {
+      setLoading(true);
+      try {
+        console.log("supabaseUserId:", supabaseUserId);
+        if (!supabaseUserId) throw new Error("No supabaseUserId provided");
+        const token = await getToken();
+        console.log("token:", token);
+        const userProfileId = await fetchUserProfileId(supabaseUserId, token);
+        console.log("userProfileId:", userProfileId);
+        if (!userProfileId) throw new Error("No user profile found");
+        const technicianId = await fetchTechnicianId(userProfileId, token);
+        console.log("technicianId:", technicianId);
+        if (!technicianId) throw new Error("No technician found");
+        const workOrders = await fetchTechnicianWorkOrders(technicianId, token);
+        console.log("workOrders:", workOrders);
+        setWorkOrders(workOrders);
+      } catch (err) {
+        console.error("fetchWorkOrders error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (supabaseUserId) fetchWorkOrders();
+  }, [supabaseUserId]);
+
+  const getWorkOrderProgress = (tasks: Labor[] = []) => {
+    if (!tasks || !Array.isArray(tasks)) return "0/0 Tasks";
     const completed = tasks.filter((t) => t.status === "COMPLETED").length;
     return `${completed}/${tasks.length} Tasks`;
   };
@@ -87,8 +76,8 @@ const workOrders = [
     tab === "All"
       ? workOrders
       : tab === "Completed"
-      ? workOrders.filter((wo) => wo.tasks.every((t) => t.status === "COMPLETED"))
-      : workOrders.filter((wo) => wo.tasks.some((t) => t.status !== "COMPLETED"));
+      ? workOrders.filter((wo) => wo.labors && wo.labors.every((labor: Labor) => labor.status === "COMPLETED"))
+      : workOrders.filter((wo) => wo.labors && wo.labors.some((labor: Labor) => labor.status !== "COMPLETED"));
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -124,23 +113,29 @@ const workOrders = [
 
       {/* Work Order List */}
       <ScrollView style={{ flex: 1, marginTop: 12, paddingBottom: 80 }}>
-        {filteredWorkOrders.map((wo) => (
-          <TouchableOpacity
-            key={wo.id}
-            style={styles.card}
-            onPress={() => navigation.navigate("WorkOrderDetails", { workOrder: wo })}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.woId}>{wo.id}</Text>
-              <Text style={styles.woSystem}>{wo.system}</Text>
-              <Text style={styles.woVehicle}>
-                {wo.carModel} ({wo.carPlate})
-              </Text>
-              <Text style={styles.woProgress}>{getWorkOrderProgress(wo.tasks)}</Text>
-            </View>
-            <FeatherIcon name="chevron-right" size={22} color="#888" />
-          </TouchableOpacity>
-        ))}
+        {loading ? (
+          <Text style={{ textAlign: "center", marginTop: 40 }}>Loading...</Text>
+        ) : filteredWorkOrders.length === 0 ? (
+          <Text style={{ textAlign: "center", marginTop: 40 }}>No work orders found.</Text>
+        ) : (
+          filteredWorkOrders.map((wo) => (
+            <TouchableOpacity
+              key={wo.id}
+              style={styles.card}
+              onPress={() => navigation.navigate("WorkOrderDetails", { workOrder: wo })}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.woId}>{wo.id}</Text>
+                <Text style={styles.woSystem}>{wo.system}</Text>
+                <Text style={styles.woVehicle}>
+                  {wo.carModel} ({wo.carPlate})
+                </Text>
+                <Text style={styles.woProgress}>{getWorkOrderProgress(wo.labors)}</Text>
+              </View>
+              <FeatherIcon name="chevron-right" size={22} color="#888" />
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
 
       {/* Bottom Navigation */}
