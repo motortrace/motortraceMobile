@@ -132,9 +132,9 @@ const ReservationsScreen = () => {
     }
   };
 
-  // Fetch appointments from backend
+  // Fetch work orders from backend
   useEffect(() => {
-    const fetchAppointments = async () => {
+    const fetchWorkOrders = async () => {
       try {
         setIsLoading(true);
 
@@ -143,9 +143,8 @@ const ReservationsScreen = () => {
 
         if (!userStr) {
           console.log('❌ No user string found in AsyncStorage');
-          setUpcomingReservations(mockUpcomingReservations);
-          setOngoingReservations(mockOngoingReservations);
-          setCompletedReservations(mockCompletedReservations);
+          setOngoingReservations([]);
+          setCompletedReservations([]);
           return;
         }
 
@@ -160,9 +159,8 @@ const ReservationsScreen = () => {
 
         if (!token) {
           console.log('❌ No token found in AsyncStorage');
-          setUpcomingReservations(mockUpcomingReservations);
-          setOngoingReservations(mockOngoingReservations);
-          setCompletedReservations(mockCompletedReservations);
+          setOngoingReservations([]);
+          setCompletedReservations([]);
           return;
         }
 
@@ -172,16 +170,15 @@ const ReservationsScreen = () => {
 
         if (!customerId) {
           console.log('⚠️ No customer ID found in stored user data');
-          setUpcomingReservations(mockUpcomingReservations);
-          setOngoingReservations(mockOngoingReservations);
-          setCompletedReservations(mockCompletedReservations);
+          setOngoingReservations([]);
+          setCompletedReservations([]);
           return;
         }
 
-        console.log('Fetching appointments for user:', customerId);
+        console.log('Fetching work orders for customer:', customerId);
 
-        // Fetch appointments for this customer
-        const res = await fetch(`http://10.0.2.2:3000/appointments?customerId=${user.customerId}`, {
+        // Fetch work orders for this customer
+        const res = await fetch(`http://10.0.2.2:3000/customers/${customerId}/work-orders`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -189,101 +186,43 @@ const ReservationsScreen = () => {
         });
 
         const data = await res.json();
-        console.log('Appointments response:', data);
+        console.log('Work orders response:', data);
 
-        if (res.ok && data.data) {
-          const appointments = data.data;
-          console.log('📅 Raw appointments from API:', appointments);
+        if (res.ok && data.success && data.data) {
+          const workOrders = data.data;
+          console.log('📅 Raw work orders from API:', workOrders);
 
-          // Categorize appointments by status
-          const upcoming = appointments.filter((apt: any) =>
-            apt.status === 'PENDING' || apt.status === 'CONFIRMED'
-          ).map((apt: any) => {
-            console.log('📅 Processing appointment:', apt.id, 'startTime:', apt.startTime, 'requestedAt:', apt.requestedAt);
-
-            // Extract date and time from startTime
-            let scheduledDate = 'TBD';
-            let scheduledTime = 'TBD';
-
-            if (apt.startTime) {
-              const startDate = new Date(apt.startTime);
-              scheduledDate = startDate.toISOString().split('T')[0];
-              scheduledTime = startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-              console.log('📅 Extracted from startTime - date:', scheduledDate, 'time:', scheduledTime);
-            } else {
-              console.log('📅 No startTime found, using fallback');
-            }
-
-            return {
-              id: apt.id,
-              customerName: apt.customer?.name || 'Customer',
-              vehicleInfo: apt.vehicle ? `${apt.vehicle.year} ${apt.vehicle.make} ${apt.vehicle.model}` : 'Unknown Vehicle',
-              Numberplate: apt.vehicle?.licensePlate || 'N/A',
-              serviceType: apt.cannedServices?.map((cs: any) => cs.cannedService?.name).join(', ') || 'Service',
-              scheduledDate: scheduledDate,
-              scheduledTime: scheduledTime,
-              estimatedDuration: '2 hours', // Default duration
-              status: apt.status?.toLowerCase() === 'confirmed' ? 'confirmed' : 'pending_confirmation',
-              phone: apt.customer?.phone || 'N/A',
-            };
-          });
-
-          console.log('📅 Final upcoming appointments:', upcoming);
-
-          const ongoing = appointments.filter((apt: any) =>
-            apt.status === 'IN_PROGRESS' || apt.status === 'CHECKED_IN'
-          ).map((apt: any) => ({
-            id: apt.id,
-            customerName: apt.customer?.name || 'Customer',
-            vehicleInfo: apt.vehicle ? `${apt.vehicle.year} ${apt.vehicle.make} ${apt.vehicle.model}` : 'Unknown Vehicle',
-            Numberplate: apt.vehicle?.licensePlate || 'N/A',
-            serviceType: apt.cannedServices?.map((cs: any) => cs.cannedService?.name).join(', ') || 'Service',
-            checkedInDate: apt.startTime ? new Date(apt.startTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-            checkedInTime: apt.startTime ? new Date(apt.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'TBD',
-            currentPhase: 'in_progress',
-            phaseDescription: 'Service in Progress',
-            estimatedCompletion: apt.endTime ? new Date(apt.endTime).toLocaleString() : 'TBD',
-            assignedBay: 'Bay 1', // Default bay
-            technician: 'Technician', // Default technician
-            hasNotification: false,
-            progress: 50, // Default progress
-            navigation: 'InspectionOngoing',
+          // Map work orders to card format
+          const mappedWorkOrders = workOrders.map((wo: any) => ({
+            id: wo.id,
+            workOrderNumber: wo.workOrderNumber,
+            vehicleInfo: wo.vehicle ? `${wo.vehicle.year} ${wo.vehicle.make} ${wo.vehicle.model}` : 'Unknown Vehicle',
+            status: wo.status,
+            jobType: wo.jobType,
+            // Add more fields if needed
           }));
 
-          const completed = appointments.filter((apt: any) => 
-            apt.status === 'COMPLETED' || apt.status === 'CANCELLED'
-          ).map((apt: any) => ({
-            id: apt.id,
-            customerName: apt.customer?.name || 'Customer',
-            vehicleInfo: apt.vehicle ? `${apt.vehicle.year} ${apt.vehicle.make} ${apt.vehicle.model}` : 'Unknown Vehicle',
-            Numberplate: apt.vehicle?.licensePlate || 'N/A',
-            serviceType: apt.cannedServices?.map((cs: any) => cs.cannedService?.name).join(', ') || 'Service',
-            completedDate: apt.endTime ? new Date(apt.endTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-            completedTime: apt.endTime ? new Date(apt.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'TBD',
-            totalCost: 0, // Default cost
-            status: apt.status?.toLowerCase() === 'completed' ? 'paid' : 'cancelled',
-          }));
+          // Categorize work orders by status
+          const ongoing = mappedWorkOrders.filter((wo: any) => wo.status !== 'COMPLETED');
+          const completed = mappedWorkOrders.filter((wo: any) => wo.status === 'COMPLETED');
 
-          setUpcomingReservations(upcoming.length > 0 ? upcoming : mockUpcomingReservations);
-          setOngoingReservations(ongoing.length > 0 ? ongoing : mockOngoingReservations);
-          setCompletedReservations(completed.length > 0 ? completed : mockCompletedReservations);
+          setOngoingReservations(ongoing);
+          setCompletedReservations(completed);
         } else {
-          console.error('Failed to fetch appointments:', data);
-          setUpcomingReservations(mockUpcomingReservations);
-          setOngoingReservations(mockOngoingReservations);
-          setCompletedReservations(mockCompletedReservations);
+          console.error('Failed to fetch work orders:', data);
+          setOngoingReservations([]);
+          setCompletedReservations([]);
         }
       } catch (err) {
-        console.error('Error fetching appointments:', err);
-        setUpcomingReservations(mockUpcomingReservations);
-        setOngoingReservations(mockOngoingReservations);
-        setCompletedReservations(mockCompletedReservations);
+        console.error('Error fetching work orders:', err);
+        setOngoingReservations([]);
+        setCompletedReservations([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchAppointments();
+    fetchWorkOrders();
     fetchServiceAdvisor();
   }, [refreshTrigger]);
 
@@ -470,12 +409,39 @@ const ReservationsScreen = () => {
     </TouchableOpacity>
   );
 
+  const renderWorkOrderCard = ({ item }) => (
+    <View style={styles.reservationCard}>
+      <View style={styles.cardHeader}>
+        <View style={styles.customerInfo}>
+          <Text style={styles.customerName}>{item.workOrderNumber}</Text>
+          <Text style={styles.vehicleInfo}>{item.vehicleInfo}</Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
+          <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+            {item.status.replace('_', ' ').toUpperCase()}
+          </Text>
+        </View>
+      </View>
+      
+      <View style={styles.serviceInfo}>
+        <Text style={styles.serviceType}>Job Type: {item.jobType}</Text>
+      </View>
+      
+      <View style={styles.cardActions}>
+        <BorderButton label="View" icon="eye" style={{width: '100%'}} onPress={() => {
+          // Placeholder for view action
+          Alert.alert('View Work Order', `Viewing details for ${item.workOrderNumber}`);
+        }} />
+      </View>
+    </View>
+  );
+
   const renderOngoingReservation = ({ item }) => {
-    return null;
+    return renderWorkOrderCard({ item });
   };
 
   const renderCompletedReservation = ({ item }) => {
-    return null;
+    return renderWorkOrderCard({ item });
   };
 
   const renderTabButton = (tabName, label, count) => (
