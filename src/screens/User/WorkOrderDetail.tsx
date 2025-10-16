@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  Linking,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -82,6 +83,20 @@ const WorkOrderDetail = () => {
   const formatCurrency = (amount: any) => {
     if (amount == null || isNaN(amount)) return 'රු0.00';
     return `රු${Number(amount).toFixed(2)}`;
+  };
+
+  const downloadInspectionPdf = async (pdfUrl: string) => {
+    try {
+      const supported = await Linking.canOpenURL(pdfUrl);
+      if (supported) {
+        await Linking.openURL(pdfUrl);
+      } else {
+        Alert.alert('Error', 'Cannot open PDF. Please check your browser settings.');
+      }
+    } catch (error) {
+      console.error('Error opening PDF:', error);
+      Alert.alert('Error', 'Failed to open PDF');
+    }
   };
 
   const renderTabButton = (tabName: string, iconName: string) => (
@@ -212,7 +227,61 @@ const WorkOrderDetail = () => {
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Inspection Information</Text>
-        <Text style={styles.emptyText}>No inspection data available</Text>
+        
+        {/* Download PDF Button */}
+        {wo.inspectionPdfUrl && (
+          <TouchableOpacity 
+            style={styles.downloadButton}
+            onPress={() => downloadInspectionPdf(wo.inspectionPdfUrl)}
+          >
+            <Icon name="download-outline" size={20} color={Colors.neutral0} />
+            <Text style={styles.downloadButtonText}>Download Inspection Report</Text>
+          </TouchableOpacity>
+        )}
+        
+        {wo.inspections && wo.inspections.length > 0 ? (
+          wo.inspections.map((inspection: any, index: number) => (
+            <View key={inspection.id || index} style={styles.serviceItem}>
+              <View style={styles.inspectorCard}>
+                {inspection.inspector?.userProfile?.profileImage ? (
+                  <Image source={{ uri: inspection.inspector.userProfile.profileImage }} style={styles.inspectorImage} />
+                ) : (
+                  <View style={styles.inspectorPlaceholder}>
+                    <Text style={styles.inspectorInitial}>
+                      {inspection.inspector?.userProfile?.firstName?.charAt(0)?.toUpperCase() || 'I'}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.inspectorDetails}>
+                  <Text style={styles.advisorName}>
+                    {inspection.inspector?.userProfile?.firstName} {inspection.inspector?.userProfile?.lastName}
+                  </Text>
+                  <Text style={styles.advisorPhone}>
+                    Inspector
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Template:</Text>
+                <Text style={styles.value}>{inspection.templateId}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Date:</Text>
+                <Text style={styles.value}>{formatDate(inspection.date)}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Status:</Text>
+                <Text style={styles.value}>{inspection.isCompleted ? 'Completed' : 'Pending'}</Text>
+              </View>
+              <View style={styles.notesContainer}>
+                <Text style={styles.notesLabel}>Notes:</Text>
+                <Text style={styles.notesText}>{inspection.notes || 'No notes'}</Text>
+              </View>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.emptyText}>No inspection data available</Text>
+        )}
       </View>
     </ScrollView>
   );
@@ -564,12 +633,39 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     resizeMode: 'cover',
   },
+  inspectorImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    resizeMode: 'cover',
+  },
+  inspectorPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inspectorInitial: {
+    color: Colors.neutral50,
+    fontSize: 20,
+    fontWeight: '600',
+  },
   advisorCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.neutral50,
     borderRadius: 12,
     padding: 16,
+  },
+  inspectorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.neutral50,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
   },
   advisorPlaceholder: {
     width: 80,
@@ -588,6 +684,10 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 16,
   },
+  inspectorDetails: {
+    flex: 1,
+    marginLeft: 12,
+  },
   advisorName: {
     fontSize: 18,
     fontWeight: '600',
@@ -597,6 +697,39 @@ const styles = StyleSheet.create({
   advisorPhone: {
     fontSize: 14,
     color: Colors.neutral600,
+  },
+  notesContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: Colors.neutral200,
+  },
+  notesLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.neutral600,
+    marginBottom: 4,
+  },
+  notesText: {
+    fontSize: 14,
+    color: Colors.neutral700,
+    lineHeight: 20,
+  },
+  downloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  downloadButtonText: {
+    color: Colors.neutral0,
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   // Loading state styles
   loadingContainer: {
