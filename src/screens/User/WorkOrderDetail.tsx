@@ -5,6 +5,7 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  TouchableOpacity,
   Alert,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -24,6 +25,7 @@ const WorkOrderDetail = () => {
   const { workOrder } = route.params;
   const [detailedWorkOrder, setDetailedWorkOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     const fetchDetailedWorkOrder = async () => {
@@ -80,6 +82,356 @@ const WorkOrderDetail = () => {
     return `$${Number(amount).toFixed(2)}`;
   };
 
+  const renderTabButton = (tabName: string, label: string) => (
+    <TouchableOpacity
+      style={[styles.tabButton, activeTab === tabName && styles.activeTab]}
+      onPress={() => setActiveTab(tabName)}
+    >
+      <Text style={[styles.tabText, activeTab === tabName && styles.activeTabText]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderOverviewTab = () => (
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      {/* Work Order Info */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Work Order Information</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Work Order Number:</Text>
+          <Text style={styles.value}>{wo.workOrderNumber}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Status:</Text>
+          <Text style={styles.value}>{wo.status}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Job Type:</Text>
+          <Text style={styles.value}>{wo.jobType}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Priority:</Text>
+          <Text style={styles.value}>{wo.priority}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Source:</Text>
+          <Text style={styles.value}>{wo.source}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Workflow Step:</Text>
+          <Text style={styles.value}>{wo.workflowStep}</Text>
+        </View>
+      </View>
+
+      {/* Customer Info */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Customer Information</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Name:</Text>
+          <Text style={styles.value}>
+            {wo.customer?.firstName} {wo.customer?.lastName}
+          </Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Email:</Text>
+          <Text style={styles.value}>{wo.customer?.email}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Phone:</Text>
+          <Text style={styles.value}>{wo.customer?.phone}</Text>
+        </View>
+      </View>
+
+      {/* Vehicle Info */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Vehicle Information</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Make/Model:</Text>
+          <Text style={styles.value}>
+            {wo.vehicle?.make} {wo.vehicle?.model} {wo.vehicle?.year}
+          </Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>VIN:</Text>
+          <Text style={styles.value}>{wo.vehicle?.vin || 'N/A'}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>License Plate:</Text>
+          <Text style={styles.value}>{wo.vehicle?.licensePlate || 'N/A'}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Odometer Reading:</Text>
+          <Text style={styles.value}>{wo.odometerReading || 'N/A'} miles</Text>
+        </View>
+      </View>
+
+      {/* Important Dates */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Important Dates</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Created:</Text>
+          <Text style={styles.value}>{formatDate(wo.createdAt)}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Updated:</Text>
+          <Text style={styles.value}>{formatDate(wo.updatedAt)}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Opened:</Text>
+          <Text style={styles.value}>{formatDate(wo.openedAt)}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Promised:</Text>
+          <Text style={styles.value}>{formatDate(wo.promisedAt)}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Closed:</Text>
+          <Text style={styles.value}>{formatDate(wo.closedAt)}</Text>
+        </View>
+      </View>
+
+      {/* Financial Summary */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Financial Summary</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Total Amount:</Text>
+          <Text style={styles.value}>{formatCurrency(wo.totalAmount)}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Paid Amount:</Text>
+          <Text style={styles.value}>{formatCurrency(wo.paidAmount)}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Payment Status:</Text>
+          <Text style={styles.value}>{wo.paymentStatus}</Text>
+        </View>
+      </View>
+
+      {/* Service Advisor */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Service Advisor</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Name:</Text>
+          <Text style={styles.value}>{wo.serviceAdvisor?.userProfile?.firstName} {wo.serviceAdvisor?.userProfile?.lastName}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Phone:</Text>
+          <Text style={styles.value}>{wo.serviceAdvisor?.userProfile?.phone || 'N/A'}</Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+
+  const renderInspectionsTab = () => (
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Inspection Information</Text>
+        <Text style={styles.emptyText}>No inspection data available</Text>
+      </View>
+    </ScrollView>
+  );
+
+  const renderServicesTab = () => (
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Services</Text>
+        {wo.services && wo.services.length > 0 ? (
+          wo.services.map((service: any, index: number) => (
+            <View key={service.id || index} style={styles.serviceItem}>
+              <View style={styles.row}>
+                <Text style={styles.label}>{service.cannedService?.name || service.description}</Text>
+                <Text style={styles.value}>{formatCurrency(service.subtotal)}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Quantity:</Text>
+                <Text style={styles.value}>{service.quantity}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Unit Price:</Text>
+                <Text style={styles.value}>{formatCurrency(service.unitPrice)}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Status:</Text>
+                <Text style={styles.value}>{service.status}</Text>
+              </View>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.emptyText}>No services found</Text>
+        )}
+      </View>
+
+      {/* Labor Items */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Labor Items</Text>
+        {wo.laborItems && wo.laborItems.length > 0 ? (
+          wo.laborItems.map((labor: any, index: number) => (
+            <View key={labor.id || index} style={styles.serviceItem}>
+              <View style={styles.row}>
+                <Text style={styles.label}>{labor.description}</Text>
+                <Text style={styles.value}>{labor.hours} hrs</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Rate:</Text>
+                <Text style={styles.value}>{formatCurrency(labor.rate)}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Technician:</Text>
+                <Text style={styles.value}>{labor.technician?.userProfile?.firstName} {labor.technician?.userProfile?.lastName}</Text>
+              </View>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.emptyText}>No labor items found</Text>
+        )}
+      </View>
+    </ScrollView>
+  );
+
+  const renderEstimatesTab = () => (
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Estimate Information</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Estimated Total:</Text>
+          <Text style={styles.value}>{formatCurrency(wo.estimatedTotal)}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Estimate Approved:</Text>
+          <Text style={styles.value}>{wo.estimateApproved ? 'Yes' : 'No'}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Estimate Notes:</Text>
+          <Text style={styles.value}>{wo.estimateNotes || 'N/A'}</Text>
+        </View>
+      </View>
+
+      {/* Parts Used */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Parts Used</Text>
+        {wo.partsUsed && wo.partsUsed.length > 0 ? (
+          wo.partsUsed.map((part: any, index: number) => (
+            <View key={part.id || index} style={styles.serviceItem}>
+              <View style={styles.row}>
+                <Text style={styles.label}>{part.part?.name || part.part?.sku}</Text>
+                <Text style={styles.value}>{formatCurrency(part.subtotal)}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Quantity:</Text>
+                <Text style={styles.value}>{part.quantity}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Unit Price:</Text>
+                <Text style={styles.value}>{formatCurrency(part.unitPrice)}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Source:</Text>
+                <Text style={styles.value}>{part.source}</Text>
+              </View>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.emptyText}>No parts used</Text>
+        )}
+      </View>
+    </ScrollView>
+  );
+
+  const renderPaymentsTab = () => (
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Payment History</Text>
+        {wo.payments && wo.payments.length > 0 ? (
+          wo.payments.map((payment: any, index: number) => (
+            <View key={payment.id || index} style={styles.serviceItem}>
+              <View style={styles.row}>
+                <Text style={styles.label}>{payment.method} - {payment.reference}</Text>
+                <Text style={styles.value}>{formatCurrency(payment.amount)}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Status:</Text>
+                <Text style={styles.value}>{payment.status}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Paid At:</Text>
+                <Text style={styles.value}>{formatDate(payment.paidAt)}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Processed By:</Text>
+                <Text style={styles.value}>{payment.processedBy?.userProfile?.firstName} {payment.processedBy?.userProfile?.lastName}</Text>
+              </View>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.emptyText}>No payment history found</Text>
+        )}
+      </View>
+    </ScrollView>
+  );
+
+  const renderNotesTab = () => (
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Complaint</Text>
+        <Text style={styles.noteText}>{wo.complaint || 'No complaint recorded'}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Internal Notes</Text>
+        <Text style={styles.noteText}>{wo.internalNotes || 'No internal notes'}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Customer Notes</Text>
+        <Text style={styles.noteText}>{wo.customerNotes || 'No customer notes'}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Estimate Notes</Text>
+        <Text style={styles.noteText}>{wo.estimateNotes || 'No estimate notes'}</Text>
+      </View>
+
+      {/* Attachments */}
+      {wo.attachments && wo.attachments.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Attachments</Text>
+          {wo.attachments.map((attachment: any, index: number) => (
+            <View key={attachment.id || index} style={styles.serviceItem}>
+              <View style={styles.row}>
+                <Text style={styles.label}>{attachment.fileName}</Text>
+                <Text style={styles.value}>{attachment.category}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Uploaded:</Text>
+                <Text style={styles.value}>{formatDate(attachment.uploadedAt)}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+    </ScrollView>
+  );
+
+  const renderCurrentTab = () => {
+    switch (activeTab) {
+      case 'overview':
+        return renderOverviewTab();
+      case 'inspections':
+        return renderInspectionsTab();
+      case 'services':
+        return renderServicesTab();
+      case 'estimates':
+        return renderEstimatesTab();
+      case 'payments':
+        return renderPaymentsTab();
+      case 'notes':
+        return renderNotesTab();
+      default:
+        return renderOverviewTab();
+    }
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -114,260 +466,18 @@ const WorkOrderDetail = () => {
         onIconPress={() => navigation.goBack()}
       />
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        {/* Work Order Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Work Order Information</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Work Order Number:</Text>
-            <Text style={styles.value}>{wo.workOrderNumber}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Status:</Text>
-            <Text style={styles.value}>{wo.status}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Job Type:</Text>
-            <Text style={styles.value}>{wo.jobType}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Priority:</Text>
-            <Text style={styles.value}>{wo.priority}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Source:</Text>
-            <Text style={styles.value}>{wo.source}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Workflow Step:</Text>
-            <Text style={styles.value}>{wo.workflowStep}</Text>
-          </View>
-        </View>
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        {renderTabButton('overview', 'Overview')}
+        {renderTabButton('inspections', 'Inspections')}
+        {renderTabButton('services', 'Services')}
+        {renderTabButton('estimates', 'Estimates')}
+        {renderTabButton('payments', 'Payments')}
+        {renderTabButton('notes', 'Notes')}
+      </View>
 
-        {/* Vehicle Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Vehicle Information</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Make/Model:</Text>
-            <Text style={styles.value}>
-              {wo.vehicle?.make} {wo.vehicle?.model} {wo.vehicle?.year}
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>VIN:</Text>
-            <Text style={styles.value}>{wo.vehicle?.vin || 'N/A'}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>License Plate:</Text>
-            <Text style={styles.value}>{wo.vehicle?.licensePlate || 'N/A'}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Odometer Reading:</Text>
-            <Text style={styles.value}>{wo.odometerReading || 'N/A'} miles</Text>
-          </View>
-        </View>
-
-        {/* Dates */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Important Dates</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Created:</Text>
-            <Text style={styles.value}>{formatDate(wo.createdAt)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Updated:</Text>
-            <Text style={styles.value}>{formatDate(wo.updatedAt)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Opened:</Text>
-            <Text style={styles.value}>{formatDate(wo.openedAt)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Promised:</Text>
-            <Text style={styles.value}>{formatDate(wo.promisedAt)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Closed:</Text>
-            <Text style={styles.value}>{formatDate(wo.closedAt)}</Text>
-          </View>
-        </View>
-
-        {/* Financial Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Financial Information</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Subtotal Services:</Text>
-            <Text style={styles.value}>{formatCurrency(wo.subtotalServices)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Subtotal Parts:</Text>
-            <Text style={styles.value}>{formatCurrency(wo.subtotalParts)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Subtotal:</Text>
-            <Text style={styles.value}>{formatCurrency(wo.subtotal)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Discount:</Text>
-            <Text style={styles.value}>
-              {formatCurrency(wo.discountAmount)} ({wo.discountType}: {wo.discountReason})
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Tax:</Text>
-            <Text style={styles.value}>{formatCurrency(wo.taxAmount)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Total Amount:</Text>
-            <Text style={styles.value}>{formatCurrency(wo.totalAmount)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Paid Amount:</Text>
-            <Text style={styles.value}>{formatCurrency(wo.paidAmount)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Payment Status:</Text>
-            <Text style={styles.value}>{wo.paymentStatus}</Text>
-          </View>
-        </View>
-
-        {/* Service Advisor */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Service Advisor</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Name:</Text>
-            <Text style={styles.value}>{wo.serviceAdvisor?.userProfile?.firstName} {wo.serviceAdvisor?.userProfile?.lastName}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Phone:</Text>
-            <Text style={styles.value}>{wo.serviceAdvisor?.userProfile?.phone || 'N/A'}</Text>
-          </View>
-        </View>
-
-        {/* Notes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notes</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Complaint:</Text>
-            <Text style={styles.value}>{wo.complaint || 'N/A'}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Internal Notes:</Text>
-            <Text style={styles.value}>{wo.internalNotes || 'N/A'}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Customer Notes:</Text>
-            <Text style={styles.value}>{wo.customerNotes || 'N/A'}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Estimate Notes:</Text>
-            <Text style={styles.value}>{wo.estimateNotes || 'N/A'}</Text>
-          </View>
-        </View>
-
-        {/* Customer Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Customer Information</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Name:</Text>
-            <Text style={styles.value}>
-              {wo.customer?.firstName} {wo.customer?.lastName}
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Email:</Text>
-            <Text style={styles.value}>{wo.customer?.email}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Phone:</Text>
-            <Text style={styles.value}>{wo.customer?.phone}</Text>
-          </View>
-        </View>
-
-        {/* Appointment Info */}
-        {wo.appointment && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Appointment Information</Text>
-            <View style={styles.row}>
-              <Text style={styles.label}>Requested:</Text>
-              <Text style={styles.value}>{formatDate(wo.appointment.requestedAt)}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>Start Time:</Text>
-              <Text style={styles.value}>{formatDate(wo.appointment.startTime)}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>End Time:</Text>
-              <Text style={styles.value}>{formatDate(wo.appointment.endTime)}</Text>
-            </View>
-          </View>
-        )}
-
-        {/* Services */}
-        {wo.services && wo.services.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Services</Text>
-            {wo.services.map((service: any, index: number) => (
-              <View key={service.id || index} style={styles.row}>
-                <Text style={styles.label}>{service.cannedService?.name || service.description}</Text>
-                <Text style={styles.value}>{formatCurrency(service.subtotal)}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Labor Items */}
-        {wo.laborItems && wo.laborItems.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Labor Items</Text>
-            {wo.laborItems.map((labor: any, index: number) => (
-              <View key={labor.id || index} style={styles.row}>
-                <Text style={styles.label}>{labor.description}</Text>
-                <Text style={styles.value}>{labor.hours} hrs</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Parts Used */}
-        {wo.partsUsed && wo.partsUsed.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Parts Used</Text>
-            {wo.partsUsed.map((part: any, index: number) => (
-              <View key={part.id || index} style={styles.row}>
-                <Text style={styles.label}>{part.part?.name || part.part?.sku}</Text>
-                <Text style={styles.value}>{formatCurrency(part.subtotal)}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Payments */}
-        {wo.payments && wo.payments.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Payments</Text>
-            {wo.payments.map((payment: any, index: number) => (
-              <View key={payment.id || index} style={styles.row}>
-                <Text style={styles.label}>{payment.method} - {payment.reference}</Text>
-                <Text style={styles.value}>{formatCurrency(payment.amount)}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Attachments */}
-        {wo.attachments && wo.attachments.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Attachments</Text>
-            {wo.attachments.map((attachment: any, index: number) => (
-              <View key={attachment.id || index} style={styles.row}>
-                <Text style={styles.label}>{attachment.fileName}</Text>
-                <Text style={styles.value}>{attachment.category}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
+      {/* Tab Content */}
+      {renderCurrentTab()}
     </SafeAreaView>
   );
 };
@@ -376,6 +486,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.primarybg,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: Colors.neutral0,
+    marginHorizontal: 20,
+    marginVertical: 16,
+    borderRadius: 12,
+    padding: 4,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  activeTab: {
+    backgroundColor: Colors.primary,
+  },
+  tabText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.neutral600,
+    textAlign: 'center',
+  },
+  activeTabText: {
+    color: Colors.neutral0,
   },
   scrollView: {
     flex: 1,
@@ -418,6 +555,23 @@ const styles = StyleSheet.create({
     color: Colors.neutral900,
     flex: 2,
     textAlign: 'right',
+  },
+  serviceItem: {
+    backgroundColor: Colors.neutral50,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: Colors.neutral500,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  noteText: {
+    fontSize: 14,
+    color: Colors.neutral700,
+    lineHeight: 20,
   },
   // Loading state styles
   loadingContainer: {
