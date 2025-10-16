@@ -80,8 +80,8 @@ const WorkOrderDetail = () => {
   };
 
   const formatCurrency = (amount: any) => {
-    if (amount == null || isNaN(amount)) return '$0.00';
-    return `$${Number(amount).toFixed(2)}`;
+    if (amount == null || isNaN(amount)) return 'රු0.00';
+    return `රු${Number(amount).toFixed(2)}`;
   };
 
   const renderTabButton = (tabName: string, iconName: string) => (
