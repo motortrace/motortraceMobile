@@ -1,27 +1,102 @@
 // src/screens/Technician/ProfileScreen.tsx
-import React from "react";
-import { SafeAreaView, View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, StatusBar } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import FeatherIcon from "react-native-vector-icons/Feather";
+import {
+  fetchTechnicianDetails,
+  fetchTechnicianId,
+  fetchTechnicianInspections,
+  fetchTechnicianWorkOrders,
+  fetchUserProfileId,
+} from "../../api/technicianApi";
 import Colors from "../../constants/colors";
+import { useAuth } from "../../context/AuthContext"; // import your AuthContext
+import { getToken } from "../../utils/authStorage";
 
-export default function ProfileScreen({ navigation }) {
-  const technician = {
-    name: "Naveen Perera",
-    id: "TECH-452",
-    email: "naveen.perera@example.com",
-    phone: "+94 77 654 3210",
-    avatar: "https://i.pravatar.cc/150?img=12",
-    joined: "2021-08-10",
-    role: "Field Technician",
-    stats: {
-      totalWorkOrders: 125,
-      completedTasks: 380,
-      inspections: 92,
-    },
-  };
+export default function ProfileScreen({ navigation }: any) {
+  const { logout, user } = useAuth(); // get logout and user from context
+
+  const [loading, setLoading] = useState(true);
+  const [technicianId, setTechnicianId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<any>(null); // will hold name, avatar, email, phone, joined, role
+  // We only need counts and profile summary for this screen
+  const [counts, setCounts] = useState({ totalWorkOrders: 0, completedTasks: 0, inspections: 0 });
 
   const handleEditProfile = () => navigation.navigate("EditProfile");
-  const handleLogout = () => console.log("Logging out...");
+
+  const handleLogout = async () => {
+    await logout(); // clear token and reset auth
+    navigation.replace("Login"); // redirect to login screen
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        setLoading(true);
+        const token = await getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        // Determine userProfileId from supabase user id (if available)
+        const supabaseUserId = user?.supabaseUserId || user?.id;
+        let userProfileId: string | null = null;
+        if (supabaseUserId) {
+          userProfileId = await fetchUserProfileId(supabaseUserId, token);
+        }
+
+        // Find technician id
+        let techId: string | null = null;
+        if (userProfileId) {
+          techId = await fetchTechnicianId(userProfileId, token);
+        }
+
+        if (!techId) {
+          // nothing more we can do
+          if (mounted) setLoading(false);
+          return;
+        }
+        if (mounted) setTechnicianId(techId);
+
+        // Use the detailed technician endpoint (returns profile + stats + recentWorkOrders)
+        const details = await fetchTechnicianDetails(techId, token);
+
+        // Fetch completed work orders count by requesting work-orders?status=COMPLETED
+        const completedWOs = await fetchTechnicianWorkOrders(techId, token, 'COMPLETED');
+
+        // Fetch inspections assigned to this technician
+        const ins = await fetchTechnicianInspections(techId, token);
+
+        if (mounted) {
+          // details.recentWorkOrders and inspections list are available if needed
+
+          // compute counts using server-provided stats when available
+          const totalWorkOrders = Array.isArray(completedWOs) ? completedWOs.length : 0;
+          const completedTasks = details?.stats?.totalTasksCompleted ?? 0;
+          const inspectionsCompleted = (ins || []).filter((i: any) => i.isCompleted === true || i.status === 'COMPLETED' || i.completedAt).length || (ins || []).length;
+
+          setCounts({ totalWorkOrders, completedTasks, inspections: inspectionsCompleted });
+
+          // Fill profile fields from details or fallback to user
+          setProfile({
+            name: details?.userProfile?.name || user?.email || 'Technician',
+            id: details?.id || techId,
+            email: details?.userProfile?.email || user?.email || '',
+            phone: details?.userProfile?.phone || '',
+            avatar: details?.userProfile?.profileImage || undefined,
+            joined: details?.createdAt || undefined,
+            role: details?.userProfile?.role || 'Technician',
+          });
+        }
+      } catch (err: any) {
+        console.warn('Failed to load profile data', err);
+        Alert.alert('Error', err?.message || 'Failed to load profile');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [user]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -34,48 +109,53 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.headerBackText}>Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
-        <View style={{ width: 40 }} />
+        <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.techPrimary} />
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.content}>
         {/* Profile Card */}
         <View style={styles.card}>
           <View style={styles.avatarContainer}>
-            <Image source={{ uri: technician.avatar }} style={styles.avatar} />
+            <Image source={{ uri: profile?.avatar || 'https://i.pravatar.cc/150?img=12' }} style={styles.avatar} />
           </View>
-          <Text style={styles.name}>{technician.name}</Text>
-          <Text style={styles.role}>{technician.role}</Text>
+          <Text style={styles.name}>{profile?.name || user?.email || 'Technician'}</Text>
+          <Text style={styles.role}>{profile?.role || 'Field Technician'}</Text>
 
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{technician.stats.totalWorkOrders}</Text>
+                <Text style={styles.statNumber}>{counts.totalWorkOrders}</Text>
               <Text style={styles.statLabel}>Work Orders</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{technician.stats.completedTasks}</Text>
+                <Text style={styles.statNumber}>{counts.completedTasks}</Text>
               <Text style={styles.statLabel}>Tasks Completed</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{technician.stats.inspections}</Text>
+                <Text style={styles.statNumber}>{counts.inspections}</Text>
               <Text style={styles.statLabel}>Inspections</Text>
             </View>
           </View>
 
           <View style={styles.infoRow}>
             <FeatherIcon name="hash" size={16} color="#555" />
-            <Text style={styles.infoText}>{technician.id}</Text>
+              <Text style={styles.infoText}>{profile?.id || technicianId || '—'}</Text>
           </View>
           <View style={styles.infoRow}>
             <FeatherIcon name="mail" size={16} color="#555" />
-            <Text style={styles.infoText}>{technician.email}</Text>
+              <Text style={styles.infoText}>{profile?.email || user?.email || ''}</Text>
           </View>
           <View style={styles.infoRow}>
             <FeatherIcon name="phone" size={16} color="#555" />
-            <Text style={styles.infoText}>{technician.phone}</Text>
+              <Text style={styles.infoText}>{profile?.phone || ''}</Text>
           </View>
           <View style={styles.infoRow}>
             <FeatherIcon name="calendar" size={16} color="#555" />
-            <Text style={styles.infoText}>Joined: {new Date(technician.joined).toLocaleDateString()}</Text>
+              <Text style={styles.infoText}>Joined: {profile?.joined ? new Date(profile.joined).toLocaleDateString() : '—'}</Text>
           </View>
 
           <TouchableOpacity style={styles.editBtn} onPress={handleEditProfile}>
@@ -105,12 +185,16 @@ export default function ProfileScreen({ navigation }) {
             <FeatherIcon name="chevron-right" size={18} color="#999" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.optionRow, { justifyContent: "center", backgroundColor: Colors.techPrimary, borderRadius: 8 }]} onPress={handleLogout}>
+          <TouchableOpacity
+            style={[styles.logoutOptionRow]}
+            onPress={handleLogout}
+          >
             <FeatherIcon name="log-out" size={18} color="#fff" />
-            <Text style={[styles.optionText, { color: "#fff", marginLeft: 8 }]}>Logout</Text>
+            <Text style={[styles.logoutOptionText]}>Logout</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -129,6 +213,8 @@ const styles = StyleSheet.create({
   headerBackText: { color: "#fff", marginLeft: 4 },
   headerTitle: { color: "#fff", fontSize: 18, fontWeight: "700" },
   content: { padding: 16, paddingBottom: 40 },
+  headerSpacer: { width: 40 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   card: {
     backgroundColor: "#fff",
     borderRadius: 12,
@@ -170,4 +256,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   optionText: { fontSize: 14, marginLeft: 8, color: "#333" },
+  logoutOptionRow: { justifyContent: "center", backgroundColor: Colors.techPrimary, borderRadius: 8, flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+  logoutOptionText: { color: '#fff', marginLeft: 8, fontSize: 14 },
 });

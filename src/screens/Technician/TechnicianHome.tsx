@@ -2,17 +2,28 @@
 import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
-  View,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  ScrollView,
+  View,
 } from "react-native";
 import FeatherIcon from "react-native-vector-icons/Feather";
+import {
+  fetchTechnicianDetails,
+  fetchTechnicianId,
+  fetchTechnicianInspections,
+  fetchTechnicianWorkOrders,
+  fetchUserProfileId,
+} from "../../api/technicianApi";
 import Colors from "../../constants/colors";
+import { useAuth } from "../../context/AuthContext";
+import { getToken } from "../../utils/authStorage";
+
 
 export default function TechnicianHomeScreen({ navigation, userName = "John" }) {
+  const { supabaseUserId } = useAuth();
   const [counts, setCounts] = useState({
     workOrders: { total: 8, completed: 4 },
     inspections: { total: 3, completed: 2 },
@@ -20,6 +31,72 @@ export default function TechnicianHomeScreen({ navigation, userName = "John" }) 
     issues: { total: 3, resolved: 1 },
     qc: { total: 5, completed: 3 },
   });
+
+  // Load live counts from backend when we have a supabaseUserId
+  useEffect(() => {
+    let mounted = true;
+    const loadCounts = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+
+        const supabaseId = supabaseUserId;
+        if (!supabaseId) return;
+
+        const userProfileId = await fetchUserProfileId(supabaseId, token);
+        if (!userProfileId) return;
+
+        const techId = await fetchTechnicianId(userProfileId, token);
+        if (!techId) return;
+
+        // Prefer the detailed technician endpoint which may include aggregated stats
+        const details = await fetchTechnicianDetails(techId, token);
+        if (mounted && details?.stats) {
+          const s = details.stats;
+          setCounts((c) => ({
+            ...c,
+            workOrders: { total: s.totalWorkOrders ?? c.workOrders.total, completed: s.completedWorkOrders ?? c.workOrders.completed },
+            inspections: { total: s.totalInspections ?? c.inspections.total, completed: s.completedInspections ?? c.inspections.completed },
+            hoursSpent: s.hoursSpent ?? c.hoursSpent,
+            issues: { total: s.issuesTotal ?? c.issues.total, resolved: s.issuesResolved ?? c.issues.resolved },
+            qc: { total: s.totalWorkOrders ?? c.qc.total, completed: s.qcCompleted ?? c.qc.completed },
+          }));
+          return;
+        }
+
+        // Fallback: request lists and compute simple counts
+        const allWOs = await fetchTechnicianWorkOrders(techId, token);
+        const completedWOs = await fetchTechnicianWorkOrders(techId, token, 'COMPLETED');
+        const ins = await fetchTechnicianInspections(techId, token);
+
+        if (!mounted) return;
+
+        const totalWorkOrders = Array.isArray(allWOs) ? allWOs.length : 0;
+        const completedWorkOrders = Array.isArray(completedWOs) ? completedWOs.length : 0;
+
+        const totalIns = Array.isArray(ins) ? ins.length : 0;
+        const completedIns = (ins || []).filter((i: any) => i.isCompleted === true || i.status === 'COMPLETED' || i.completedAt).length;
+
+        const hours = Array.isArray(allWOs) ? allWOs.reduce((s: number, w: any) => s + (Number(w.actualTime) || 0), 0) : 0;
+
+        if (mounted) {
+          setCounts((c) => ({
+            ...c,
+            workOrders: { total: totalWorkOrders, completed: completedWorkOrders },
+            inspections: { total: totalIns, completed: completedIns },
+            hoursSpent: hours,
+            // leave issues and qc as-is or basic defaults
+            qc: { total: totalWorkOrders, completed: c.qc.completed },
+          }));
+        }
+      } catch (err) {
+        console.warn('loadCounts error', err);
+      }
+    };
+
+    loadCounts();
+    return () => { mounted = false; };
+  }, [supabaseUserId]);
 
   const [reportedIssues, setReportedIssues] = useState([
     { id: "ISSUE-001", title: "Brake fluid leakage", status: "OPEN", workOrderId: "WO-001" },
@@ -60,7 +137,7 @@ export default function TechnicianHomeScreen({ navigation, userName = "John" }) 
         <View style={styles.statsRow}>
           <TouchableOpacity
             style={styles.statCard}
-            onPress={() => navigation?.navigate?.("WorkOrderList")}
+            onPress={() => navigation?.navigate?.("WorkOrderList", { supabaseUserId })}
           >
             <FeatherIcon name="briefcase" size={20} color={Colors.techPrimary} style={{ marginRight: 10 }} />
             <View>
@@ -196,7 +273,7 @@ export default function TechnicianHomeScreen({ navigation, userName = "John" }) 
           <Text style={styles.navLabelActive}>Home</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation?.navigate?.("WorkOrderList")}>
+  <TouchableOpacity style={styles.navItem} onPress={() => navigation?.navigate?.("WorkOrderList", { supabaseUserId })}> 
           <FeatherIcon name="briefcase" size={22} color="#444" />
           <Text style={styles.navLabel}>Work Orders</Text>
         </TouchableOpacity>

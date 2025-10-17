@@ -1,20 +1,20 @@
 // src/screens/Technician/InspectionReportDetails.tsx
 import React from "react";
 import {
-  SafeAreaView,
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  ScrollView,
-  TouchableOpacity,
-  Image,
   Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import Mailer from "react-native-mail";
+import RNPrint from "react-native-print";
 import FeatherIcon from "react-native-vector-icons/Feather";
 import Colors from "../../constants/colors";
-import RNPrint from "react-native-print";
-import Mailer from "react-native-mail";
 
 export default function InspectionReportScreen({ navigation, route }) {
   const inspection = route.params?.inspection || {
@@ -34,6 +34,16 @@ export default function InspectionReportScreen({ navigation, route }) {
     ],
   };
 
+  const formatDate = (iso: string | null | undefined) => {
+    if (!iso) return "";
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString();
+    } catch (e) {
+      return iso;
+    }
+  };
+
   /** Map status codes to friendly labels */
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -45,6 +55,18 @@ export default function InspectionReportScreen({ navigation, route }) {
         return "Requires Attention";
       default:
         return status;
+    }
+  };
+
+  /** Derive an overall status from checklist items (RED > YELLOW > GREEN) */
+  const getOverallStatus = (insp: any) => {
+    try {
+      const items = Array.isArray(insp.checklistItems) ? insp.checklistItems : [];
+      if (items.some((it: any) => it.status === 'RED')) return 'RED';
+      if (items.some((it: any) => it.status === 'YELLOW')) return 'YELLOW';
+      return 'GREEN';
+    } catch (e) {
+      return insp.isCompleted ? 'GREEN' : 'YELLOW';
     }
   };
 
@@ -88,7 +110,7 @@ export default function InspectionReportScreen({ navigation, route }) {
             </tr>
             ${inspection.checklistItems
               .map(
-                (item) => `
+                (item: any) => `
               <tr>
                 <td>${item.item}</td>
                 <td class="status-${item.status.toLowerCase()}">${getStatusLabel(item.status)}</td>
@@ -96,7 +118,7 @@ export default function InspectionReportScreen({ navigation, route }) {
                 <td>
                   ${item.photos
                     .map(
-                      (photo) =>
+                      (photo: any) =>
                         `<img src="${photo}" style="height:50px;width:50px;" />`
                     )
                     .join("")}
@@ -116,7 +138,8 @@ export default function InspectionReportScreen({ navigation, route }) {
     try {
       await RNPrint.print({ html: generateReportHTML() });
     } catch (e) {
-      Alert.alert("Print Error", e.message);
+      const msg = (e as any)?.message || String(e);
+      Alert.alert("Print Error", msg);
     }
   };
 
@@ -129,7 +152,7 @@ export default function InspectionReportScreen({ navigation, route }) {
         body: generateReportHTML(),
         isHTML: true,
       },
-      (error, event) => {
+      (error, _event) => {
         if (error) {
           Alert.alert("Email Error", "Could not send email. Please try again.");
         }
@@ -140,27 +163,34 @@ export default function InspectionReportScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar backgroundColor={Colors.techPrimary} barStyle="light-content" />
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+  <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Back */}
         <TouchableOpacity style={styles.backRow} onPress={() => navigation.goBack()}>
           <FeatherIcon name="arrow-left" size={18} color={Colors.techPrimary} />
           <Text style={styles.backText}>Back to Inspections</Text>
         </TouchableOpacity>
 
-        {/* Header */}
+        {/* Header (minimal, two-line) */}
         <View style={styles.section}>
-          <View style={styles.detailsCard}>
-            <Image source={require("../../assets/images/car.png")} style={styles.carImage} resizeMode="contain" />
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.taskId}>{inspection.id}</Text>
-              <Text style={styles.detailText}>{inspection.system}</Text>
-              <Text style={styles.detailText}>{inspection.workOrderId}</Text>
-              <Text style={styles.detailText}>{inspection.carModel}</Text>
-              <Text style={styles.detailText}>{inspection.carPlate}</Text>
-              <Text style={styles.detailText}>By: {inspection.technician}</Text>
+          <View style={styles.minCard}>
+            <View style={styles.minLeft}>
+              <Text style={styles.workOrderNumberLarge} numberOfLines={1} ellipsizeMode="tail">
+                {inspection.workOrder?.workOrderNumber || inspection.workOrderNumber || inspection.workOrderId}
+              </Text>
+              <Text style={styles.secondaryLine} numberOfLines={1} ellipsizeMode="tail">
+                {inspection.template?.name || inspection.system} • {formatDate(inspection.date)}
+              </Text>
             </View>
-            <View style={styles.statusTag}>
-              <Text style={styles.statusText}>Completed</Text>
+
+            <View style={styles.minRight}>
+              {(() => {
+                const overall = getOverallStatus(inspection);
+                return (
+                  <View style={[styles.statusPillCompact, { backgroundColor: getStatusColor(overall) }]}> 
+                    <Text style={styles.statusPillTextWhite}>{getStatusLabel(overall)}</Text>
+                  </View>
+                );
+              })()}
             </View>
           </View>
         </View>
@@ -169,7 +199,7 @@ export default function InspectionReportScreen({ navigation, route }) {
         <View style={styles.section}>
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Inspection Checklist</Text>
-            {inspection.checklistItems.map((item, idx) => (
+            {inspection.checklistItems.map((item: any, idx: number) => (
               <View key={idx} style={styles.itemCard}>
                 <View style={styles.itemRow}>
                   <Text style={styles.itemName}>{item.item}</Text>
@@ -185,13 +215,13 @@ export default function InspectionReportScreen({ navigation, route }) {
 </View>
                 </View>
                 <Text style={styles.itemNotes}>{item.notes}</Text>
-                {item.photos.length > 0 && (
+                {Array.isArray(item.photos) && item.photos.length > 0 && (
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     style={{ marginTop: 8 }}
                   >
-                    {item.photos.map((photo, pIdx) => (
+                    {item.photos.map((photo: any, pIdx: number) => (
                       <Image
                         key={pIdx}
                         source={photo}
@@ -210,7 +240,7 @@ export default function InspectionReportScreen({ navigation, route }) {
         <View style={styles.section}>
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Actions</Text>
-            <View style={{ flexDirection: "row", marginTop: 10 }}>
+            <View style={styles.actionsRow}>
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: Colors.techPrimary }]}
                 onPress={handlePrint}
@@ -301,6 +331,33 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#fff"
   },
+  workOrderLabel: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.85)',
+    fontWeight: '600'
+  },
+  workOrderNumber: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '800',
+    marginTop: 2
+  },
+  dateText: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 6
+  },
+  inspectionType: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.95)',
+    marginTop: 6,
+    fontWeight: '600'
+  },
+  vehicleText: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 6
+  },
   detailText: {
     fontSize: 12,
     color: "#fff",
@@ -335,4 +392,26 @@ statusBadgeText: {
   photo: { width: 80, height: 80, borderRadius: 8, marginRight: 8 },
   actionBtn: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, marginRight: 10 },
   actionBtnText: { color: "#fff", fontWeight: "600", fontSize: 13, marginLeft: 6 },
+  scrollContent: { paddingBottom: 120 },
+  detailsCardAlt: { flexDirection: 'row', backgroundColor: Colors.techPrimary, borderRadius: 12, padding: 12, marginHorizontal: 18, alignItems: 'center' },
+  leftColumn: { width: 72, alignItems: 'center', justifyContent: 'center' },
+  avatarWrap: { width: 64, height: 64, borderRadius: 8, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
+  carImageAlt: { width: 56, height: 56 },
+  centerColumn: { flex: 1, marginLeft: 12 },
+  rightColumn: { width: 110, alignItems: 'flex-end', justifyContent: 'center' },
+  statusPill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, marginBottom: 8 },
+  statusPillText: { fontWeight: '700', fontSize: 12 },
+  smallBy: { fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 6 },
+  byName: { fontSize: 13, color: '#fff', fontWeight: '700' },
+  photosScroll: { marginTop: 8 },
+  actionsRow: { flexDirection: 'row', marginTop: 10 },
+  minCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: Colors.techPrimary, padding: 12, borderRadius: 12, marginHorizontal: 18 },
+  minLeft: { flex: 1, paddingRight: 12 },
+  minRight: { width: 100, alignItems: 'flex-end' },
+  statusPillCompact: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14 },
+  actionBtnSecondary: { backgroundColor: '#555' },
+  workOrderNumberLarge: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  secondaryLine: { fontSize: 12, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
+  statusPillTextWhite: { fontWeight: '700', fontSize: 12, color: '#fff' },
+  photosScroll: { marginTop: 8 },
 });

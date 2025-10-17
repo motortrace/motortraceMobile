@@ -1,4 +1,3 @@
-// src/screens/Technician/WorkOrderList.tsx
 import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
@@ -10,32 +9,33 @@ import {
   View,
 } from "react-native";
 import FeatherIcon from "react-native-vector-icons/Feather";
-import { fetchUserProfileId, fetchTechnicianId, fetchTechnicianWorkOrders } from "../../api/technicianApi";
-import { getToken } from "../../utils/authStorage";
+import { getAuthMe, getTechnicianWorkOrders } from "../../api/technician";
 import Colors from "../../constants/colors";
-
-// Define WorkOrder type based on expected backend response
+// Types for work orders and labors
 interface Labor {
   id: string;
-  status: string;
-  // ...other labor fields
+  status?: string;
+  state?: string;
+  // ...other fields
 }
 
 interface WorkOrder {
   id: string;
-  system?: string;
-  carModel?: string;
-  carPlate?: string;
+  workOrderNumber?: string;
+  jobType?: string;
+  vehicle?: {
+    make?: string;
+    model?: string;
+    licensePlate?: string;
+  };
   labors?: Labor[];
-  // ...other work order fields
+  laborItems?: Labor[]; // server may return laborItems instead of labors
+  isCompleted?: boolean;
+  // ...other fields
 }
 
-// Accept supabaseUserId as a prop (pass from parent or context)
-import { useRoute } from '@react-navigation/native';
 
 export default function WorkOrderListScreen({ navigation }: { navigation: any }) {
-  const route = useRoute();
-  const supabaseUserId = (route.params as any)?.supabaseUserId;
   const [tab, setTab] = useState<string>("All");
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -44,40 +44,75 @@ export default function WorkOrderListScreen({ navigation }: { navigation: any })
     async function fetchWorkOrders() {
       setLoading(true);
       try {
-        console.log("supabaseUserId:", supabaseUserId);
-        if (!supabaseUserId) throw new Error("No supabaseUserId provided");
-        const token = await getToken();
-        console.log("token:", token);
-        const userProfileId = await fetchUserProfileId(supabaseUserId, token);
-        console.log("userProfileId:", userProfileId);
-        if (!userProfileId) throw new Error("No user profile found");
-        const technicianId = await fetchTechnicianId(userProfileId, token);
-        console.log("technicianId:", technicianId);
-        if (!technicianId) throw new Error("No technician found");
-        const workOrders = await fetchTechnicianWorkOrders(technicianId, token);
-        console.log("workOrders:", workOrders);
-        setWorkOrders(workOrders);
+        const meData = await getAuthMe();
+        console.log('Response from /auth/me:', meData);
+        const userProfileId = meData?.userProfileId || meData?.user?.userProfileId;
+        console.log('Extracted userProfileId:', userProfileId);
+        const technicianId = meData?.data?.roleDetails?.technicianId;
+        console.log('Extracted technicianId:', technicianId);
+        if (!technicianId) throw new Error("No technician id found for user");
+        const workOrdersRes = await getTechnicianWorkOrders(technicianId);
+        const raw = workOrdersRes?.data || workOrdersRes?.workOrders || [];
+        // API sometimes returns a single object in `data` instead of an array. Normalize to array.
+        const rawArray = Array.isArray(raw) ? raw : raw ? [raw] : [];
+        // Normalize each work order to have a boolean isCompleted flag and ensure labors array exists
+        const normalized = rawArray.map((wo: any) => {
+          const laborsArray = Array.isArray(wo.labors)
+            ? wo.labors
+            : Array.isArray(wo.laborItems)
+            ? wo.laborItems
+            : [];
+
+          const laborCompletionFlag = laborsArray.length > 0 && laborsArray.every((l: any) => {
+            const s = (l?.status || l?.state || '').toString().toLowerCase();
+            return s === 'completed' || s === 'complete' || s === 'done';
+          });
+
+          // Also consider work order-level fields: status or closedAt as indicators of completion
+          const workOrderStatusFlag = typeof wo.status === 'string' && wo.status.toLowerCase() === 'completed';
+          const closedAtFlag = !!wo.closedAt;
+
+          const completed = !!(laborCompletionFlag || workOrderStatusFlag || closedAtFlag);
+
+          return {
+            ...wo,
+            labors: laborsArray,
+            laborItems: wo.laborItems || wo.labors || [],
+            isCompleted: !!completed,
+          } as WorkOrder;
+        });
+        setWorkOrders(normalized);
       } catch (err) {
         console.error("fetchWorkOrders error:", err);
       } finally {
         setLoading(false);
       }
     }
-    if (supabaseUserId) fetchWorkOrders();
-  }, [supabaseUserId]);
+    fetchWorkOrders();
+  }, []);
 
-  const getWorkOrderProgress = (tasks: Labor[] = []) => {
-    if (!tasks || !Array.isArray(tasks)) return "0/0 Tasks";
-    const completed = tasks.filter((t) => t.status === "COMPLETED").length;
-    return `${completed}/${tasks.length} Tasks`;
+  const getWorkOrderProgress = (labors: Labor[] = []) => {
+    // Defensive: ensure labors is an array
+    if (!labors || !Array.isArray(labors)) return '0/0 Tasks';
+
+    const total = labors.filter(Boolean).length; // ignore null/undefined entries
+
+    const completed = labors.reduce((acc, l) => {
+      if (!l) return acc;
+      const s = (l.status || l.state || '').toString().toLowerCase();
+      if (s === 'completed' || s === 'complete' || s === 'done') return acc + 1;
+      return acc;
+    }, 0);
+
+    return `${completed}/${total} Tasks`;
   };
 
   const filteredWorkOrders =
     tab === "All"
       ? workOrders
       : tab === "Completed"
-      ? workOrders.filter((wo) => wo.labors && wo.labors.every((labor: Labor) => labor.status === "COMPLETED"))
-      : workOrders.filter((wo) => wo.labors && wo.labors.some((labor: Labor) => labor.status !== "COMPLETED"));
+      ? workOrders.filter((wo) => !!wo.isCompleted)
+      : workOrders.filter((wo) => !wo.isCompleted);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -116,19 +151,40 @@ export default function WorkOrderListScreen({ navigation }: { navigation: any })
         {loading ? (
           <Text style={{ textAlign: "center", marginTop: 40 }}>Loading...</Text>
         ) : filteredWorkOrders.length === 0 ? (
-          <Text style={{ textAlign: "center", marginTop: 40 }}>No work orders found.</Text>
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconCircle}>
+              <FeatherIcon name="briefcase" size={24} color="#6b6b6b" />
+            </View>
+            <Text style={styles.emptyTitle}>
+              {tab === 'All'
+                ? 'No work orders found.'
+                : tab === 'Pending'
+                ? 'No Pending Work Orders.'
+                : 'No Completed Work Orders.'}
+            </Text>
+            <Text style={styles.emptySubtitle}>
+              {tab === 'All'
+                ? 'There are no work orders assigned to you.'
+                : tab === 'Pending'
+                ? "You're all caught up — no pending work orders."
+                : 'There are no completed work orders yet.'}
+            </Text>
+          </View>
         ) : (
           filteredWorkOrders.map((wo) => (
             <TouchableOpacity
               key={wo.id}
               style={styles.card}
-              onPress={() => navigation.navigate("WorkOrderDetails", { workOrder: wo })}
+              onPress={() => navigation.navigate("WorkOrderDetails", { workOrderId: wo.id, workOrder: wo })}
             >
               <View style={{ flex: 1 }}>
-                <Text style={styles.woId}>{wo.id}</Text>
-                <Text style={styles.woSystem}>{wo.system}</Text>
+                {/* Display Work Order Number */}
+                <Text style={styles.woId}>{wo.workOrderNumber ?? "No Number"}</Text>
+                {/* Display Job Type */}
+                <Text style={styles.woSystem}>{wo.jobType ?? "No Job Type"}</Text>
+                {/* Display Vehicle Details */}
                 <Text style={styles.woVehicle}>
-                  {wo.carModel} ({wo.carPlate})
+                  {wo.vehicle?.make ?? ""} {wo.vehicle?.model ?? ""} ({wo.vehicle?.licensePlate ?? "No Plate"})
                 </Text>
                 <Text style={styles.woProgress}>{getWorkOrderProgress(wo.labors)}</Text>
               </View>
@@ -219,5 +275,33 @@ const styles = StyleSheet.create({
     color: Colors.techPrimary,
     marginTop: 4,
     fontWeight: "700",
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+    marginTop: 40,
+    color: '#666'
+  },
+  emptyTitle: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#444',
+    fontWeight: '600'
+  },
+  emptySubtitle: {
+    marginTop: 6,
+    fontSize: 13,
+    color: '#777',
+    textAlign: 'center',
+    maxWidth: '80%'
+  },
+  emptyIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#e6e6e6',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
 });
