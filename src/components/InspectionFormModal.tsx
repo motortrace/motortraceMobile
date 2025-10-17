@@ -1,14 +1,14 @@
 // src/components/InspectionFormModal.tsx
 import React, { useState } from "react";
 import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  TextInput,
   Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import FeatherIcon from "react-native-vector-icons/Feather";
 import Colors from "../constants/colors";
@@ -47,7 +47,12 @@ export default function InspectionFormModal({
         <View style={styles.modal}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>{inspection.template}</Text>
+            {/* Fix: Only render template name, not object */}
+            <Text style={styles.title}>
+              {typeof inspection.template === "object"
+                ? inspection.template?.name
+                : inspection.template}
+            </Text>
             <TouchableOpacity onPress={onClose}>
               <FeatherIcon name="x" size={22} color="#000" />
             </TouchableOpacity>
@@ -123,24 +128,30 @@ export default function InspectionFormModal({
                       />
 
                       {/* Attachments */}
-{/* Attachments */}
-<Text style={styles.sectionLabel}>Attachments</Text>
-<ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-  {/* Add Photo Button first */}
-  <TouchableOpacity
-    style={styles.addPhotoDotted}
-    onPress={() => attachPhoto(index)}
-  >
-    <FeatherIcon name="camera" size={20} color={Colors.techPrimary} />
-    <Text style={styles.addPhotoText}>Add Photo</Text>
-  </TouchableOpacity>
+                      <Text style={styles.sectionLabel}>Attachments</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={{ marginBottom: 12 }}
+                      >
+                        {/* Add Photo Button first */}
+                        <TouchableOpacity
+                          style={styles.addPhotoDotted}
+                          onPress={() => attachPhoto(index)}
+                        >
+                          <FeatherIcon
+                            name="camera"
+                            size={20}
+                            color={Colors.techPrimary}
+                          />
+                          <Text style={styles.addPhotoText}>Add Photo</Text>
+                        </TouchableOpacity>
 
-  {/* Existing Photos */}
-  {item.photos?.map((uri, i) => (
-    <Image key={i} source={{ uri }} style={styles.attachment} />
-  ))}
-</ScrollView>
-
+                        {/* Existing Photos */}
+                        {item.photos?.map((uri, i) => (
+                          <Image key={i} source={{ uri }} style={styles.attachment} />
+                        ))}
+                      </ScrollView>
                     </View>
                   )}
                 </View>
@@ -260,28 +271,27 @@ const styles = StyleSheet.create({
   },
   submitText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   addPhotoDotted: {
-  width: 80,
-  height: 80,
-  borderRadius: 8,
-  borderWidth: 1,
-  borderStyle: "dashed",
-  borderColor: "#ccc",
-  justifyContent: "center",
-  alignItems: "center",
-  marginRight: 8,
-  backgroundColor: "#fafafa",
-},
-addPhotoText: {
-  fontSize: 10,
-  color: Colors.techPrimary,
-  marginTop: 2,
-  textAlign: "center",
-},
-attachment: {
-  width: 80,
-  height: 80,
-  borderRadius: 8,
-  marginRight: 8,
-},
-
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#ccc",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+    backgroundColor: "#fafafa",
+  },
+  addPhotoText: {
+    fontSize: 10,
+    color: Colors.techPrimary,
+    marginTop: 2,
+    textAlign: "center",
+  },
+  attachment: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 8,
+  },
 });

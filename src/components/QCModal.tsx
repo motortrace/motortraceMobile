@@ -1,31 +1,30 @@
 // src/components/QCModal.tsx
+import { Picker } from "@react-native-picker/picker";
 import React, { useState } from "react";
 import {
   Modal,
-  View,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
+  View,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import Colors from "../constants/colors";
 
 interface QCModalProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (data: { verifiedBy: string; method: string; notes: string }) => void;
+  // Technician is derived server-side from the authenticated user; modal does not collect verifiedBy
+  onSubmit: (data: { method: string; notes: string }) => void;
 }
 
 export default function QCModal({ visible, onClose, onSubmit }: QCModalProps) {
-  const [verifiedBy, setVerifiedBy] = useState("");
   const [method, setMethod] = useState("");
   const [notes, setNotes] = useState("");
 
   const handleSubmit = () => {
-    onSubmit({ verifiedBy, method, notes });
-    setVerifiedBy("");
+    onSubmit({ method, notes });
     setMethod("");
     setNotes("");
     onClose();
@@ -37,19 +36,7 @@ export default function QCModal({ visible, onClose, onSubmit }: QCModalProps) {
         <View style={styles.modal}>
           <Text style={styles.title}>Quality Control</Text>
           <ScrollView>
-            {/* Verified By */}
-            <Text style={styles.label}>Verified By</Text>
-            <View style={styles.dropdownWrapper}>
-              <Picker
-                selectedValue={verifiedBy}
-                onValueChange={(val) => setVerifiedBy(val)}
-              >
-                <Picker.Item label="Select Technician" value="" />
-                <Picker.Item label="Tech-001 (John Doe)" value="Tech-001" />
-                <Picker.Item label="Tech-002 (Jane Smith)" value="Tech-002" />
-                <Picker.Item label="Tech-003 (Michael Lee)" value="Tech-003" />
-              </Picker>
-            </View>
+            {/* Verified By removed: backend uses authenticated technician as inspector */}
 
             {/* Method */}
             <Text style={styles.label}>Verification Method</Text>
