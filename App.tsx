@@ -30,6 +30,7 @@ import GarageServices from './src/screens/Vresion2/GarageServices'
 import GarageServiceDetails from './src/screens/Vresion2/GarageServiceDetails'
 import DetailedBill from './src/screens/User/DetailedBill';
 import PaidServiceBillSummary from './src/screens/User/PaidServiceBillSummary';
+import Invoices from './src/screens/User/Invoices';
 import ServiceDetails from './src/screens/User/ServiceDetails'
 import PackageDetails from './src/screens/User/PackageDetails'
 
@@ -52,6 +53,7 @@ import DeleteAccount from './src/screens/DeleteAccount';
 import LoginActivity from './src/screens/LoginActivity';
 import ActiveSession from './src/screens/User/ActiveSession';
 import SupportChat from './src/screens/User/SupportChat';
+import Notifications from './src/screens/User/Notifications';
 import faq from './src/screens/faq'
 import FaqAnswer from './src/screens/FaqAnswer';
 
@@ -137,7 +139,9 @@ export type RootStackParamList = {
   GarageServices: undefined;
   GarageServiceDetails: undefined;
   DetailedBill: undefined;
-  PaidServiceBillSummary: undefined
+  PaidServiceBillSummary: undefined;
+  Invoices: undefined;
+  InvoiceDetail: { invoiceId: string };
   Appointment: undefined;
   ServiceDetails: { serviceId: string };
   PackageDetails: { packageId: string };
@@ -161,6 +165,7 @@ export type RootStackParamList = {
   LoginActivity: undefined;
   ActiveSession: undefined;
   SupportChat: undefined;
+  Notifications: undefined;
   faq: undefined;
   FaqAnswer: undefined;
 
@@ -265,6 +270,7 @@ function App(): React.ReactElement {
           <Stack.Screen name="GarageServiceDetails" component={GarageServiceDetails} />
           <Stack.Screen name="DetailedBill" component={DetailedBill} />
           <Stack.Screen name="PaidServiceBillSummary" component={PaidServiceBillSummary} />
+          <Stack.Screen name="Invoices" component={Invoices} />
           <Stack.Screen name="ServiceDetails" component={ServiceDetails} />
           <Stack.Screen name="PackageDetails" component={PackageDetails} />
 
@@ -289,6 +295,7 @@ function App(): React.ReactElement {
           <Stack.Screen name="LoginActivity" component={LoginActivity} />
           <Stack.Screen name="ActiveSession" component={ActiveSession} />
           <Stack.Screen name="SupportChat" component={SupportChat} />
+          <Stack.Screen name="Notifications" component={Notifications} />
           <Stack.Screen name="faq" component={faq} />
           <Stack.Screen name="FaqAnswer" component={FaqAnswer} />
 

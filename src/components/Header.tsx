@@ -18,11 +18,13 @@ import Colors from '../constants/colors';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNotifications } from '../hooks/useNotifications';
 
 // Define navigation type - adjust RootStackParamList according to your navigation structure
 type RootStackParamList = {
   Notifications: undefined;
   Profile: undefined;
+  WorkOrderDetail: { workOrder: any };
   // Add other screen names as needed
 };
 
@@ -46,6 +48,7 @@ const Header: React.FC<HeaderProps> = ({
   style,
 }) => {
   const navigation = useNavigation<NavigationProp>();
+  const { unreadCount } = useNotifications();
   const [headerData, setHeaderData] = useState<{
     fullname: string;
     profile_image: string | null;
@@ -111,11 +114,18 @@ const Header: React.FC<HeaderProps> = ({
     if (!showNotification) return null;
 
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.iconButton}
         onPress={() => navigation.navigate('Notifications')}
       >
         <Icon name="notifications-outline" size={24} color={Colors.neutral500} />
+        {unreadCount > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {unreadCount > 99 ? '99+' : unreadCount.toString()}
+            </Text>
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -251,6 +261,24 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 20,
     fontWeight: '800',
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: Colors.danger,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.neutral50,
+  },
+  badgeText: {
+    color: Colors.neutral50,
+    fontSize: 10,
+    fontWeight: '700',
   },
 
 });

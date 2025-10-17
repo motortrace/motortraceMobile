@@ -272,14 +272,23 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       screen: "Cars",
       bgColor: "#ECFDF5",
     },
-    { 
-      id: 4, 
-      title: "Track Service", 
+    {
+      id: 4,
+      title: "Track Service",
       subtitle: "Real-time updates",
-      icon: "location", 
+      icon: "location",
       color: "#F59E0B",
       screen: "Reservations",
       bgColor: "#FFFBEB"
+    },
+    {
+      id: 5,
+      title: "Invoices",
+      subtitle: "View your bills",
+      icon: "receipt",
+      color: "#8B5CF6",
+      screen: "Invoices",
+      bgColor: "#F3F4FF"
     },
   ]
 
@@ -657,7 +666,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   quickActionCard: {
-    width: '47%',
+    width: '31%',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
