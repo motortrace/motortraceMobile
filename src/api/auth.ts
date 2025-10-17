@@ -27,6 +27,11 @@ export const login = async (data: LoginData): Promise<LoginResponse> => {
 };
 
 export const logout = async () => {
-  await api.post("/auth/logout");
-  await removeToken();
+  try {
+    await api.post("/auth/logout");
+  } catch (err) {
+    console.warn('Logout request failed, removing local token anyway', err);
+  } finally {
+    await removeToken();
+  }
 };
