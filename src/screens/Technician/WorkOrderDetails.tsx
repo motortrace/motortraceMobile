@@ -4,17 +4,20 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
+  Modal,
   SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { launchCamera, launchImageLibrary } from "react-native-image-picker";
 import FeatherIcon from "react-native-vector-icons/Feather";
-import { completePartInstallation, createWorkOrderQC, fetchWorkOrderDetails, getWorkOrderQC, startPartInstallation, updateLaborTask, updateWorkOrderPart, uploadWorkOrderAttachment } from "../../api/technicianApi";
+import { completePartInstallation, createWorkOrderQC, fetchWorkOrderAttachments, fetchWorkOrderDetails, getWorkOrderQC, startPartInstallation, updateLaborTask, updateWorkOrderPart, uploadWorkOrderAttachment } from "../../api/technicianApi";
 import AddIssueModal from "../../components/AddIssueModal";
 import InstallPartModal from "../../components/InstallPartModal";
 import IssueDetailsModal from "../../components/IssueDetailsModal";
@@ -54,6 +57,7 @@ export default function WorkOrderDetailsScreen({ route, navigation }: { route: a
 const [photoModalVisible, setPhotoModalVisible] = useState(false);
 const [selectedPhoto, setSelectedPhoto] = useState<{ uri: string; taskId: string; index: number } | null>(null);
 const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [workOrderAttachments, setWorkOrderAttachments] = useState<any[]>([]);
 const [installPartModalVisible, setInstallPartModalVisible] = useState(false);
 const [selectedPart, setSelectedPart] = useState(null);
 const [startingPartId, setStartingPartId] = useState<string | null>(null);
@@ -138,55 +142,107 @@ const [partsUsage, setPartsUsage] = useState(
   };
 
   // Persist completion to backend (send endTime+status only) and refresh
-  const persistComplete = async (task: any) => {
-    const taskId = task.id;
-    // compute elapsed ms from taskTimers state (defensive) for local display only
-    const timer = taskTimers[taskId] || {};
-    let elapsedMs = timer.elapsed || 0;
-    if (timer.running && timer.start) {
-      const base = timer.elapsedBase || 0;
-      elapsedMs = Date.now() - timer.start + base;
-    }
+  // NOTE: completion is handled via a confirmation modal (confirmComplete)
+
+  // New modal flow for confirming completion with optional notes
+  const [completeModalVisible, setCompleteModalVisible] = useState(false);
+  const [completeNotes, setCompleteNotes] = useState('');
+  const [taskToComplete, setTaskToComplete] = useState<any | null>(null);
+  const [previewActualMinutes, setPreviewActualMinutes] = useState<number | null>(null);
+
+  const openCompleteModal = (task: any) => {
+    setTaskToComplete(task);
+    setCompleteNotes('');
+    // compute preview actual minutes using server startTime if provided else local timer
     try {
-      // stop local timer immediately
+      let startTs: number | null = null;
+      if (task?.startTime) {
+        const parsed = new Date(task.startTime).getTime();
+        if (!isNaN(parsed)) startTs = parsed;
+      }
+      const localTimerStart = taskTimers[task.id]?.start;
+      if (!startTs && localTimerStart) startTs = localTimerStart;
+      if (startTs) {
+        const now = Date.now();
+        const diffMin = Math.max(1, Math.round((now - startTs) / 60000));
+        setPreviewActualMinutes(diffMin);
+      } else {
+        setPreviewActualMinutes(null);
+      }
+    } catch (e) {
+      setPreviewActualMinutes(null);
+    }
+    setCompleteModalVisible(true);
+  };
+
+  const confirmComplete = async () => {
+    if (!taskToComplete) return;
+    const taskId = taskToComplete.id;
+    try {
+      // Stop local timer immediately
       handleStop(taskId);
       setSavingTasks((s) => ({ ...s, [taskId]: true }));
       const token = await getToken();
-      if (!token) {
-        throw new Error('Missing authentication token. Please log in again.');
-      }
-      const payload = { endTime: new Date().toISOString(), status: 'COMPLETED' };
-      console.log('[persistComplete] calling updateLaborTask', { laborId: taskId, payload, tokenPresent: !!token });
-      // Use the server response if it returns the updated labor (may include computed minutes/hours)
-      const res = await updateLaborTask(taskId, payload, token || '');
-      const refreshed = await fetchWorkOrderDetails(workOrder.id, token || '');
-      if (refreshed) setFetchedWorkOrder(mapWorkOrderApiToUi(refreshed));
+      if (!token) throw new Error('Missing authentication token.');
 
-      // If the server returned computed minutes/actual time, show it. Try common fields.
-      let recordedText = '';
-      if (res) {
-        // prefer actualMinutes, then hours/hoursWorked, then any returned value
-        if (res.actualMinutes !== undefined && res.actualMinutes !== null) {
-          recordedText = `${res.actualMinutes} minute(s)`;
-        } else if (res.actualHours !== undefined && res.actualHours !== null) {
-          recordedText = `${res.actualHours} hour(s)`;
-        } else if (res.hours !== undefined && res.hours !== null) {
-          recordedText = `${res.hours} hour(s)`;
+      // Determine start timestamp: prefer server-provided startTime, else local timer start
+      let startTs: number | null = null;
+      if (taskToComplete.startTime) {
+        const parsed = new Date(taskToComplete.startTime).getTime();
+        if (!isNaN(parsed)) startTs = parsed;
+      }
+
+      // If no start time on the task object, try to fetch the latest work order details
+      // to obtain the authoritative startTime from the server (helps when UI is stale)
+      if (!startTs) {
+        try {
+          const fresh = await fetchWorkOrderDetails(workOrder.id, token || '');
+          const found = (fresh?.laborItems || []).find((li: any) => li.id === taskId);
+          if (found && found.startTime) {
+            const parsed = new Date(found.startTime).getTime();
+            if (!isNaN(parsed)) startTs = parsed;
+          }
+        } catch (e) {
+          // ignore - we'll fallback to local timer if available
         }
       }
 
-      if (recordedText) {
-        Alert.alert('Task completed', `Time recorded: ${recordedText}`);
-      } else {
-        // Fallback: show local elapsed in minutes
-        const localMinutes = Math.max(1, Math.round((elapsedMs || 0) / 60000));
-        Alert.alert('Task completed', `Time recorded: ~${localMinutes} minute(s)`);
+      const localTimerStart = taskTimers[taskId]?.start;
+      if (!startTs && localTimerStart) startTs = localTimerStart;
+
+      const endTs = Date.now();
+      const endIso = new Date(endTs).toISOString();
+
+      let actualMinutes: number | undefined = undefined;
+      if (startTs) {
+        const diffMin = Math.max(1, Math.round((endTs - startTs) / 60000));
+        actualMinutes = diffMin;
       }
+
+      const payload: any = { endTime: endIso, status: 'COMPLETED' };
+      if (actualMinutes !== undefined) payload.actualMinutes = actualMinutes;
+      if (completeNotes && completeNotes.trim().length > 0) payload.notes = completeNotes.trim();
+
+  // Debug: log the payload being sent so we can verify actualMinutes is present
+  console.log('[confirmComplete] sending payload for laborId', taskId, payload);
+  const res = await updateLaborTask(taskId, payload, token || '');
+      const refreshed = await fetchWorkOrderDetails(workOrder.id, token || '');
+      if (refreshed) setFetchedWorkOrder(mapWorkOrderApiToUi(refreshed));
+
+      // Show confirmation including recorded minutes if returned or computed
+      let recordedText = '';
+      if (res && res.actualMinutes !== undefined && res.actualMinutes !== null) recordedText = `${res.actualMinutes} minute(s)`;
+      else if (actualMinutes !== undefined) recordedText = `${actualMinutes} minute(s)`;
+      Alert.alert('Task completed', recordedText ? `Time recorded: ${recordedText}` : 'Task completed');
     } catch (err: any) {
       console.error('Failed to persist completion', err);
       Alert.alert('Error', err?.message || 'Failed to complete task');
     } finally {
       setSavingTasks((s) => ({ ...s, [taskId]: false }));
+      setCompleteModalVisible(false);
+      setTaskToComplete(null);
+      setCompleteNotes('');
+      setPreviewActualMinutes(null);
     }
   };
 
@@ -204,9 +260,7 @@ const [partsUsage, setPartsUsage] = useState(
     });
   }, [workOrder.tasks]);
 
-  const handleComplete = (task: any) => {
-    // not used; completion is handled by persistComplete
-  };
+  // removed unused placeholder. Completion is handled by openCompleteModal/confirmComplete
   
 
 
@@ -277,36 +331,32 @@ const getTextColor = (status: string) => {
   // Auto-open QC modal when all tasks are COMPLETED and current user is a technician
   const { user } = useAuth();
   useEffect(() => {
+    // Instead of auto-opening the QC modal when all tasks are completed,
+    // simply fetch any existing QC records and show them in the UI.
+    // The modal should only open when the user intentionally taps "Complete QC".
     let mounted = true;
-    const checkAndOpenQC = async () => {
-      const allCompleted = workOrder.tasks && workOrder.tasks.length > 0 && (workOrder.tasks as any[]).every((t: any) => t.status === "COMPLETED");
-      const isTechnician = user?.role === 'technician';
-      if (!allCompleted || !isTechnician || qcRecorded) return;
-
+    const fetchQcRecords = async () => {
       try {
         const token = await getToken();
         if (!token) return;
         const fetchedQc = await getWorkOrderQC(workOrder.id, token || '');
-        setQcRecords(fetchedQc || []);
         if (!mounted) return;
-        if (!fetchedQc || fetchedQc.length === 0) {
-          setQcModalVisible({ visible: true, taskId: null });
-        } else {
-          // mark as recorded and populate qcData for UI
+        setQcRecords(fetchedQc || []);
+        if (fetchedQc && fetchedQc.length > 0) {
           setQcRecorded(true);
-          // Use first QC record to show summary
           const first = fetchedQc[0];
           if (first) setQcData((prev: any) => ({ ...prev, workOrder: first }));
+        } else {
+          setQcRecorded(false);
         }
       } catch (err) {
-        // If fetching QC fails, don't block the modal silently — log and do nothing
-        console.warn('Failed to check existing QC records', err);
+        console.warn('Failed to fetch QC records', err);
       }
     };
 
-    checkAndOpenQC();
+    fetchQcRecords();
     return () => { mounted = false; };
-  }, [workOrder.tasks, user, qcRecorded, workOrder.id]);
+  }, [workOrder.id]);
 
   // Fetch latest work order when id present
   useEffect(() => {
@@ -336,6 +386,13 @@ const getTextColor = (status: string) => {
             if (firstQc && firstQc.qcDate) {
               setQcData((prev: any) => ({ ...prev, workOrder: { ...firstQc } }));
             }
+          }
+          // fetch attachments for this work order if available
+          try {
+            const atts = await fetchWorkOrderAttachments(routeWorkOrderId, token || "");
+            if (mounted) setWorkOrderAttachments(atts || []);
+          } catch (attErr) {
+            console.warn('Failed to fetch work order attachments', attErr);
           }
         }
       } catch (err: any) {
@@ -387,7 +444,11 @@ const getTextColor = (status: string) => {
         description: li.description || li.laborCatalog?.name || li.serviceId || 'Task',
         status: li.status || 'PENDING',
         estimatedTime: li.estimatedMinutes || li.laborCatalog?.estimatedMinutes || 0,
-        actualTime: li.actualMinutes || li.actualMinutes || 0,
+        actualTime: li.actualMinutes || li.actual_minutes || li.actualMinutes || 0,
+        // map possible start time fields from various backend shapes
+        startTime: li.startTime || li.start_time || li.startedAt || li.started_at || li.start || null,
+        // map any returned actual minutes field if present
+        actualMinutes: li.actualMinutes || li.actual_minutes || li.actual_minutes || undefined,
       })),
       parts: api.partsUsed || api.parts || [],
       services: api.services || [],
@@ -452,6 +513,11 @@ const handlePickPhoto = (task: any) => {
 const openPhotoModal = (taskId: string, uri: string, index: number) => {
   setSelectedPhoto({ uri, taskId, index });
   setPhotoModalVisible(true);
+};
+
+const openAttachment = (url: string) => {
+  if (!url) return;
+  Linking.openURL(url).catch((err) => console.warn('Failed to open attachment', err));
 };
 
 const removePhoto = (taskId: string, index: number) => {
@@ -610,7 +676,7 @@ const removePhoto = (taskId: string, index: number) => {
                   {task.status === "IN_PROGRESS" && (
                     <TouchableOpacity
                       style={styles.completeBtn}
-                      onPress={() => persistComplete(task)}
+                      onPress={() => openCompleteModal(task)}
                       disabled={Boolean(savingTasks[task.id])}
                     >
                       {savingTasks[task.id] ? (
@@ -667,6 +733,31 @@ const removePhoto = (taskId: string, index: number) => {
       </TouchableOpacity>
     ))}
 
+    {/* Work Order Attachments (documents, invoices, etc.) */}
+    {workOrderAttachments && workOrderAttachments.length > 0 && (
+      <View style={styles.attachmentsContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {workOrderAttachments.map((att: any, idx: number) => (
+            <TouchableOpacity
+              key={`att-${idx}`}
+              style={styles.attachmentItem}
+              onPress={() => openAttachment(att?.fileUrl || att?.url || att?.path || att?.data?.fileUrl)}
+            >
+              {att?.fileUrl || att?.url || (att?.path) ? (
+                <Image source={{ uri: att.fileUrl || att.url || att.path }} style={styles.attachmentThumb} />
+              ) : (
+                <View style={[styles.attachmentThumb, { justifyContent: 'center', alignItems: 'center' }]}>
+                  <FeatherIcon name="file" size={24} color="#666" />
+                </View>
+              )}
+              
+              <Text style={styles.attachmentCategory}>{att?.category || att?.type || ''}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    )}
+
     {/* Part Photos */}
   {documentation.parts?.photos?.map((photo: any, i: number) => (
       <TouchableOpacity
@@ -710,6 +801,47 @@ const removePhoto = (taskId: string, index: number) => {
               {part.warrantyInfo || installedPart.warrantyInfo ? (
                 <Text style={styles.partMeta}>Warranty: {part.warrantyInfo || installedPart.warrantyInfo}</Text>
               ) : null}
+              {/* Show attachments uploaded for this part installation */}
+              {workOrderAttachments && workOrderAttachments.length > 0 && (
+                (() => {
+                  // Look for attachments with category PART_INSTALLATION and matching partId in metadata
+                  const partIdKey = part.id || part.inventoryItemId;
+                  const matches = (workOrderAttachments || []).filter((att: any) => {
+                    const cat = (att.category || att.type || '').toUpperCase();
+                    if (cat !== 'PART_INSTALLATION') return false;
+                    // Try metadata/descriptions
+                    try {
+                      const meta = att.description ? JSON.parse(att.description) : att.metadata ? JSON.parse(att.metadata) : null;
+                      if (meta && (meta.partId === partIdKey || meta.partId === String(partIdKey))) return true;
+                    } catch (e) {
+                      // ignore parse errors
+                    }
+                    // fallback: check if filename or url contains the inventory id
+                    const url = att.fileUrl || att.url || att.path || '';
+                    if (url && String(url).includes(String(partIdKey))) return true;
+                    return false;
+                  });
+
+                  if (matches.length === 0) return null;
+
+                  return (
+                    <View style={{ marginTop: 8 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', marginBottom: 6 }}>Installation Photos</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        {matches.map((att: any, idx: number) => (
+                          <TouchableOpacity key={`part-att-${idx}`} onPress={() => openAttachment(att.fileUrl || att.url || att.path)} style={{ marginRight: 8 }}>
+                            {att.fileUrl || att.url || att.path ? (
+                              <Image source={{ uri: att.fileUrl || att.url || att.path }} style={styles.docPhoto} />
+                            ) : (
+                              <View style={styles.attachmentThumb}><FeatherIcon name="file" size={20} color="#666" /></View>
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  );
+                })()
+              )}
             </View>
           )}
         </View>
@@ -782,34 +914,45 @@ const removePhoto = (taskId: string, index: number) => {
                 </View>
 
                                 {/* QC after completion */}
-{(task.status === "QC PENDING" || task.status === "COMPLETED") && (
-  <View style={{ marginTop: 12 }}>
-    <Text style={styles.sectionTitle}>Quality Control</Text>
+<View style={{ marginTop: 12 }}>
+  <Text style={styles.sectionTitle}>Quality Control</Text>
 
-    {(() => {
-      // prefer task-level qcData, otherwise use latest work-order QC
-      const taskQc = qcData[task.id] || (qcRecords && qcRecords.length > 0 ? qcRecords[0] : null);
-      if (taskQc) {
-        return (
-          <View style={styles.qcCard}>
-            <Text style={styles.qcLabel}>Notes: {taskQc.notes || '—'}</Text>
-            <Text style={styles.qcLabel}>Passed: {taskQc.passed ? 'Yes' : 'No'}</Text>
-            <Text style={styles.qcLabel}>At: {taskQc.qcDate ? new Date(taskQc.qcDate).toLocaleString() : taskQc.createdAt ? new Date(taskQc.createdAt).toLocaleString() : '—'}</Text>
-          </View>
-        );
-      }
+  {(() => {
+    // prefer task-level qcData, otherwise use latest work-order QC
+    const taskQc = qcData[task.id] || (qcRecords && qcRecords.length > 0 ? qcRecords[0] : null);
 
-        return task.status === "QC PENDING" ? (
-        <TouchableOpacity
-          style={[styles.startBtn, styles.alignSelfFlexStart]}
-          onPress={() => setQcModalVisible({ visible: true, taskId: task.id })}
-        >
-          <Text style={styles.startBtnText}>Complete QC</Text>
-        </TouchableOpacity>
-      ) : null;
-    })()}
-  </View>
-)}
+    if (taskQc) {
+      return (
+        <View style={styles.qcCard}>
+          <Text style={styles.qcLabel}>Notes: {taskQc.notes || '—'}</Text>
+          <Text style={styles.qcLabel}>Passed: {taskQc.passed ? 'Yes' : 'No'}</Text>
+          <Text style={styles.qcLabel}>At: {taskQc.qcDate ? new Date(taskQc.qcDate).toLocaleString() : taskQc.createdAt ? new Date(taskQc.createdAt).toLocaleString() : '—'}</Text>
+        </View>
+      );
+    }
+
+    // If there is no QC record for this task, show guidance.
+    // QC should be done only after all work order labors are completed.
+    const allCompleted = workOrder.tasks && workOrder.tasks.length > 0 && (workOrder.tasks as any[]).every((t: any) => t.status === 'COMPLETED');
+    if (!allCompleted) {
+      return (
+        <View style={styles.qcCard}>
+          <Text style={styles.qcLabel}>Complete all work order labor assigned to this work order before performing Quality Control.</Text>
+        </View>
+      );
+    }
+
+    // All tasks completed and no QC record yet -> show a button to allow the technician to open the QC modal
+    return (
+      <TouchableOpacity
+        style={[styles.startBtn, styles.alignSelfFlexStart]}
+        onPress={() => setQcModalVisible({ visible: true, taskId: null })}
+      >
+        <Text style={styles.startBtnText}>Complete QC</Text>
+      </TouchableOpacity>
+    );
+  })()}
+</View>
 
               </View>
             );
@@ -838,6 +981,43 @@ const removePhoto = (taskId: string, index: number) => {
           setAddIssueModalVisible({ visible: false, taskId: null });
         }}
       />
+
+      {/* Complete Task Confirmation Modal */}
+      <Modal visible={completeModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Complete Task</Text>
+            <Text style={styles.modalSubtitle}>Confirm completing this task and optionally add notes.</Text>
+            {previewActualMinutes !== null && (
+              <Text style={styles.modalPreview}>Time to be recorded: {previewActualMinutes} minute(s)</Text>
+            )}
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Add notes (optional)"
+              multiline
+              numberOfLines={3}
+              value={completeNotes}
+              onChangeText={setCompleteNotes}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnCancel]}
+                onPress={() => {
+                  setCompleteModalVisible(false);
+                  setTaskToComplete(null);
+                  setCompleteNotes('');
+                  setPreviewActualMinutes(null);
+                }}
+              >
+                <Text style={[styles.modalBtnText, styles.modalBtnCancelText]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, styles.modalBtnConfirm]} onPress={confirmComplete}>
+                <Text style={[styles.modalBtnText, styles.modalBtnConfirmText]}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <IssueDetailsModal visible={showIssueModal} issue={selectedIssue} onClose={() => setShowIssueModal(false)} />
       <QCModal
         visible={!!qcModalVisible.visible}
@@ -944,9 +1124,41 @@ const removePhoto = (taskId: string, index: number) => {
         await updateWorkOrderPart(workOrder.id, inventoryItemId, { installedAt: now, quantityUsed, notes }, token || "");
       }
 
-      // Refresh work order from server
-      const refreshed = await fetchWorkOrderDetails(workOrder.id, token || "");
+      // If the installer included a photo, upload it as a WORK ORDER attachment
+      // with category PART_INSTALLATION. Include some metadata in the description so
+      // we can associate the attachment to the specific part when rendering.
+      if (photo && photo.uri) {
+        try {
+          const supabaseUserId = await getSupabaseUserId();
+          const attachmentMeta = {
+            type: 'PART_INSTALLATION',
+            partId: partId || inventoryItemId,
+            notes: notes || '',
+          };
+          await uploadWorkOrderAttachment(
+            workOrder.id,
+            { uri: photo.uri, fileName: photo.fileName, type: photo.type },
+            JSON.stringify(attachmentMeta),
+            'PART_INSTALLATION',
+            token || '',
+            supabaseUserId || null
+          );
+        } catch (attErr: any) {
+          console.warn('Failed to upload part installation attachment', attErr);
+          // don't block the success of part installation; notify user
+          Alert.alert('Attachment upload failed', attErr?.message || 'Failed to upload part photo');
+        }
+      }
+
+      // Refresh work order and attachments from server
+      const refreshed = await fetchWorkOrderDetails(workOrder.id, token || '');
       if (refreshed) setFetchedWorkOrder(mapWorkOrderApiToUi(refreshed));
+      try {
+        const atts = await fetchWorkOrderAttachments(workOrder.id, token || '');
+        setWorkOrderAttachments(atts || []);
+      } catch (attErr) {
+        console.warn('Failed to refresh attachments after part install', attErr);
+      }
 
       Alert.alert("Success", "Part marked as installed");
     } catch (err: any) {
@@ -1015,6 +1227,12 @@ const styles = StyleSheet.create({
   addPhotoDotted: { width: 80, height: 80, borderRadius: 12, borderWidth: 2, borderStyle: "dashed", borderColor: "#ccc", justifyContent: "center", alignItems: "center", marginRight: 8, backgroundColor: "#fafafa" },
   addPhotoText: { fontSize: 10, color: "#8c8a8aff", marginTop: 6, textAlign: "center" },
   docPhoto: { width: 80, height: 80, borderRadius: 12 },
+  attachmentThumb: { width: 80, height: 80, borderRadius: 8, backgroundColor: '#fafafa' },
+  attachmentsContainer: { marginLeft: 6, marginRight: 8 },
+  documentsTitle: { fontSize: 13, fontWeight: '700', marginBottom: 8 },
+  attachmentItem: { alignItems: 'center', marginRight: 12 },
+  attachmentLabel: { fontSize: 11, color: '#444', marginTop: 6, maxWidth: 80, textAlign: 'center' },
+  attachmentCategory: { fontSize: 11, color: '#777', marginTop: 2, maxWidth: 80, textAlign: 'center' },
   issueHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   newIssueBtn: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.techPrimary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   newIssueBtnText: { color: "#fff", fontWeight: "600", fontSize: 12, marginLeft: 6 },
@@ -1067,5 +1285,18 @@ readyBtnText: {
   fontWeight: "700",
   fontSize: 16,
 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalContainer: { backgroundColor: '#fff', padding: 16, borderTopLeftRadius: 12, borderTopRightRadius: 12, minHeight: 180 },
+  modalTitle: { fontSize: 16, fontWeight: '700', marginBottom: 6 },
+  modalSubtitle: { color: '#555', marginBottom: 10, fontSize: 13 },
+  modalPreview: { marginBottom: 8, fontWeight: '600', color: '#222' },
+  modalInput: { borderWidth: 1, borderColor: '#e6e6e6', borderRadius: 8, padding: 8, textAlignVertical: 'top', minHeight: 70, backgroundColor: '#fafafa' },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 },
+  modalBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, marginLeft: 8, minWidth: 90, alignItems: 'center' },
+  modalBtnText: { fontWeight: '700' },
+  modalBtnCancel: { backgroundColor: '#eee' },
+  modalBtnCancelText: { color: '#333' },
+  modalBtnConfirm: { backgroundColor: Colors.techPrimary },
+  modalBtnConfirmText: { color: '#fff' },
 
 });
