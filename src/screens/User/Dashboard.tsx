@@ -111,6 +111,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 serviceStatus: vehicle.serviceStatus || 'good' as const,
               }));
               console.log('✅ Formatted vehicles:', formattedVehicles.length);
+              console.log('🔍 DEBUG: Setting realVehicles to:', formattedVehicles);
               setRealVehicles(formattedVehicles);
             } else {
               console.log('⚠️ No vehicles data or invalid format');
@@ -137,6 +138,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         try {
           console.log('📡 Fetching appointments for customerId:', user.customerId || user.id);
           const customerId = user.customerId || user.id;
+          console.log('📡 Appointments API URL:', `http://10.0.2.2:3000/appointments?customerId=${customerId}`);
           const appointmentsRes = await fetch(`http://10.0.2.2:3000/appointments?customerId=${customerId}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -146,10 +148,16 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           });
 
           console.log('📡 Appointments response status:', appointmentsRes.status);
+          console.log('📡 Appointments response ok:', appointmentsRes.ok);
 
           if (appointmentsRes.ok) {
             const appointmentsData = await appointmentsRes.json();
             console.log('✅ Appointments data received:', appointmentsData);
+            console.log('✅ Appointments data structure:', {
+              hasData: !!appointmentsData.data,
+              dataType: typeof appointmentsData.data,
+              dataLength: appointmentsData.data?.length || 0
+            });
 
             if (appointmentsData.data && Array.isArray(appointmentsData.data)) {
               const appointments = appointmentsData.data;
@@ -174,12 +182,15 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 active: activeServices,
                 scheduled: scheduledServices
               });
+              console.log('🔍 DEBUG: realVehicles state at stats calc:', realVehicles.length, 'vehicles');
+              // console.log('🔍 DEBUG: formattedVehicles from API:', formattedVehicles?.length || 0, 'vehicles');
 
               setDashboardStats({
                 vehicles: totalVehicles,
                 active: activeServices,
                 scheduled: scheduledServices
               });
+              console.log('🔍 DEBUG: dashboardStats set to:', { vehicles: totalVehicles, active: activeServices, scheduled: scheduledServices });
 
               // Format recent services (show all appointments, not just first 3)
               const formattedServices: ServiceStatus[] = appointments.map((apt: any) => ({

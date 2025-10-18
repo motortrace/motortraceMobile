@@ -277,6 +277,10 @@ const ReservationsScreen = () => {
         return Colors.warning;
       case 'paid':
         return Colors.success;
+      case 'unpaid':
+        return '#d97706'; // Dark yellow for unpaid
+      case 'completed':
+        return Colors.success;
       default:
         return Colors.neutral500;
     }
@@ -289,8 +293,8 @@ const ReservationsScreen = () => {
           <Text style={styles.customerName}>{item.vehicleInfo}</Text>
           <Text style={styles.customerInfo}>{item.Numberplate}</Text>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
-          <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status.toLowerCase()) + '20' }]}>
+          <Text style={[styles.statusText, { color: getStatusColor(item.status.toLowerCase()) }]}>
             {item.status.replace('_', ' ').toUpperCase()}
           </Text>
         </View>
@@ -409,38 +413,74 @@ const ReservationsScreen = () => {
     </TouchableOpacity>
   );
 
-  const renderWorkOrderCard = ({ item }) => (
-    <View style={styles.reservationCard}>
-      <View style={styles.cardHeader}>
-        <View style={styles.customerInfo}>
-          <Text style={styles.customerName}>{item.workOrderNumber}</Text>
-          <Text style={styles.vehicleInfo}>{item.vehicleInfo}</Text>
+  const renderWorkOrderCard = ({ item }) => {
+    // Check if work order has unpaid payments
+    const hasUnpaidPayments = item.payments && item.payments.some((payment: any) => payment.status !== 'PAID');
+
+    return (
+      <View style={styles.reservationCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.customerInfo}>
+            <Text style={styles.customerName}>{item.workOrderNumber}</Text>
+            <Text style={styles.vehicleInfo}>{item.vehicleInfo}</Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(hasUnpaidPayments ? 'unpaid' : item.status.toLowerCase()) + '20' }]}>
+            <Text style={[styles.statusText, { color: getStatusColor(hasUnpaidPayments ? 'unpaid' : item.status.toLowerCase()) }]}>
+              {hasUnpaidPayments ? 'UNPAID' : item.status.replace('_', ' ').toUpperCase()}
+            </Text>
+          </View>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
-          <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-            {item.status.replace('_', ' ').toUpperCase()}
-          </Text>
+
+        <View style={styles.serviceInfo}>
+          <Text style={styles.serviceType}>Job Type: {item.jobType}</Text>
+        </View>
+
+        <View style={styles.cardActions}>
+          <BorderButton label="View" icon="eye" style={{width: '100%'}} onPress={() => {
+            navigation.navigate('WorkOrderDetail', { workOrder: item });
+          }} />
         </View>
       </View>
-      
-      <View style={styles.serviceInfo}>
-        <Text style={styles.serviceType}>Job Type: {item.jobType}</Text>
-      </View>
-      
-      <View style={styles.cardActions}>
-        <BorderButton label="View" icon="eye" style={{width: '100%'}} onPress={() => {
-          navigation.navigate('WorkOrderDetail', { workOrder: item });
-        }} />
-      </View>
-    </View>
-  );
+    );
+  };
 
   const renderOngoingReservation = ({ item }) => {
     return renderWorkOrderCard({ item });
   };
 
   const renderCompletedReservation = ({ item }) => {
-    return renderWorkOrderCard({ item });
+    // Check if work order has unpaid payments
+    const hasUnpaidPayments = item.payments && item.payments.some((payment: any) => payment.status !== 'PAID');
+
+    return (
+      <View style={styles.reservationCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.customerInfo}>
+            <Text style={styles.customerName}>{item.workOrderNumber}</Text>
+            <Text style={styles.vehicleInfo}>{item.vehicleInfo}</Text>
+          </View>
+          <View style={[styles.statusBadge, {
+            backgroundColor: hasUnpaidPayments ? '#fef3c7' : '#dcfce7' // Light yellow for unpaid, light green for paid
+          }]}>
+            <Text style={[styles.statusText, {
+              color: hasUnpaidPayments ? '#d97706' : '#16a34a' // Dark yellow for unpaid, dark green for paid
+            }]}>
+              {hasUnpaidPayments ? 'UNPAID' : 'COMPLETED'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.serviceInfo}>
+          <Text style={styles.serviceType}>Job Type: {item.jobType}</Text>
+        </View>
+
+        <View style={styles.cardActions}>
+          <BorderButton label="View" icon="eye" style={{width: '100%'}} onPress={() => {
+            navigation.navigate('WorkOrderDetail', { workOrder: item });
+          }} />
+        </View>
+      </View>
+    );
   };
 
   const renderTabButton = (tabName, label, count) => (

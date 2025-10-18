@@ -20,6 +20,8 @@ import Header from '../../components/Header';
 import LoadingComponent from '../../components/Loading';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useStripe, initStripe } from '@stripe/stripe-react-native';
+import CustomAlert from '../../components/Alert';
 
 type WorkOrderDetailRouteProp = RouteProp<RootStackParamList, 'WorkOrderDetail'>;
 type WorkOrderDetailNavigationProp = StackNavigationProp<RootStackParamList, 'WorkOrderDetail'>;
@@ -31,6 +33,10 @@ const WorkOrderDetail = () => {
   const [detailedWorkOrder, setDetailedWorkOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<any>({});
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   useEffect(() => {
     const fetchDetailedWorkOrder = async () => {
@@ -39,7 +45,14 @@ const WorkOrderDetail = () => {
         const token = await AsyncStorage.getItem('token');
 
         if (!token) {
-          Alert.alert('Error', 'Authentication required');
+          setAlertConfig({
+            title: 'Authentication Error',
+            message: 'Authentication required',
+            type: 'error',
+            buttonType: 'single',
+            confirmText: 'OK',
+          });
+          setAlertVisible(true);
           navigation.goBack();
           return;
         }
@@ -63,12 +76,26 @@ const WorkOrderDetail = () => {
             console.log('🔍 Last approval ID:', data.data.approvals[data.data.approvals.length - 1].id);
           }
         } else {
-          Alert.alert('Error', 'Failed to fetch work order details');
+          setAlertConfig({
+            title: 'Error',
+            message: 'Failed to fetch work order details',
+            type: 'error',
+            buttonType: 'single',
+            confirmText: 'OK',
+          });
+          setAlertVisible(true);
           navigation.goBack();
         }
       } catch (error) {
         console.error('Error fetching work order details:', error);
-        Alert.alert('Error', 'Failed to fetch work order details');
+        setAlertConfig({
+          title: 'Error',
+          message: 'Failed to fetch work order details',
+          type: 'error',
+          buttonType: 'single',
+          confirmText: 'OK',
+        });
+        setAlertVisible(true);
         navigation.goBack();
       } finally {
         setIsLoading(false);
@@ -241,6 +268,7 @@ const WorkOrderDetail = () => {
 
     switch (status?.toUpperCase()) {
       case 'PENDING':
+      case 'ESTIMATED':
         backgroundColor = '#fef3c7'; // Light yellow
         textColor = '#d97706'; // Dark yellow
         break;
@@ -249,6 +277,7 @@ const WorkOrderDetail = () => {
         textColor = '#16a34a'; // Dark green
         break;
       case 'DECLINED':
+      case 'REJECTED':
         backgroundColor = '#fecaca'; // Light red
         textColor = '#dc2626'; // Dark red
         break;
@@ -340,12 +369,26 @@ const WorkOrderDetail = () => {
           console.log('🔍 URL opened successfully with Linking');
         } else {
           console.log('🔍 URL not supported by Linking');
-          Alert.alert('Error', 'Cannot open PDF. Please check your browser settings.');
+          setAlertConfig({
+            title: 'Error',
+            message: 'Cannot open PDF. Please check your browser settings.',
+            type: 'error',
+            buttonType: 'single',
+            confirmText: 'OK',
+          });
+          setAlertVisible(true);
         }
       }
     } catch (error) {
       console.error('❌ Error opening PDF:', error);
-      Alert.alert('Error', 'Failed to open PDF');
+      setAlertConfig({
+        title: 'Error',
+        message: 'Failed to open PDF',
+        type: 'error',
+        buttonType: 'single',
+        confirmText: 'OK',
+      });
+      setAlertVisible(true);
     }
   };
 
@@ -394,7 +437,14 @@ const WorkOrderDetail = () => {
           const updatedData = await updatedResponse.json();
           if (updatedData.success) {
             setDetailedWorkOrder(updatedData.data);
-            Alert.alert('Success', 'Estimate approved successfully');
+            setAlertConfig({
+              title: 'Success',
+              message: 'Estimate approved successfully',
+              type: 'success',
+              buttonType: 'single',
+              confirmText: 'OK',
+            });
+            setAlertVisible(true);
           }
         }
       } else {
@@ -433,20 +483,216 @@ const WorkOrderDetail = () => {
             'Content-Type': 'application/json',
           },
         });
-        
+
         if (updatedResponse.ok) {
           const updatedData = await updatedResponse.json();
           if (updatedData.success) {
             setDetailedWorkOrder(updatedData.data);
-            Alert.alert('Success', 'Estimate rejected successfully');
+            setAlertConfig({
+              title: 'Success',
+              message: 'Estimate rejected successfully',
+              type: 'success',
+              buttonType: 'single',
+              confirmText: 'OK',
+            });
+            setAlertVisible(true);
           }
         }
       } else {
-        Alert.alert('Error', 'Failed to reject estimate');
+        setAlertConfig({
+          title: 'Error',
+          message: 'Failed to reject estimate',
+          type: 'error',
+          buttonType: 'single',
+          confirmText: 'OK',
+        });
+        setAlertVisible(true);
       }
     } catch (error) {
       console.error('Error rejecting estimate:', error);
       Alert.alert('Error', 'Failed to reject estimate');
+    }
+  };
+
+  const approveService = async (serviceId: string) => {
+    try {
+      console.log('🔍 approveService called with serviceId:', serviceId);
+      console.log('🔍 serviceId type:', typeof serviceId);
+      console.log('🔍 serviceId length:', serviceId?.length);
+
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔍 Token retrieved from AsyncStorage:', token ? 'Present' : 'Missing');
+      console.log('🔍 Token length:', token?.length);
+
+      if (!token) {
+        console.log('🔍 No token found, showing auth error');
+        Alert.alert('Error', 'Authentication required');
+        return;
+      }
+
+      const url = `http://10.0.2.2:3000/work-orders/services/${serviceId}/approve`;
+      console.log('🔍 Full URL:', url);
+      console.log('🔍 Request method: POST');
+
+      const requestBody = JSON.stringify({
+        notes: 'Approved via mobile app',
+      });
+      console.log('🔍 Request body:', requestBody);
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+      console.log('🔍 Request headers:', {
+        'Authorization': `Bearer ${token.substring(0, 20)}...`, // Partial token for security
+        'Content-Type': headers['Content-Type']
+      });
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: requestBody,
+      });
+
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response statusText:', response.statusText);
+      console.log('🔍 Response ok:', response.ok);
+      console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()));
+
+      const responseText = await response.text();
+      console.log('🔍 Raw response text:', responseText);
+
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+        console.log('🔍 Parsed response data:', responseData);
+      } catch (parseError) {
+        console.log('🔍 Failed to parse response as JSON:', parseError);
+      }
+
+      if (response.ok) {
+        console.log('🔍 Response OK, refreshing work order data');
+
+        // Refresh the work order data
+        const refreshUrl = `http://10.0.2.2:3000/work-orders/${workOrder.id}`;
+        console.log('🔍 Refresh URL:', refreshUrl);
+
+        const updatedResponse = await fetch(refreshUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        console.log('🔍 Refresh response status:', updatedResponse.status);
+        console.log('🔍 Refresh response ok:', updatedResponse.ok);
+
+        if (updatedResponse.ok) {
+          const updatedData = await updatedResponse.json();
+          console.log('🔍 Refresh data success:', updatedData.success);
+          if (updatedData.success) {
+            console.log('🔍 Setting updated work order data');
+            setDetailedWorkOrder(updatedData.data);
+            setAlertConfig({
+              title: 'Success',
+              message: 'Service approved successfully',
+              type: 'success',
+              buttonType: 'single',
+              confirmText: 'OK',
+            });
+            setAlertVisible(true);
+          } else {
+            console.log('🔍 Refresh data not successful:', updatedData);
+          }
+        } else {
+          console.log('🔍 Refresh request failed');
+          const refreshText = await updatedResponse.text();
+          console.log('🔍 Refresh response text:', refreshText);
+        }
+      } else {
+        console.log('🔍 Response not OK, showing error alert');
+        setAlertConfig({
+          title: 'Error',
+          message: `Failed to approve service (${response.status})`,
+          type: 'error',
+          buttonType: 'single',
+          confirmText: 'OK',
+        });
+        setAlertVisible(true);
+      }
+    } catch (error) {
+      console.error('❌ Error approving service:', error);
+      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'Unknown error');
+      setAlertConfig({
+        title: 'Error',
+        message: 'Failed to approve service',
+        type: 'error',
+        buttonType: 'single',
+        confirmText: 'OK',
+      });
+      setAlertVisible(true);
+    }
+  };
+
+  const rejectService = async (serviceId: string) => {
+    try {
+      console.log('🔍 rejectService called with serviceId:', serviceId);
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'Authentication required');
+        return;
+      }
+
+      const response = await fetch(`http://10.0.2.2:3000/work-orders/services/${serviceId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reason: 'Rejected via mobile app',
+        }),
+      });
+
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response ok:', response.ok);
+
+      if (response.ok) {
+        // Refresh the work order data
+        const updatedResponse = await fetch(`http://10.0.2.2:3000/work-orders/${workOrder.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (updatedResponse.ok) {
+          const updatedData = await updatedResponse.json();
+          if (updatedData.success) {
+            setDetailedWorkOrder(updatedData.data);
+            setAlertConfig({
+              title: 'Success',
+              message: 'Service rejected successfully',
+              type: 'success',
+              buttonType: 'single',
+              confirmText: 'OK',
+            });
+            setAlertVisible(true);
+          }
+        }
+      } else {
+        Alert.alert('Error', `Failed to reject service (${response.status})`);
+      }
+    } catch (error) {
+      console.error('Error rejecting service:', error);
+      setAlertConfig({
+        title: 'Error',
+        message: 'Failed to reject service',
+        type: 'error',
+        buttonType: 'single',
+        confirmText: 'OK',
+      });
+      setAlertVisible(true);
     }
   };
 
@@ -539,22 +785,24 @@ const WorkOrderDetail = () => {
         </View>
       </View>
 
-      {/* Financial Summary */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Financial Summary</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Total Amount:</Text>
-          <Text style={styles.value}>{formatCurrency(wo.totalAmount)}</Text>
+      {/* Financial Summary - Only show if Total Amount is not 0 */}
+      {wo.totalAmount && wo.totalAmount !== 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Financial Summary</Text>
+          <View style={styles.row}>
+            <Text style={styles.label}>Total Amount:</Text>
+            <Text style={styles.value}>{formatCurrency(wo.totalAmount)}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Paid Amount:</Text>
+            <Text style={styles.value}>{formatCurrency(wo.paidAmount)}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Payment Status:</Text>
+            <Text style={styles.value}>{wo.paymentStatus}</Text>
+          </View>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Paid Amount:</Text>
-          <Text style={styles.value}>{formatCurrency(wo.paidAmount)}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Payment Status:</Text>
-          <Text style={styles.value}>{wo.paymentStatus}</Text>
-        </View>
-      </View>
+      )}
 
       {/* Service Advisor */}
       <View style={styles.section}>
@@ -769,14 +1017,75 @@ const WorkOrderDetail = () => {
         {(() => {
           console.log('🔍 renderEstimatesTab - wo.approvals:', wo.approvals);
           console.log('🔍 renderEstimatesTab - approvals length:', wo.approvals?.length);
+          console.log('🔍 renderEstimatesTab - wo.services:', wo.services);
           return null;
         })()}
+
+        {/* Show all services sorted by status (pending first) */}
+        {wo.services && wo.services.length > 0 && (
+          <View style={{ marginBottom: 20 }}>
+            <Text style={[styles.sectionTitle, { fontSize: 16, marginBottom: 12 }]}>All Services</Text>
+            {wo.services
+              .sort((a: any, b: any) => {
+                // Sort by status: ESTIMATED (pending) first, then others
+                if (a.status === 'ESTIMATED' && b.status !== 'ESTIMATED') return -1;
+                if (a.status !== 'ESTIMATED' && b.status === 'ESTIMATED') return 1;
+                return 0;
+              })
+              .map((service: any, idx: number) => (
+                <View key={service.id || idx} style={[styles.serviceItem, { marginBottom: 12 }]}>
+                  <View style={styles.serviceHeader}>
+                    <View style={styles.serviceInfo}>
+                      <Text style={styles.serviceName}>{service.cannedService?.name || service.description}</Text>
+                      <Text style={styles.serviceDescription}>{service.description}</Text>
+                    </View>
+                    <View style={styles.serviceMeta}>
+                      <Text style={styles.serviceSubtotal}>{formatCurrency(service.subtotal)}</Text>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        {renderApprovalStatusBadge(service.customerApproved === true ? 'APPROVED' : service.customerApproved === false ? 'DECLINED' : 'PENDING')}
+                      </View>
+                    </View>
+                  </View>
+                  <View style={styles.serviceDetails}>
+                    <View style={styles.row}>
+                      <Text style={styles.label}>Quantity:</Text>
+                      <Text style={styles.value}>{service.quantity}</Text>
+                    </View>
+                    <View style={styles.row}>
+                      <Text style={styles.label}>Unit Price:</Text>
+                      <Text style={styles.value}>{formatCurrency(service.unitPrice)}</Text>
+                    </View>
+                  </View>
+                  {/* Show buttons only for pending services */}
+                  {service.status === 'ESTIMATED' && (
+                    <View style={styles.buttonContainer}>
+                      <TouchableOpacity
+                        style={styles.approveButton}
+                        onPress={() => approveService(service.id)}
+                      >
+                        <Text style={styles.approveButtonText}>Accept</Text>
+                        <Icon name="checkmark-circle-outline" size={16} color={Colors.neutral0} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.rejectButton}
+                        onPress={() => rejectService(service.id)}
+                      >
+                        <Text style={styles.rejectButtonText}>Reject</Text>
+                        <Icon name="close-circle-outline" size={16} color={Colors.neutral0} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              ))}
+          </View>
+        )}
+
         {wo.approvals && wo.approvals.length > 0 ? (
           wo.approvals.map((approval: any, idx: number) => {
             const isLatest = idx === wo.approvals.length - 1;
             console.log('Approval:', idx, 'Status:', approval.status, 'isLatest:', isLatest);
             return (
-              <View key={approval.id} style={[styles.serviceItem, { marginBottom: 16 }]}> 
+              <View key={approval.id} style={[styles.serviceItem, { marginBottom: 16 }]}>
                 <View style={styles.row}>
                   <Text style={styles.label}>Status:</Text>
                   <View style={{ flex: 2, alignItems: 'flex-end' }}>
@@ -825,13 +1134,15 @@ const WorkOrderDetail = () => {
                         approveApproval(approval.id);
                       }}
                     >
-                      <Icon name="checkmark-circle-outline" size={24} color={Colors.neutral900} />
+                      <Text style={styles.approveButtonText}>Accept Services</Text>
+                      <Icon name="checkmark-circle-outline" size={20} color={Colors.neutral0} />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.rejectButton}
                       onPress={() => rejectApproval(approval.id)}
                     >
-                      <Icon name="close-circle-outline" size={24} color={Colors.neutral900} />
+                      <Text style={styles.rejectButtonText}>Reject Services</Text>
+                      <Icon name="close-circle-outline" size={20} color={Colors.neutral0} />
                     </TouchableOpacity>
                   </View>
                 )}
@@ -844,6 +1155,159 @@ const WorkOrderDetail = () => {
       </View>
     </ScrollView>
   );
+
+  const initializeStripe = async () => {
+    // Initialize Stripe with publishable key
+    await initStripe({
+      publishableKey: 'pk_test_51SJY98PAm1s4oBYTENNlx88igfvRPEBkxDDn2828qUVpZQKiMcGIpTcmNrn8PXSPoFNgbudcN8KqfhgTbyOpgJdF00s0jxUvGe',
+    });
+  };
+
+  const processStripePayment = async (payment: any) => {
+    try {
+      setIsProcessingPayment(true);
+
+      // Initialize Stripe if not already done
+      await initializeStripe();
+
+      // Create payment intent from backend
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        setAlertConfig({
+          title: 'Error',
+          message: 'Authentication required',
+          type: 'error',
+          buttonType: 'single',
+          confirmText: 'OK',
+        });
+        setAlertVisible(true);
+        return;
+      }
+
+      const response = await fetch(`http://10.0.2.2:3000/payments/payment-intents`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workOrderId: workOrder.id,
+          amount: payment.amount,
+          currency: 'USD',
+        }),
+      });
+
+      if (response.ok) {
+        const paymentIntentData = await response.json();
+        console.log('Payment intent created:', paymentIntentData);
+
+        // Initialize payment sheet
+        const { error } = await initPaymentSheet({
+          paymentIntentClientSecret: paymentIntentData.data.clientSecret,
+          merchantDisplayName: 'MotorTrace Auto Service',
+          returnURL: 'motortrace://stripe-redirect',
+        });
+
+        if (error) {
+          console.error('Error initializing payment sheet:', error);
+          setAlertConfig({
+            title: 'Error',
+            message: 'Failed to initialize payment',
+            type: 'error',
+            buttonType: 'single',
+            confirmText: 'OK',
+          });
+          setAlertVisible(true);
+          return;
+        }
+
+        // Present payment sheet
+        const { error: presentError } = await presentPaymentSheet();
+
+        if (presentError) {
+          console.error('Payment sheet error:', presentError);
+          setAlertConfig({
+            title: 'Payment Failed',
+            message: presentError.message || 'Payment was cancelled or failed',
+            type: 'error',
+            buttonType: 'single',
+            confirmText: 'OK',
+          });
+          setAlertVisible(true);
+          return;
+        }
+
+        // Payment successful, update payment status
+        const completeResponse = await fetch(`http://10.0.2.2:3000/payments/${payment.id}/complete`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: 'PAID',
+            reference: `STRIPE-${Date.now()}`,
+            notes: 'Payment completed via Stripe'
+          }),
+        });
+
+        if (completeResponse.ok) {
+          // Refresh work order data
+          const updatedResponse = await fetch(`http://10.0.2.2:3000/work-orders/${workOrder.id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (updatedResponse.ok) {
+            const updatedData = await updatedResponse.json();
+            if (updatedData.success) {
+              setDetailedWorkOrder(updatedData.data);
+              setAlertConfig({
+                title: 'Success',
+                message: 'Payment completed successfully!',
+                type: 'success',
+                buttonType: 'single',
+                confirmText: 'OK',
+              });
+              setAlertVisible(true);
+            }
+          }
+        } else {
+          setAlertConfig({
+            title: 'Error',
+            message: 'Failed to update payment status',
+            type: 'error',
+            buttonType: 'single',
+            confirmText: 'OK',
+          });
+          setAlertVisible(true);
+        }
+      } else {
+        setAlertConfig({
+          title: 'Error',
+          message: 'Failed to create payment intent',
+          type: 'error',
+          buttonType: 'single',
+          confirmText: 'OK',
+        });
+        setAlertVisible(true);
+      }
+    } catch (error) {
+      console.error('Error processing Stripe payment:', error);
+      setAlertConfig({
+        title: 'Error',
+        message: 'Payment processing failed',
+        type: 'error',
+        buttonType: 'single',
+        confirmText: 'OK',
+      });
+      setAlertVisible(true);
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
 
   const renderPaymentsTab = () => (
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -870,6 +1334,21 @@ const WorkOrderDetail = () => {
                 <Text style={styles.label}>Processed By:</Text>
                 <Text style={styles.value}>{payment.processedBy?.userProfile?.firstName} {payment.processedBy?.userProfile?.lastName}</Text>
               </View>
+              {/* Show Pay Now button for pending payments */}
+              {payment.status === 'PENDING' && (
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={styles.payButton}
+                    onPress={() => processStripePayment(payment)}
+                    disabled={isProcessingPayment}
+                  >
+                    <Icon name="card-outline" size={16} color={Colors.neutral0} />
+                    <Text style={styles.payButtonText}>
+                      {isProcessingPayment ? 'Processing...' : 'Pay Now (Stripe)'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           ))
         ) : (
@@ -985,6 +1464,17 @@ const WorkOrderDetail = () => {
 
       {/* Tab Content */}
       {renderCurrentTab()}
+
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        buttonType={alertConfig.buttonType}
+        confirmText={alertConfig.confirmText}
+        onClose={() => setAlertVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -1252,7 +1742,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#dcfce7', // Light green
+    backgroundColor: '#16a34a', // Dark green
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -1273,7 +1763,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fecaca', // Light red
+    backgroundColor: '#dc2626', // Dark red
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -1281,6 +1771,22 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   rejectButtonText: {
+    color: Colors.neutral0,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  payButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flex: 1,
+  },
+  payButtonText: {
     color: Colors.neutral0,
     fontSize: 14,
     fontWeight: '600',
@@ -1336,6 +1842,90 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: Colors.neutral0,
+    borderRadius: 12,
+    padding: 20,
+    margin: 20,
+    width: '90%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.neutral900,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  paymentDetails: {
+    marginBottom: 20,
+  },
+  paymentAmount: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.primary,
+    marginBottom: 8,
+  },
+  paymentDescription: {
+    fontSize: 14,
+    color: Colors.neutral600,
+  },
+  cardFieldContainer: {
+    marginBottom: 20,
+  },
+  cardField: {
+    width: '100%',
+    height: 50,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: Colors.neutral200,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginRight: 8,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: Colors.neutral700,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmButton: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginLeft: 8,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: Colors.neutral0,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });
 
