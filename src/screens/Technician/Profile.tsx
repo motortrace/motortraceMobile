@@ -57,33 +57,53 @@ export default function ProfileScreen({ navigation }: any) {
         }
         if (mounted) setTechnicianId(techId);
 
-        // Use the detailed technician endpoint (returns profile + stats + recentWorkOrders)
-        const details = await fetchTechnicianDetails(techId, token);
+  // Use the detailed technician endpoint (returns profile + stats + recentWorkOrders)
+  const details = await fetchTechnicianDetails(techId, token);
+  console.debug('[Profile] fetchTechnicianDetails result', { details });
 
-        // Fetch completed work orders count by requesting work-orders?status=COMPLETED
-        const completedWOs = await fetchTechnicianWorkOrders(techId, token, 'COMPLETED');
+  // Fetch all work orders for this technician so we can compute totals and completed labor
+  const allWorkOrders = await fetchTechnicianWorkOrders(techId, token);
+  console.debug('[Profile] fetchTechnicianWorkOrders result (all)', { length: Array.isArray(allWorkOrders) ? allWorkOrders.length : 'not-array', sample: Array.isArray(allWorkOrders) ? allWorkOrders[0] : allWorkOrders });
 
-        // Fetch inspections assigned to this technician
-        const ins = await fetchTechnicianInspections(techId, token);
+  // Fetch inspections assigned to this technician
+  const ins = await fetchTechnicianInspections(techId, token);
+  console.debug('[Profile] fetchTechnicianInspections result', { length: Array.isArray(ins) ? ins.length : 'not-array', sample: Array.isArray(ins) ? ins[0] : ins });
 
         if (mounted) {
-          // details.recentWorkOrders and inspections list are available if needed
+          // Compute total work orders
+          const totalWorkOrders = Array.isArray(allWorkOrders) ? allWorkOrders.length : 0;
 
-          // compute counts using server-provided stats when available
-          const totalWorkOrders = Array.isArray(completedWOs) ? completedWOs.length : 0;
-          const completedTasks = details?.stats?.totalTasksCompleted ?? 0;
+          // Compute completed work order labor count. Prefer server stats if available.
+          let completedTasks = details?.stats?.totalTasksCompleted ?? 0;
+          if ((!completedTasks || completedTasks === 0) && Array.isArray(allWorkOrders)) {
+            try {
+              completedTasks = allWorkOrders.reduce((acc: number, wo: any) => {
+                const laborItems = wo.laborItems || wo.tasks || [];
+                const completed = (laborItems || []).filter((li: any) => li.status === 'COMPLETED').length;
+                return acc + completed;
+              }, 0);
+            } catch (e) {
+              completedTasks = completedTasks || 0;
+            }
+          }
+
           const inspectionsCompleted = (ins || []).filter((i: any) => i.isCompleted === true || i.status === 'COMPLETED' || i.completedAt).length || (ins || []).length;
 
           setCounts({ totalWorkOrders, completedTasks, inspections: inspectionsCompleted });
 
           // Fill profile fields from details or fallback to user
           setProfile({
-            name: details?.userProfile?.name || user?.email || 'Technician',
+            name:
+              details?.userProfile?.fullName ||
+              details?.userProfile?.name ||
+              (details?.userProfile?.firstName ? `${details.userProfile.firstName} ${details.userProfile.lastName || ''}`.trim() : null) ||
+              user?.email ||
+              'Technician',
             id: details?.id || techId,
             email: details?.userProfile?.email || user?.email || '',
-            phone: details?.userProfile?.phone || '',
-            avatar: details?.userProfile?.profileImage || undefined,
-            joined: details?.createdAt || undefined,
+            phone: details?.userProfile?.phone || details?.userProfile?.mobile || '',
+            avatar: details?.userProfile?.profileImage || details?.userProfile?.avatarUrl || undefined,
+            joined: details?.createdAt || details?.userProfile?.createdAt || undefined,
             role: details?.userProfile?.role || 'Technician',
           });
         }
