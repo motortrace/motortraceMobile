@@ -150,6 +150,7 @@ const Cars = () => {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
+            'x-client-type': 'mobile',
           },
         });
 
@@ -175,6 +176,7 @@ const Cars = () => {
                   headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
+                    'x-client-type': 'mobile',
                   },
                 });
                 if (mileageRes.ok) {

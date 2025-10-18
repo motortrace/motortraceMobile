@@ -25,13 +25,11 @@ const NotificationsScreen: React.FC = () => {
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
     try {
-      // const data = await notificationService.getNotifications();
-      // setNotifications(data);
-      // Temporary: set empty array for debugging
-      setNotifications([]);
+      const data = await notificationService.getNotifications();
+      setNotifications(data);
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      // Alert.alert('Error', 'Failed to load notifications');
+      Alert.alert('Error', 'Failed to load notifications');
     } finally {
       setRefreshing(false);
     }

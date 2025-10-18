@@ -31,7 +31,7 @@ const PackageCard: React.FC<PackageCardProps> = ({ title, description, services,
       <View style={styles.footer}>
         <Text style={styles.price}>{price}</Text>
         <View style={styles.buttonWrapper}>
-          <BorderButton label="Purchase" onPress={onPurchase} style={styles.purchaseButton} />
+          <BorderButton label="Book" onPress={onPurchase} style={styles.purchaseButton} />
         </View>
       </View>
     </TouchableOpacity>

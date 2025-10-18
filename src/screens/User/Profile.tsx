@@ -352,13 +352,40 @@ const UserProfileScreen = () => {
         },
       });
 
+      console.log('📡 Auth/me response status:', response.status);
+      console.log('📡 Auth/me response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error(`Auth/me failed with status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Auth/me error response:', errorText);
+        throw new Error(`Auth/me failed with status: ${response.status}, body: ${errorText}`);
       }
 
       const data = await response.json();
-      console.log('✅ Auth/me data received:', data);
-      return data;
+      console.log('✅ Auth/me raw data received:', JSON.stringify(data, null, 2));
+
+      // The auth/me endpoint returns data in this structure:
+      // { success: true, data: { ...userProfileData }, message: "..." }
+      const userData = data?.data;
+      console.log('✅ Auth/me userData structure:', {
+        hasData: !!userData,
+        dataKeys: userData ? Object.keys(userData) : [],
+        hasEmail: !!userData?.email,
+        hasRole: !!userData?.role,
+        hasName: !!userData?.name,
+        hasPhone: !!userData?.phone,
+        hasCreatedAt: !!userData?.createdAt,
+        hasProfileImage: !!userData?.profileImage,
+        emailValue: userData?.email,
+        roleValue: userData?.role,
+        nameValue: userData?.name,
+        phoneValue: userData?.phone,
+        createdAtValue: userData?.createdAt,
+        profileImageValue: userData?.profileImage,
+      });
+
+      // Return the nested data object, not the wrapper
+      return userData || data;
     } catch (error) {
       console.error('❌ Failed to fetch auth/me data:', error);
       throw error;
@@ -377,12 +404,30 @@ const UserProfileScreen = () => {
         },
       });
 
+      console.log('📡 Auth/header response status:', response.status);
+      console.log('📡 Auth/header response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error(`Auth/header failed with status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Auth/header error response:', errorText);
+        throw new Error(`Auth/header failed with status: ${response.status}, body: ${errorText}`);
       }
 
       const data = await response.json();
-      console.log('✅ Auth/header data received:', data);
+      console.log('✅ Auth/header raw data received:', JSON.stringify(data, null, 2));
+      console.log('✅ Auth/header data structure:', {
+        hasData: !!data,
+        dataKeys: data ? Object.keys(data) : [],
+        hasUser: !!data?.user,
+        hasSuccess: !!data?.success,
+        hasMessage: !!data?.message,
+        userKeys: data?.user ? Object.keys(data.user) : [],
+        userFullname: data?.user?.fullname,
+        userFullName: data?.user?.fullName,
+        userProfileImage: data?.user?.profile_image,
+        userProfileImageAlt: data?.user?.profileImage,
+        userIsRegistrationComplete: data?.user?.isRegistrationComplete,
+      });
       return data;
     } catch (error) {
       console.error('❌ Failed to fetch auth/header data:', error);
@@ -431,46 +476,64 @@ const UserProfileScreen = () => {
         throw new Error('Both API endpoints failed to return data');
       }
 
+      console.log('🔄 Combining data from both endpoints...');
+      console.log('🔄 Auth/me data available:', !!authData);
+      console.log('🔄 Auth/header data available:', !!headerData);
+
       // Combine and prioritize data from both endpoints
       const combinedData = {
-        // Primary data from auth/me endpoint
-        email: authData?.user?.email || authData?.email || '',
-        role: authData?.user?.role || authData?.role || '',
-        emailConfirmed: authData?.user?.emailConfirmed ?? authData?.emailConfirmed ?? false,
-        createdAt: authData?.user?.createdAt || authData?.createdAt || '',
-        lastSignIn: authData?.user?.lastSignIn || authData?.lastSignIn || '',
-        phoneNumber: authData?.user?.phone || authData?.user?.phoneNumber || authData?.phone || '0779991124',
-        
+        // Primary data from auth/me endpoint (this has the UserProfile data)
+        email: authData?.email || '',
+        role: authData?.role || '',
+        emailConfirmed: authData?.emailConfirmed ?? false,
+        createdAt: authData?.createdAt || '',
+        lastSignIn: authData?.lastSignIn || '',
+        phoneNumber: authData?.phone || '0779991124',
+        fullName: authData?.name || 'User',
+        profileImage: authData?.profileImage || '',
+
         // Display data from auth/header endpoint (fallback to auth/me if not available)
-        fullName: headerData?.user?.fullname || 
-                  headerData?.user?.fullName || 
-                  headerData?.fullname ||
-                  authData?.user?.fullName || 
-                  authData?.user?.name || 
-                  authData?.fullName ||
-                  'User',
-        
-        profileImage: headerData?.user?.profile_image || 
-                     headerData?.user?.profileImage || 
-                     headerData?.profile_image ||
-                     authData?.user?.profileImage || 
-                     authData?.profileImage ||
-                     '',
-        
+        fullNameDisplay: headerData?.user?.fullname ||
+                        headerData?.user?.fullName ||
+                        headerData?.fullname ||
+                        authData?.name ||
+                        'User',
+
+        profileImageDisplay: headerData?.user?.profile_image ||
+                            headerData?.user?.profileImage ||
+                            headerData?.profile_image ||
+                            authData?.profileImage ||
+                            '',
+
         // Additional flags
-        isRegistrationComplete: headerData?.user?.isRegistrationComplete ?? 
-                               authData?.user?.isRegistrationComplete ?? 
-                               true,
-        
+        isRegistrationComplete: headerData?.user?.isRegistrationComplete ??
+                                authData?.isRegistrationComplete ??
+                                true,
+
         // Formatted join date
-        joinDate: authData?.user?.createdAt || authData?.createdAt
-          ? `Member since ${new Date(authData.user?.createdAt || authData.createdAt).toLocaleDateString('en-US', {
+        joinDate: authData?.createdAt
+          ? `Member since ${new Date(authData.createdAt).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
             })}`
           : '',
       };
+
+      console.log('📊 Final combined data:', {
+        email: combinedData.email,
+        role: combinedData.role,
+        hasCreatedAt: !!combinedData.createdAt,
+        joinDate: combinedData.joinDate,
+        fullName: combinedData.fullName,
+        phoneNumber: combinedData.phoneNumber,
+        hasProfileImage: !!combinedData.profileImage,
+        isRegistrationComplete: combinedData.isRegistrationComplete,
+      });
+
+      // Use the display versions for UI, but keep the auth/me data for core fields
+      combinedData.fullName = combinedData.fullNameDisplay || combinedData.fullName;
+      combinedData.profileImage = combinedData.profileImageDisplay || combinedData.profileImage;
 
       console.log('📥 Combined profile data:', combinedData);
 

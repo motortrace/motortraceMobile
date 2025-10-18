@@ -147,6 +147,7 @@ const CarDetailsPage = () => {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
+          'x-client-type': 'mobile',
         },
       });
       
@@ -158,6 +159,7 @@ const CarDetailsPage = () => {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
+          'x-client-type': 'mobile',
         },
       });
       
@@ -171,6 +173,7 @@ const CarDetailsPage = () => {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
+            'x-client-type': 'mobile',
           },
         });
         if (mileageRes.ok) {
@@ -190,6 +193,7 @@ const CarDetailsPage = () => {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
+            'x-client-type': 'mobile',
           },
         });
         if (recommendationsRes.ok) {
@@ -481,6 +485,7 @@ const CarDetailsPage = () => {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
+          'x-client-type': 'mobile',
         },
       });
       const data = await res.json();
@@ -543,7 +548,7 @@ const CarDetailsPage = () => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Car Image & Basic Info */}
         <View style={styles.carImageSection}>
-          <Image source={{ uri: hardcodedCarData.image }} style={styles.carImage} />
+          <Image source={{ uri: car?.image || hardcodedCarData.image }} style={styles.carImage} />
           <View style={[styles.statusBadge, { backgroundColor: statusConfig.backgroundColor }]}>
             <Icon name={statusConfig.icon} size={16} color={statusConfig.color} />
             <Text style={[styles.statusText, { color: statusConfig.textColor }]}>

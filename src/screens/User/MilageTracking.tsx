@@ -146,25 +146,32 @@ const MileageTrackingScreen = () => {
 
         const user = JSON.parse(userStr);
 
-        // For now, we'll use the first vehicle. In a real app, you'd select a vehicle
-        // For demo purposes, let's assume we have a vehicle ID
-        const mockVehicleId = 'vehicle-123'; // This should come from vehicle selection
+        // Get the selected vehicle ID from AsyncStorage
+        const selectedCarId = await AsyncStorage.getItem('selectedCarId');
+        const vehicleId = selectedCarId || 'cmguqx8dx0001117o6cc7xwez'; // Use the specific vehicle ID provided
+
+        console.log('Fetching mileage data for vehicle:', vehicleId);
 
         try {
           // Fetch current mileage
-          const currentRes = await fetch(`http://10.0.2.2:3000/mileage-tracking/vehicles/${mockVehicleId}/current`, {
+          const currentRes = await fetch(`http://10.0.2.2:3000/mileage-tracking/vehicles/${vehicleId}/current`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
           });
 
+          console.log('Current mileage response status:', currentRes.status);
           if (currentRes.ok) {
             const currentData = await currentRes.json();
+            console.log('Current mileage data:', currentData);
             if (currentData.success && currentData.data) {
               setCurrentMileage(currentData.data.currentMileage);
               setEditMileage(currentData.data.currentMileage.toString());
             }
+          } else {
+            const errorData = await currentRes.json();
+            console.error('Current mileage error:', errorData);
           }
 
           // Fetch analytics data
@@ -175,10 +182,22 @@ const MileageTrackingScreen = () => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              vehicleId: mockVehicleId,
+              vehicleId: vehicleId,
               period: selectedPeriod
             })
           });
+
+          console.log('Analytics response status:', analyticsRes.status);
+          if (analyticsRes.ok) {
+            const analyticsData = await analyticsRes.json();
+            console.log('Analytics data:', analyticsData);
+            if (analyticsData.success) {
+              setAnalyticsData(analyticsData.data);
+            }
+          } else {
+            const errorData = await analyticsRes.json();
+            console.error('Analytics error:', errorData);
+          }
 
           if (analyticsRes.ok) {
             const analyticsData = await analyticsRes.json();
@@ -214,7 +233,10 @@ const MileageTrackingScreen = () => {
 
       try {
         const token = await AsyncStorage.getItem('token');
-        const mockVehicleId = 'vehicle-123'; // This should come from vehicle selection
+        const selectedCarId = await AsyncStorage.getItem('selectedCarId');
+        const vehicleId = selectedCarId || 'cmguqx8dx0001117o6cc7xwez';
+
+        console.log('Updating mileage for vehicle:', vehicleId, 'New mileage:', newMileage);
 
         if (token) {
           const response = await fetch('http://10.0.2.2:3000/mileage-tracking/entries', {
@@ -224,11 +246,13 @@ const MileageTrackingScreen = () => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              vehicleId: mockVehicleId,
+              vehicleId: vehicleId,
               mileage: newMileage,
               notes: 'Manual mileage update'
             })
           });
+
+          console.log('Mileage update response status:', response.status);
 
           if (response.ok) {
             const result = await response.json();

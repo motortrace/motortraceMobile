@@ -43,7 +43,7 @@ const CarProducts = () => {
     return matchesSearch && matchesFilter
   })
 
-  const totalValue = usedProducts.reduce((sum, product) => sum + product.cost, 0)
+  const totalValue = usedProducts.reduce((sum, product) => sum + (product.cost || 0), 0)
   const activeWarranties = usedProducts.filter(p => p.warrantyStatus === 'active').length
   const expiringWarranties = usedProducts.filter(p => p.warrantyStatus === 'expiring-soon').length
 
@@ -56,8 +56,11 @@ const CarProducts = () => {
     })
   }
 
-  const formatCurrency = (amount: number) => {
-    return `$${amount.toFixed(2)}`
+  const formatCurrency = (amount: number | undefined | null) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '$0.00'
+    }
+    return `$${amount}`
   }
 
   const getWarrantyEndDate = (purchaseDate: string, warrantyPeriod: number) => {
@@ -242,57 +245,61 @@ const CarProducts = () => {
         console.log('Fetching parts for vehicle:', selectedCarId);
 
         // Fetch work orders for this vehicle to get parts used
+        console.log('📡 Fetching work orders for vehicle:', selectedCarId);
         const res = await fetch(`http://10.0.2.2:3000/work-orders?vehicleId=${selectedCarId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
+            'X-Client-Type': 'mobile',
           },
         });
 
         const data = await res.json();
-        console.log('Work orders response:', data);
+        console.log('📡 Work orders response:', data);
 
-        if (res.ok && data.data) {
+        if (res.ok && data.data && Array.isArray(data.data)) {
+          console.log('✅ Found', data.data.length, 'work orders');
           // Get all parts from work orders
           const allParts: any[] = [];
 
           for (const workOrder of data.data) {
-            // Fetch parts for each work order
-            const partsRes = await fetch(`http://10.0.2.2:3000/work-orders/${workOrder.id}/parts`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            });
+            console.log('📡 Fetching parts for work order:', workOrder.id);
+            // Fetch parts for each work order - Note: This endpoint doesn't exist in the backend
+            // The backend doesn't have a /work-orders/:id/parts endpoint
+            // We need to get parts from the work order include or find another way
+            console.log('⚠️ Parts endpoint /work-orders/${workOrder.id}/parts does not exist in backend');
+            console.log('📡 Work order data structure:', workOrder);
 
-            if (partsRes.ok) {
-              const partsData = await partsRes.json();
-              if (partsData.data) {
-                // Transform parts data into product format
-                const transformedParts = partsData.data.map((part: any) => ({
-                  id: part.id,
-                  icon: getPartIcon(part.inventoryItem?.category || 'other'),
-                  name: part.inventoryItem?.name || 'Unknown Part',
-                  brand: part.inventoryItem?.manufacturer || 'Unknown Brand',
-                  partNumber: part.inventoryItem?.partNumber || part.inventoryItem?.sku || 'N/A',
-                  purchaseDate: part.installedAt ? new Date(part.installedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                  installationDate: part.installedAt ? new Date(part.installedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                  warrantyPeriod: 12, // Default warranty period
-                  warrantyStatus: 'active',
-                  cost: part.unitPrice || 0,
-                  supplier: part.supplierName || 'Unknown Supplier',
-                  category: getPartCategory(part.inventoryItem?.category || 'other'),
-                  condition: 'excellent',
-                  notes: part.notes || '',
-                }));
-                allParts.push(...transformedParts);
-              }
+            // Check if parts are included in the work order response
+            if (workOrder.partsUsed && Array.isArray(workOrder.partsUsed)) {
+              console.log('✅ Found parts in work order include:', workOrder.partsUsed.length);
+              // Transform parts data into product format
+              const transformedParts = workOrder.partsUsed.map((part: any) => ({
+                id: part.id,
+                icon: getPartIcon(part.part?.category || 'other'),
+                name: part.part?.name || 'Unknown Part',
+                brand: part.part?.manufacturer || 'Unknown Brand',
+                partNumber: part.part?.partNumber || part.part?.sku || 'N/A',
+                purchaseDate: part.createdAt ? new Date(part.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                installationDate: part.installedAt ? new Date(part.installedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                warrantyPeriod: 12, // Default warranty period
+                warrantyStatus: 'active',
+                cost: part.unitPrice || 0,
+                supplier: part.supplierName || 'Unknown Supplier',
+                category: getPartCategory(part.part?.category || 'other'),
+                condition: 'excellent',
+                notes: part.notes || '',
+              }));
+              allParts.push(...transformedParts);
+            } else {
+              console.log('⚠️ No parts found in work order', workOrder.id);
             }
           }
 
+          console.log('✅ Total parts collected:', allParts.length);
           setUsedProducts(allParts.length > 0 ? allParts : mockUsedProducts);
         } else {
-          console.error('Failed to fetch parts:', data);
+          console.error('❌ Failed to fetch work orders:', data);
           setUsedProducts(mockUsedProducts);
         }
       } catch (err) {
@@ -373,7 +380,7 @@ const CarProducts = () => {
           <Text style={styles.statLabel}>Warranties</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{formatCurrency(totalValue)}</Text>
+          <Text style={styles.statNumber}>{formatCurrency(Number(totalValue))}</Text>
           <Text style={styles.statLabel}>Total Value</Text>
         </View>
       </View>

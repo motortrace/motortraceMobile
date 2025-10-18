@@ -42,7 +42,7 @@ const CarServices = () => {
 
   const totalCost = services
     .filter(service => service.status === 'completed')
-    .reduce((sum, service) => sum + service.cost, 0)
+    .reduce((sum, service) => sum + (service.cost || 0), 0)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -53,8 +53,11 @@ const CarServices = () => {
     })
   }
 
-  const formatCurrency = (amount: number) => {
-    return `$${amount.toFixed(2)}`
+  const formatCurrency = (amount: number | undefined | null) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '$0.00'
+    }
+    return `$${amount}`
   }
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -281,7 +284,7 @@ const CarServices = () => {
           <Text style={styles.statLabel}>Pending</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{formatCurrency(totalCost)}</Text>
+          <Text style={styles.statNumber}>{formatCurrency(Number(totalCost))}</Text>
           <Text style={styles.statLabel}>Total Spent</Text>
         </View>
       </View>

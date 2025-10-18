@@ -9,6 +9,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
 import { useUser } from '../../store/UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import CustomAlert, { CustomAlertProps } from '../../components/Alert';
 
 interface Vehicle {
   id: string;
@@ -58,6 +59,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     scheduled: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [alertConfig, setAlertConfig] = useState<CustomAlertProps | null>(null);
 
   // Fetch dashboard data from backend
   useEffect(() => {
@@ -79,58 +81,99 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
         // Fetch vehicles
         try {
-          const vehiclesRes = await fetch(`http://10.0.2.2:3000/vehicles?customerId=${user.id}`, {
+          console.log('📡 Fetching vehicles for customerId:', user.customerId || user.id);
+          const customerId = user.customerId || user.id;
+          const vehiclesRes = await fetch(`http://10.0.2.2:3000/vehicles?customerId=${customerId}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
+              'X-Client-Type': 'mobile',
             },
           });
 
+          console.log('📡 Vehicles response status:', vehiclesRes.status);
+
           if (vehiclesRes.ok) {
             const vehiclesData = await vehiclesRes.json();
-            if (vehiclesData.data) {
+            console.log('✅ Vehicles data received:', vehiclesData);
+
+            if (vehiclesData.data && Array.isArray(vehiclesData.data)) {
               const formattedVehicles: Vehicle[] = vehiclesData.data.map((vehicle: any) => ({
                 id: vehicle.id,
-                name: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
-                model: vehicle.model,
-                year: vehicle.year?.toString() || '',
+                name: `${vehicle.year || 'Unknown'} ${vehicle.make || 'Unknown'} ${vehicle.model || 'Unknown'}`,
+                model: vehicle.model || 'Unknown',
+                year: vehicle.year?.toString() || 'Unknown',
                 license: vehicle.licensePlate || 'N/A',
                 color: Colors.primary, // Default color
                 type: 'sedan' as const, // Default type
-                mileage: 0, // Would need to be fetched from service history
-                nextService: 'Oil Change', // Default
-                serviceStatus: 'good' as const,
+                mileage: vehicle.currentMileage || 0, // Use actual mileage if available
+                nextService: vehicle.nextServiceDue || 'Oil Change', // Use actual next service if available
+                serviceStatus: vehicle.serviceStatus || 'good' as const,
               }));
+              console.log('✅ Formatted vehicles:', formattedVehicles.length);
               setRealVehicles(formattedVehicles);
+            } else {
+              console.log('⚠️ No vehicles data or invalid format');
+              setRealVehicles([]);
             }
+          } else {
+            const errorText = await vehiclesRes.text();
+            console.error('❌ Vehicles API error:', errorText);
+            setRealVehicles([]);
           }
         } catch (error) {
-          console.error('Error fetching vehicles:', error);
-          setRealVehicles(vehicles); // Fallback to mock
+          console.error('❌ Error fetching vehicles:', error);
+          setAlertConfig({
+            visible: true,
+            title: 'Connection Error',
+            message: 'Unable to load vehicle data. Please check your connection.',
+            type: 'error',
+            onClose: () => setAlertConfig(null),
+          });
+          setRealVehicles([]);
         }
 
         // Fetch appointments/services
         try {
-          const appointmentsRes = await fetch(`http://10.0.2.2:3000/appointments?customerId=${user.id}`, {
+          console.log('📡 Fetching appointments for customerId:', user.customerId || user.id);
+          const customerId = user.customerId || user.id;
+          const appointmentsRes = await fetch(`http://10.0.2.2:3000/appointments?customerId=${customerId}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
+              'X-Client-Type': 'mobile',
             },
           });
 
+          console.log('📡 Appointments response status:', appointmentsRes.status);
+
           if (appointmentsRes.ok) {
             const appointmentsData = await appointmentsRes.json();
-            if (appointmentsData.data) {
-              const appointments = appointmentsData.data;
+            console.log('✅ Appointments data received:', appointmentsData);
 
-              // Calculate stats
-              const totalVehicles = realVehicles.length || 2;
-              const activeServices = appointments.filter((apt: any) =>
-                apt.status === 'IN_PROGRESS' || apt.status === 'CHECKED_IN'
-              ).length;
-              const scheduledServices = appointments.filter((apt: any) =>
-                apt.status === 'PENDING' || apt.status === 'CONFIRMED'
-              ).length;
+            if (appointmentsData.data && Array.isArray(appointmentsData.data)) {
+              const appointments = appointmentsData.data;
+              console.log('📊 Total appointments found:', appointments.length);
+
+              // Calculate stats from real data
+              const now = new Date();
+              const totalVehicles = realVehicles.length > 0 ? realVehicles.length : 0;
+              const activeServices = appointments.filter((apt: any) => {
+                const startTime = apt.startTime ? new Date(apt.startTime) : null;
+                return (apt.status === 'IN_PROGRESS' || apt.status === 'CHECKED_IN') &&
+                       (!startTime || startTime <= now);
+              }).length;
+              const scheduledServices = appointments.filter((apt: any) => {
+                const startTime = apt.startTime ? new Date(apt.startTime) : null;
+                return (apt.status === 'PENDING' || apt.status === 'CONFIRMED') &&
+                       startTime && startTime > now;
+              }).length;
+
+              console.log('📊 Dashboard stats calculated:', {
+                vehicles: totalVehicles,
+                active: activeServices,
+                scheduled: scheduledServices
+              });
 
               setDashboardStats({
                 vehicles: totalVehicles,
@@ -138,31 +181,49 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 scheduled: scheduledServices
               });
 
-              // Format recent services
-              const formattedServices: ServiceStatus[] = appointments.slice(0, 3).map((apt: any) => ({
+              // Format recent services (show all appointments, not just first 3)
+              const formattedServices: ServiceStatus[] = appointments.map((apt: any) => ({
                 id: apt.id,
                 title: apt.cannedServices?.map((cs: any) => cs.cannedService?.name).join(', ') || 'Service',
                 status: apt.status === 'IN_PROGRESS' ? 'in-progress' :
                        apt.status === 'COMPLETED' ? 'completed' :
-                       apt.status === 'PENDING' ? 'scheduled' : 'scheduled',
+                       apt.status === 'PENDING' ? 'scheduled' :
+                       apt.status === 'CONFIRMED' ? 'scheduled' : 'scheduled',
                 date: apt.startTime ? new Date(apt.startTime).toLocaleDateString() : 'TBD',
                 time: apt.startTime ? new Date(apt.startTime).toLocaleTimeString('en-US', {
                   hour: '2-digit',
                   minute: '2-digit'
                 }) : 'TBD',
                 serviceType: 'Service',
-                vehicle: apt.vehicle ? `${apt.vehicle.year} ${apt.vehicle.make} ${apt.vehicle.model}` : 'Unknown Vehicle',
+                vehicle: apt.vehicle ? `${apt.vehicle.year || 'Unknown'} ${apt.vehicle.make || 'Unknown'} ${apt.vehicle.model || 'Unknown'}` : 'Unknown Vehicle',
                 icon: 'construct',
                 color: Colors.primary
               }));
 
-              setRealServices(formattedServices.length > 0 ? formattedServices : serviceStatuses);
+              console.log('✅ Formatted services:', formattedServices.length);
+              setRealServices(formattedServices.length > 0 ? formattedServices : []);
+            } else {
+              console.log('⚠️ No appointments data or invalid format');
+              setDashboardStats({ vehicles: realVehicles.length, active: 0, scheduled: 0 });
+              setRealServices([]);
             }
+          } else {
+            const errorText = await appointmentsRes.text();
+            console.error('❌ Appointments API error:', errorText);
+            setDashboardStats({ vehicles: realVehicles.length, active: 0, scheduled: 0 });
+            setRealServices([]);
           }
         } catch (error) {
-          console.error('Error fetching appointments:', error);
-          setRealServices(serviceStatuses); // Fallback to mock
-          setDashboardStats({ vehicles: 2, active: 1, scheduled: 3 });
+          console.error('❌ Error fetching appointments:', error);
+          setAlertConfig({
+            visible: true,
+            title: 'Connection Error',
+            message: 'Unable to load appointment data. Please check your connection.',
+            type: 'error',
+            onClose: () => setAlertConfig(null),
+          });
+          setDashboardStats({ vehicles: realVehicles.length, active: 0, scheduled: 0 });
+          setRealServices([]);
         }
 
       } catch (error) {
@@ -247,16 +308,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const quickActions = [
     { 
       id: 1, 
-      title: "Book Service", 
-      subtitle: "Schedule appointment",
-      icon: "calendar", 
-      color: Colors.primary, 
-      screen: "AllServices",
-      bgColor: "#EEF2FF"
-    },
-    { 
-      id: 2, 
-      title: "Purchase Packages", 
+      title: "Book Services", 
       subtitle: "Buy packages for your vehicles",
       icon: "time", 
       color: "#3B82F6",
@@ -264,7 +316,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       bgColor: "#EFF6FF"
     },
     { 
-      id: 3, 
+      id: 2, 
       title: "Vehicle Details",
       subtitle: "Manage your cars",
       icon: "car", 
@@ -273,7 +325,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       bgColor: "#ECFDF5",
     },
     {
-      id: 4,
+      id: 3,
       title: "Track Service",
       subtitle: "Real-time updates",
       icon: "location",
@@ -282,31 +334,19 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       bgColor: "#FFFBEB"
     },
     {
-      id: 5,
-      title: "Invoices",
-      subtitle: "View your bills",
+      id: 4,
+      title: "Appointments",
+      subtitle: "View your bookings",
       icon: "receipt",
       color: "#8B5CF6",
-      screen: "Invoices",
+      screen: "Appointments",
       bgColor: "#F3F4FF"
     },
   ]
 
-  const upcomingServices = [
-    { id: 1, title: "Oil Change", vehicle: "Toyota Camry", dueDate: "Next week", priority: "high" },
-    { id: 2, title: "Brake Inspection", vehicle: "Honda CR-V", dueDate: "2 weeks", priority: "medium" },
-    { id: 3, title: "Tire Rotation", vehicle: "Toyota Camry", dueDate: "1 month", priority: "low" },
-  ]
+  // This will be populated from backend data or can be removed if not needed
+  // Removed upcomingServices - now using real appointment data
 
-  const getVehicleIcon = (type: string) => {
-    switch (type) {
-      case 'sedan': return 'car-outline'
-      case 'suv': return 'car-sport-outline'
-      case 'truck': return 'bus-outline'
-      case 'hatchback': return 'car-outline'
-      default: return 'car-outline'
-    }
-  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -506,50 +546,42 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           />
         </View>
 
-        {/* Upcoming Services */}
+        {/* Recent Services - Now shows actual appointment data */}
         <View style={[styles.section, styles.lastSection]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Upcoming Services</Text>
-            {/* @ts-ignore - Navigation type issue */}
-            <TouchableOpacity onPress={() => navigation.navigate('Reservations')}>
+            <Text style={styles.sectionTitle}>Recent Services</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Appointments')}>
               <Text style={styles.viewAllButton}>View All</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.upcomingList}>
-            {upcomingServices.map((service, index) => (
-              <TouchableOpacity key={service.id} style={styles.upcomingCard}>
-                <View style={styles.upcomingIconContainer}>
-                  <Icon name="construct-outline" size={18} color={Colors.primary} />
-                </View>
-                <View style={styles.upcomingContent}>
-                  <Text style={styles.upcomingTitle}>{service.title}</Text>
-                  <Text style={styles.upcomingVehicle}>{service.vehicle}</Text>
-                </View>
-                <View style={styles.upcomingRight}>
-                  <Text style={styles.upcomingDate}>{service.dueDate}</Text>
-                  <View style={[
-                    styles.priorityIndicator,
-                    { 
-                      backgroundColor: service.priority === 'high' ? '#FEE2E2' : 
-                                     service.priority === 'medium' ? '#FEF3C7' : '#DCFCE7'
-                    }
-                  ]}>
-                    <Text style={[
-                      styles.priorityText,
-                      { 
-                        color: service.priority === 'high' ? '#DC2626' : 
-                               service.priority === 'medium' ? '#D97706' : '#16A34A'
-                      }
-                    ]}>
-                      {service.priority.charAt(0).toUpperCase() + service.priority.slice(1)}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {realServices.length > 0 ? (
+            <FlatList
+              data={realServices.slice(0, 3)} // Show only first 3
+              renderItem={renderServiceStatus}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.servicesList}
+            />
+          ) : (
+            <View style={styles.emptyStateContainer}>
+              <Icon name="construct-outline" size={48} color={Colors.neutral400} />
+              <Text style={styles.emptyStateTitle}>No Recent Services</Text>
+              <Text style={styles.emptyStateText}>Your service history will appear here</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
+
+      {alertConfig && (
+        <CustomAlert
+          visible={alertConfig.visible}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          type={alertConfig.type}
+          onClose={alertConfig.onClose}
+        />
+      )}
     </SafeAreaView>
   )
 }
@@ -666,7 +698,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   quickActionCard: {
-    width: '31%',
+    width: '48%',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
@@ -836,64 +868,25 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
 
-  // Upcoming Services
-  upcomingList: {
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  upcomingCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
+  // Empty State Styles
+  emptyStateContainer: {
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  upcomingIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.primary + '15',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+    paddingVertical: 40,
+    paddingHorizontal: 20,
   },
-  upcomingContent: {
-    flex: 1,
-  },
-  upcomingTitle: {
-    fontSize: 15,
+  emptyStateTitle: {
+    fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
-    marginBottom: 2,
+    color: Colors.neutral700,
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  upcomingVehicle: {
-    fontSize: 13,
-    color: '#6B7280',
-  },
-  upcomingRight: {
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  upcomingDate: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  priorityIndicator: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  priorityText: {
-    fontSize: 10,
-    fontWeight: '600',
+  emptyStateText: {
+    fontSize: 14,
+    color: Colors.neutral500,
+    textAlign: 'center',
   },
 
   // Debug Section Styles

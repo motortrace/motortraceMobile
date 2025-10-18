@@ -33,6 +33,7 @@ import PaidServiceBillSummary from './src/screens/User/PaidServiceBillSummary';
 import Invoices from './src/screens/User/Invoices';
 import ServiceDetails from './src/screens/User/ServiceDetails'
 import PackageDetails from './src/screens/User/PackageDetails'
+import Appointments from './src/screens/User/Appointments';
 
 // import Forum from './src/screens/User/Forum'
 // import SearchPosts from './src/screens/User/SearchPost';
@@ -111,6 +112,7 @@ import SelectedWork from './src/screens/Technician/SelectedWork';
 import CompleteWork from './src/screens/Technician/CompleteWork';
 
 import { UserProvider } from './src/store/UserContext';
+import { Appointment } from '../backend/src/modules/customers/customers.types';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -145,6 +147,7 @@ export type RootStackParamList = {
   Appointment: undefined;
   ServiceDetails: { serviceId: string };
   PackageDetails: { packageId: string };
+  Appointments: undefined;
 
   // Forum: undefined;
   // SearchPosts: undefined;
@@ -273,6 +276,7 @@ function App(): React.ReactElement {
           <Stack.Screen name="Invoices" component={Invoices} />
           <Stack.Screen name="ServiceDetails" component={ServiceDetails} />
           <Stack.Screen name="PackageDetails" component={PackageDetails} />
+          <Stack.Screen name="Appointments" component={Appointments} />
 
           {/* Forum */}
           {/* <Stack.Screen name="Forum" component={Forum} />
