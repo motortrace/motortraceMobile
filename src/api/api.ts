@@ -1,8 +1,9 @@
 // src/api/api.ts
+// src/api/api.ts
 import axios from "axios";
 import { getToken } from "../utils/authStorage";
 
-const LOCAL_IP = "192.168.72.149";
+const LOCAL_IP = "192.168.98.149";
 
 
 

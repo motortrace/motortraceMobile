@@ -1,6 +1,6 @@
 // src/api/technicianApi.ts
 
-const BASE_URL = "http://192.168.72.149:3000";
+const BASE_URL = "http://192.168.98.149:3000";
 
 // 1. Get UserProfile by Supabase User ID
 export async function fetchUserProfileId(supabaseUserId: string, token: string): Promise<string | null> {
@@ -30,7 +30,9 @@ export async function fetchTechnicianWorkOrders(technicianId: string, token: str
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return [];
-  const data = await res.json();
+  const data = await res.json().catch(() => null);
+  // Accept either an array response or a { data: [...] } envelope
+  if (Array.isArray(data)) return data;
   return data?.data || [];
 }
 
@@ -41,7 +43,8 @@ export async function fetchTechnicianDetails(technicianId: string, token: string
   });
   if (!res.ok) return null;
   const data = await res.json().catch(() => null);
-  return data?.data || null;
+  // Accept either { data: {...} } or top-level object
+  return data?.data || data || null;
 }
 
 // 4. Get Work Order Details by ID
@@ -60,7 +63,8 @@ export async function fetchTechnicianInspections(technicianId: string, token: st
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return [];
-  const data = await res.json();
+  const data = await res.json().catch(() => null);
+  if (Array.isArray(data)) return data;
   return data?.data || [];
 }
 
@@ -209,6 +213,20 @@ export async function fetchWorkOrderParts(workOrderId: string, token: string): P
   });
   if (!res.ok) return [];
   const data = await res.json();
+  return data?.data || [];
+}
+
+// Fetch attachments for a work order
+export async function fetchWorkOrderAttachments(workOrderId: string, token: string): Promise<any[]> {
+  const res = await fetch(`${BASE_URL}/work-orders/${workOrderId}/attachments`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    if (res.status === 404) return [];
+    const text = await res.text().catch(() => null);
+    throw new Error(text || `Failed to fetch work order attachments (status ${res.status})`);
+  }
+  const data = await res.json().catch(() => null);
   return data?.data || [];
 }
 
