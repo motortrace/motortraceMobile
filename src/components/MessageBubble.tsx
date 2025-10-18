@@ -8,7 +8,7 @@ interface Message {
   text: string;
   timestamp: string;
   isOwn: boolean;
-  status?: 'sent' | 'delivered' | 'read'; // optional
+  status?: 'sent' | 'delivered' | 'read' | 'sending'; // optional
 }
 
 interface MessageBubbleProps {

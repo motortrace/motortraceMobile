@@ -17,17 +17,17 @@ import RecoverPassword from './src/screens/RecoverPassword';
 
 import AllPackages from  './src/screens/User/AllPackages'
 import AllServices from  './src/screens/User/AllServices'
-import AllReviews from  './src/screens/Vresion2/AllReviews'
-import Locations from './src/screens/Vresion2/Locations'
+// import AllReviews from  './src/screens/Vresion2/AllReviews'
+// import Locations from './src/screens/Vresion2/Locations'
 import RecommendedServices from './src/screens/User/RecommendedServices'
-import GarageHistory from './src/screens/Vresion2/GarageHistory'
-import GarageExplore from './src/screens/Vresion2/GarageExplore'
-import GarageFavourites from './src/screens/Vresion2/GarageFavourites'
-import GarageInfo from './src/screens/Vresion2/GarageInfo'
-import GaragePackage from './src/screens/Vresion2/GaragePackages'
-import GarageReview from './src/screens/Vresion2/GarageReview'
-import GarageServices from './src/screens/Vresion2/GarageServices'
-import GarageServiceDetails from './src/screens/Vresion2/GarageServiceDetails'
+// import GarageHistory from './src/screens/Vresion2/GarageHistory'
+// import GarageExplore from './src/screens/Vresion2/GarageExplore'
+// import GarageFavourites from './src/screens/Vresion2/GarageFavourites'
+// import GarageInfo from './src/screens/Vresion2/GarageInfo'
+// import GaragePackage from './src/screens/Vresion2/GaragePackages'
+// import GarageReview from './src/screens/Vresion2/GarageReview'
+// import GarageServices from './src/screens/Vresion2/GarageServices'
+// import GarageServiceDetails from './src/screens/Vresion2/GarageServiceDetails'
 import DetailedBill from './src/screens/User/DetailedBill';
 import PaidServiceBillSummary from './src/screens/User/PaidServiceBillSummary';
 import Invoices from './src/screens/User/Invoices';
@@ -91,6 +91,7 @@ import InspectionOngoing from './src/screens/User/InspectionOngoing';
 // import RewardHistory from './src/screens/User/RewardHistory';
 import InspectionCar from './src/screens/User/InspectionsCar';
 import WorkOrderDetail from './src/screens/User/WorkOrderDetail';
+import WorkOrderChat from './src/screens/User/WorkOrderChat';
 
 import TechnicianHome from './src/screens/Technician/Home';
 import AssignedWork from './src/screens/Technician/AssignedWork';
@@ -206,6 +207,7 @@ export type RootStackParamList = {
   // RewardHistory: undefined;
 
   WorkOrderDetail: { workOrder: any };
+  WorkOrderChat: { workOrder: any };
 
   TechnicianHome: undefined;
   AssignedWork: undefined;
@@ -258,19 +260,19 @@ function App(): React.ReactElement {
           <Stack.Screen name="Home" component={Home} />
 
           {/* Garages and Locations */}
-          <Stack.Screen name="Locations" component={Locations} />
+          {/* <Stack.Screen name="Locations" component={Locations} /> */}
           <Stack.Screen name="RecommendedServices" component={RecommendedServices} />
-          <Stack.Screen name="GarageHistory" component={GarageHistory} />
+          {/* <Stack.Screen name="GarageHistory" component={GarageHistory} />
           <Stack.Screen name="GarageExplore" component={GarageExplore} />
-          <Stack.Screen name="GarageFavourites" component={GarageFavourites} />
+          <Stack.Screen name="GarageFavourites" component={GarageFavourites} /> */}
           <Stack.Screen name="AllPackages" component={AllPackages} />
           <Stack.Screen name="AllServices" component={AllServices} />
-          <Stack.Screen name="AllReviews" component={AllReviews} />
+          {/* <Stack.Screen name="AllReviews" component={AllReviews} />
           <Stack.Screen name="GarageInfo" component={GarageInfo} />
           <Stack.Screen name="GaragePackage" component={GaragePackage} />
           <Stack.Screen name="GarageReview" component={GarageReview} />
           <Stack.Screen name="GarageServices" component={GarageServices} />
-          <Stack.Screen name="GarageServiceDetails" component={GarageServiceDetails} />
+          <Stack.Screen name="GarageServiceDetails" component={GarageServiceDetails} /> */}
           <Stack.Screen name="DetailedBill" component={DetailedBill} />
           <Stack.Screen name="PaidServiceBillSummary" component={PaidServiceBillSummary} />
           <Stack.Screen name="Invoices" component={Invoices} />
@@ -341,6 +343,7 @@ function App(): React.ReactElement {
           <Stack.Screen name="RewardHistory" component={RewardHistory} /> */}
 
           <Stack.Screen name="WorkOrderDetail" component={WorkOrderDetail} />
+          <Stack.Screen name="WorkOrderChat" component={WorkOrderChat} />
 
           {/* Technician */}
           <Stack.Screen name="TechnicianHome" component={TechnicianHome}/>

@@ -405,8 +405,7 @@ const CarOnboardingForm = () => {
 
       if (formData.image) {
         console.log('📤 Uploading car image...');
-        // TEMPORARY: Try using profile image upload to see if it works
-        const uploadResult = await imageUploadService.uploadProfileImage(formData.image);
+        const uploadResult = await imageUploadService.uploadCarImage(formData.image);
 
         if (!uploadResult.success) {
           showAlert({

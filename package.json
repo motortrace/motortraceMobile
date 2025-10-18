@@ -29,7 +29,7 @@
     "react": "19.1.0",
     "react-native": "0.80.0",
     "react-native-elements": "^3.4.3",
-    "react-native-gesture-handler": "^2.26.0",
+    "react-native-gesture-handler": "^2.28.0",
     "react-native-image-picker": "^8.2.1",
     "react-native-inappbrowser-reborn": "^3.7.0",
     "react-native-maps": "^1.24.3",
@@ -41,7 +41,9 @@
     "react-native-screens": "^4.11.1",
     "react-native-svg": "^15.12.0",
     "react-native-svg-transformer": "^1.5.1",
-    "react-native-vector-icons": "^10.2.0"
+    "react-native-vector-icons": "^10.2.0",
+    "socket.io-client": "^4.7.5",
+    "socket.io-parser": "^4.2.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -59,6 +61,7 @@
     "@types/react-native": "^0.72.8",
     "@types/react-native-vector-icons": "^6.4.18",
     "@types/react-test-renderer": "^19.1.0",
+    "@types/socket.io-client": "^1.4.36",
     "eslint": "^8.19.0",
     "jest": "^29.6.3",
     "prettier": "2.8.8",

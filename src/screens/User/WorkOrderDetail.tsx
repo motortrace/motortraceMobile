@@ -830,68 +830,96 @@ const WorkOrderDetail = () => {
     </ScrollView>
   );
 
-  const renderInspectionsTab = () => (
-    <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Inspection Information</Text>
-        
-        {/* Download PDF Button */}
-        {wo.inspectionPdfUrl && (
-          <TouchableOpacity 
-            style={styles.downloadButton}
-            onPress={() => downloadInspectionPdf(wo.inspectionPdfUrl)}
-          >
-            <Icon name="download-outline" size={20} color={Colors.neutral0} />
-            <Text style={styles.downloadButtonText}>Download Inspection Report</Text>
-          </TouchableOpacity>
-        )}
-        
-        {wo.inspections && wo.inspections.length > 0 ? (
-          wo.inspections.map((inspection: any, index: number) => (
-            <View key={inspection.id || index} style={styles.serviceItem}>
-              <View style={styles.inspectorCard}>
-                {inspection.inspector?.userProfile?.profileImage ? (
-                  <Image source={{ uri: inspection.inspector.userProfile.profileImage }} style={styles.inspectorImage} />
-                ) : (
-                  <View style={styles.inspectorPlaceholder}>
-                    <Text style={styles.inspectorInitial}>
-                      {inspection.inspector?.userProfile?.firstName?.charAt(0)?.toUpperCase() || 'I'}
+  const renderInspectionsTab = () => {
+    console.log('🔍 renderInspectionsTab - Work Order Status:', wo.status);
+    console.log('🔍 renderInspectionsTab - Is PENDING:', wo.status === 'PENDING');
+
+    return (
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Inspection Information</Text>
+
+          {/* Download PDF Button */}
+          {wo.inspectionPdfUrl && (
+            <TouchableOpacity
+              style={styles.downloadButton}
+              onPress={() => downloadInspectionPdf(wo.inspectionPdfUrl)}
+            >
+              <Icon name="download-outline" size={20} color={Colors.neutral0} />
+              <Text style={styles.downloadButtonText}>Download Inspection Report</Text>
+            </TouchableOpacity>
+          )}
+
+          {wo.inspections && wo.inspections.length > 0 ? (
+            wo.inspections.map((inspection: any, index: number) => (
+              <View key={inspection.id || index} style={styles.serviceItem}>
+                <View style={styles.inspectorCard}>
+                  {inspection.inspector?.userProfile?.profileImage ? (
+                    <Image source={{ uri: inspection.inspector.userProfile.profileImage }} style={styles.inspectorImage} />
+                  ) : (
+                    <View style={styles.inspectorPlaceholder}>
+                      <Text style={styles.inspectorInitial}>
+                        {inspection.inspector?.userProfile?.firstName?.charAt(0)?.toUpperCase() || 'I'}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.inspectorDetails}>
+                    <Text style={styles.advisorName}>
+                      {inspection.inspector?.userProfile?.firstName} {inspection.inspector?.userProfile?.lastName}
+                    </Text>
+                    <Text style={styles.advisorPhone}>
+                      Inspector
                     </Text>
                   </View>
-                )}
-                <View style={styles.inspectorDetails}>
-                  <Text style={styles.advisorName}>
-                    {inspection.inspector?.userProfile?.firstName} {inspection.inspector?.userProfile?.lastName}
-                  </Text>
-                  <Text style={styles.advisorPhone}>
-                    Inspector
-                  </Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Template:</Text>
+                  <Text style={styles.value}>{inspection.templateId}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Date:</Text>
+                  <Text style={styles.value}>{formatDate(inspection.date)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Status:</Text>
+                  <Text style={styles.value}>{inspection.isCompleted ? 'Completed' : 'Pending'}</Text>
+                </View>
+                <View style={styles.notesContainer}>
+                  <Text style={styles.notesLabel}>Notes:</Text>
+                  <Text style={styles.notesText}>{inspection.notes || 'No notes'}</Text>
                 </View>
               </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Template:</Text>
-                <Text style={styles.value}>{inspection.templateId}</Text>
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Date:</Text>
-                <Text style={styles.value}>{formatDate(inspection.date)}</Text>
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Status:</Text>
-                <Text style={styles.value}>{inspection.isCompleted ? 'Completed' : 'Pending'}</Text>
-              </View>
-              <View style={styles.notesContainer}>
-                <Text style={styles.notesLabel}>Notes:</Text>
-                <Text style={styles.notesText}>{inspection.notes || 'No notes'}</Text>
-              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>No inspection data available</Text>
+          )}
+
+          {/* Chat and Call Buttons - Only show if work order is PENDING */}
+          {wo.status === 'PENDING' && (
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.chatButton}
+                onPress={() => navigation.navigate('WorkOrderChat', { workOrder: wo })}
+              >
+                <Icon name="chatbubble-outline" size={20} color={Colors.neutral0} />
+                <Text style={styles.buttonText}>Chat</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.callButton}
+                onPress={() => {
+                  const phoneNumber = wo.serviceAdvisor?.userProfile?.phone || 'tel:+1234567890'; // Default or get from work order
+                  Linking.openURL(`tel:${phoneNumber}`);
+                }}
+              >
+                <Icon name="call-outline" size={20} color={Colors.neutral0} />
+                <Text style={styles.buttonText}>Call</Text>
+              </TouchableOpacity>
             </View>
-          ))
-        ) : (
-          <Text style={styles.emptyText}>No inspection data available</Text>
-        )}
-      </View>
-    </ScrollView>
-  );
+          )}
+        </View>
+      </ScrollView>
+    );
+  };
 
   const renderServicesTab = () => (
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -1024,14 +1052,9 @@ const WorkOrderDetail = () => {
         {/* Show all services sorted by status (pending first) */}
         {wo.services && wo.services.length > 0 && (
           <View style={{ marginBottom: 20 }}>
-            <Text style={[styles.sectionTitle, { fontSize: 16, marginBottom: 12 }]}>All Services</Text>
+            <Text style={[styles.sectionTitle, { fontSize: 16, marginBottom: 12 }]}>Services Requiring Approval</Text>
             {wo.services
-              .sort((a: any, b: any) => {
-                // Sort by status: ESTIMATED (pending) first, then others
-                if (a.status === 'ESTIMATED' && b.status !== 'ESTIMATED') return -1;
-                if (a.status !== 'ESTIMATED' && b.status === 'ESTIMATED') return 1;
-                return 0;
-              })
+              .filter((service: any) => service.status === 'ESTIMATED')
               .map((service: any, idx: number) => (
                 <View key={service.id || idx} style={[styles.serviceItem, { marginBottom: 12 }]}>
                   <View style={styles.serviceHeader}>
@@ -1042,7 +1065,7 @@ const WorkOrderDetail = () => {
                     <View style={styles.serviceMeta}>
                       <Text style={styles.serviceSubtotal}>{formatCurrency(service.subtotal)}</Text>
                       <View style={{ alignItems: 'flex-end' }}>
-                        {renderApprovalStatusBadge(service.customerApproved === true ? 'APPROVED' : service.customerApproved === false ? 'DECLINED' : 'PENDING')}
+                        {renderApprovalStatusBadge('PENDING')}
                       </View>
                     </View>
                   </View>
@@ -1056,27 +1079,60 @@ const WorkOrderDetail = () => {
                       <Text style={styles.value}>{formatCurrency(service.unitPrice)}</Text>
                     </View>
                   </View>
-                  {/* Show buttons only for pending services */}
-                  {service.status === 'ESTIMATED' && (
-                    <View style={styles.buttonContainer}>
-                      <TouchableOpacity
-                        style={styles.approveButton}
-                        onPress={() => approveService(service.id)}
-                      >
-                        <Text style={styles.approveButtonText}>Accept</Text>
-                        <Icon name="checkmark-circle-outline" size={16} color={Colors.neutral0} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.rejectButton}
-                        onPress={() => rejectService(service.id)}
-                      >
-                        <Text style={styles.rejectButtonText}>Reject</Text>
-                        <Icon name="close-circle-outline" size={16} color={Colors.neutral0} />
-                      </TouchableOpacity>
-                    </View>
-                  )}
+                  {/* Accept/Reject buttons for individual services */}
+                  <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                      style={styles.approveButton}
+                      onPress={() => approveService(service.id)}
+                    >
+                      <Text style={styles.approveButtonText}>Accept</Text>
+                      <Icon name="checkmark-circle-outline" size={16} color={Colors.neutral0} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.rejectButton}
+                      onPress={() => rejectService(service.id)}
+                    >
+                      <Text style={styles.rejectButtonText}>Reject</Text>
+                      <Icon name="close-circle-outline" size={16} color={Colors.neutral0} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))}
+
+            {/* Show approved/rejected services */}
+            {wo.services.filter((service: any) => service.status !== 'ESTIMATED').length > 0 && (
+              <View style={{ marginTop: 20 }}>
+                <Text style={[styles.sectionTitle, { fontSize: 16, marginBottom: 12 }]}>Service History</Text>
+                {wo.services
+                  .filter((service: any) => service.status !== 'ESTIMATED')
+                  .map((service: any, idx: number) => (
+                    <View key={service.id || idx} style={[styles.serviceItem, { marginBottom: 12 }]}>
+                      <View style={styles.serviceHeader}>
+                        <View style={styles.serviceInfo}>
+                          <Text style={styles.serviceName}>{service.cannedService?.name || service.description}</Text>
+                          <Text style={styles.serviceDescription}>{service.description}</Text>
+                        </View>
+                        <View style={styles.serviceMeta}>
+                          <Text style={styles.serviceSubtotal}>{formatCurrency(service.subtotal)}</Text>
+                          <View style={{ alignItems: 'flex-end' }}>
+                            {renderApprovalStatusBadge(service.customerApproved === true ? 'APPROVED' : service.customerApproved === false ? 'DECLINED' : 'PENDING')}
+                          </View>
+                        </View>
+                      </View>
+                      <View style={styles.serviceDetails}>
+                        <View style={styles.row}>
+                          <Text style={styles.label}>Quantity:</Text>
+                          <Text style={styles.value}>{service.quantity}</Text>
+                        </View>
+                        <View style={styles.row}>
+                          <Text style={styles.label}>Unit Price:</Text>
+                          <Text style={styles.value}>{formatCurrency(service.unitPrice)}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+              </View>
+            )}
           </View>
         )}
 
@@ -1758,6 +1814,35 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  chatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flex: 1,
+    marginRight: 8,
+  },
+  callButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#16a34a', // Green color for call
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flex: 1,
+    marginLeft: 8,
+  },
+  buttonText: {
+    color: Colors.neutral0,
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   rejectButton: {
     flexDirection: 'row',
