@@ -18,6 +18,7 @@ import ProfileAvatar from '../../components/ProfileAvatar';
 import MessageBubble from '../../components/MessageBubble';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import io from 'socket.io-client';
 
 type WorkOrderChatRouteProp = RouteProp<RootStackParamList, 'WorkOrderChat'>;
 type WorkOrderChatNavigationProp = StackNavigationProp<RootStackParamList, 'WorkOrderChat'>;
@@ -58,15 +59,30 @@ const WorkOrderChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [socket, setSocket] = useState<any>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     const init = async () => {
       await getUserProfile();
-      await fetchMessages();
+      await initializeSocket();
     };
     init();
+
+    return () => {
+      if (socket) {
+        socket.disconnect();
+      }
+    };
   }, [workOrder.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Separate useEffect to fetch messages when currentUserId is set
+  useEffect(() => {
+    if (currentUserId && socket) {
+      console.log('🔍 Current user ID set, fetching messages');
+      fetchMessages();
+    }
+  }, [currentUserId, socket]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getUserProfile = async () => {
     try {
@@ -104,11 +120,106 @@ const WorkOrderChat = () => {
     }
   };
 
+  const initializeSocket = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'Authentication required');
+        return;
+      }
+
+      // Initialize Socket.IO connection
+      const socketConnection = io('http://10.0.2.2:3000', {
+        auth: {
+          token: token
+        },
+        transports: ['websocket', 'polling']
+      });
+
+      socketConnection.on('connect', () => {
+        console.log('🔌 Socket connected:', socketConnection.id);
+        // Join work order room
+        socketConnection.emit('join-work-order', workOrder.id);
+      });
+
+      socketConnection.on('new-message', (message: IMessage) => {
+        console.log('🔌 New message received:', message);
+        console.log('🔌 Message senderRole:', message.senderRole, 'isOwn:', message.senderRole === 'CUSTOMER');
+
+        // Check if this message is already in our messages (to avoid duplicates)
+        setMessages(prev => {
+          const messageExists = prev.some(msg => msg.id === message.id);
+          if (messageExists) {
+            console.log('🔌 Message already exists, skipping duplicate');
+            return prev;
+          }
+
+          const formattedMessage: Message = {
+            id: message.id,
+            text: message.message,
+            timestamp: new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isOwn: message.senderRole === 'CUSTOMER', // Customer messages on right, others on left
+            status: message.status.toLowerCase() as 'sent' | 'delivered' | 'read',
+          };
+
+          const newMessages = [...prev, formattedMessage];
+
+          // Auto scroll to bottom
+          setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+
+          return newMessages;
+        });
+      });
+
+      socketConnection.on('message-sent', (message: IMessage) => {
+        console.log('🔌 Message sent confirmation:', message);
+        // Update the optimistic message with the real one
+        setMessages(prev => prev.map(msg =>
+          msg.id.startsWith('temp-') && msg.text === message.message
+            ? {
+                id: message.id,
+                text: message.message,
+                timestamp: new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isOwn: true,
+                status: message.status.toLowerCase() as 'sent' | 'delivered' | 'read',
+              }
+            : msg
+        ));
+      });
+
+      socketConnection.on('user-typing', (data: { userId: string }) => {
+        if (data.userId !== socketConnection.id) {
+          // setIsTyping(true);
+        }
+      });
+
+      socketConnection.on('user-stopped-typing', (data: { userId: string }) => {
+        if (data.userId !== socketConnection.id) {
+          // setIsTyping(false);
+        }
+      });
+
+      socketConnection.on('disconnect', () => {
+        console.log('🔌 Socket disconnected');
+      });
+
+      setSocket(socketConnection);
+    } catch (error) {
+      console.error('❌ Error initializing socket:', error);
+    }
+  };
+
   const fetchMessages = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      if (!token || !currentUserId) return;
+      if (!token || !currentUserId) {
+        console.log('🔍 Skipping fetchMessages - missing token or currentUserId');
+        return;
+      }
 
+      console.log('🔍 Fetching messages for workOrder:', workOrder.id, 'currentUserId:', currentUserId);
       const response = await fetch(`http://10.0.2.2:3000/messages/${workOrder.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -116,74 +227,61 @@ const WorkOrderChat = () => {
         },
       });
 
+      console.log('🔍 Fetch response status:', response.status);
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 Fetch response data:', data);
+
         if (data.success && data.data) {
           const formattedMessages = data.data.map((msg: IMessage) => ({
             id: msg.id,
             text: msg.message,
             timestamp: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            isOwn: msg.senderId === currentUserId,
+            isOwn: msg.senderRole === 'CUSTOMER', // Customer messages on right, others on left
             status: msg.status.toLowerCase() as 'sent' | 'delivered' | 'read',
           }));
+          console.log('🔍 Setting messages:', formattedMessages.length, 'messages');
           setMessages(formattedMessages);
+        } else {
+          console.log('🔍 No messages data or success false');
         }
+      } else {
+        console.log('🔍 Fetch failed with status:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error('❌ Error fetching messages:', error);
     }
   };
 
   const sendMessage = async () => {
-    if (inputText.trim() && currentUserId) {
+    if (inputText.trim() && socket && currentUserId) {
       try {
-        console.log('📤 Sending message:', inputText.trim(), 'currentUserId:', currentUserId);
+        console.log('📤 Sending message via socket:', inputText.trim(), 'currentUserId:', currentUserId, 'socket connected:', socket.connected);
 
-        const token = await AsyncStorage.getItem('token');
-        if (!token) {
-          Alert.alert('Error', 'Authentication required');
-          return;
-        }
+        // Optimistically add to local state first
+        const tempId = `temp-${Date.now()}`;
+        const optimisticMessage: Message = {
+          id: tempId,
+          text: inputText.trim(),
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isOwn: true,
+          status: 'sending',
+        };
 
-        // Send message via HTTP POST
-        const response = await fetch(`http://10.0.2.2:3000/messages`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            workOrderId: workOrder.id,
-            message: inputText.trim(),
-            messageType: 'TEXT'
-          }),
+        setMessages((prev) => [...prev, optimisticMessage]);
+        setInputText('');
+
+        // Send via Socket.IO for real-time delivery
+        socket.emit('send-message', {
+          workOrderId: workOrder.id,
+          message: inputText.trim(),
+          userId: currentUserId
         });
 
-        if (response.ok) {
-          const messageData = await response.json();
-          console.log('📤 Message sent successfully:', messageData);
-
-          // Add the message to local state
-          const newMessage: Message = {
-            id: messageData.data.id,
-            text: messageData.data.message,
-            timestamp: new Date(messageData.data.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            isOwn: true,
-            status: messageData.data.status.toLowerCase() as 'sent' | 'delivered' | 'read',
-          };
-
-          setMessages((prev) => [...prev, newMessage]);
-          setInputText('');
-
-          // Auto scroll to bottom
-          setTimeout(() => {
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-          }, 100);
-        } else {
-          const errorText = await response.text();
-          console.error('📤 Failed to send message:', response.status, errorText);
-          Alert.alert('Error', 'Failed to send message');
-        }
+        // Auto scroll to bottom
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
 
       } catch (error) {
         console.error('❌ Error sending message:', error);
