@@ -186,7 +186,7 @@ export default function ProfileScreen({ navigation }: any) {
 
         {/* Settings Card */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Settings</Text>
+          {/* <Text style={styles.sectionTitle}>Settings</Text>
           <TouchableOpacity style={styles.optionRow}>
             <FeatherIcon name="lock" size={18} color={Colors.techPrimary} />
             <Text style={styles.optionText}>Change Password</Text>
@@ -203,7 +203,7 @@ export default function ProfileScreen({ navigation }: any) {
             <FeatherIcon name="info" size={18} color={Colors.techPrimary} />
             <Text style={styles.optionText}>About App</Text>
             <FeatherIcon name="chevron-right" size={18} color="#999" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <TouchableOpacity
             style={[styles.logoutOptionRow]}
