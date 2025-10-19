@@ -19,6 +19,7 @@ import { getToken } from "../../utils/authStorage";
 
 export default function TechnicianHomeScreen({ navigation, userName = "John" }: { navigation: any; userName?: string }) {
   const { supabaseUserId } = useAuth();
+  const [techName, setTechName] = useState<string | null>(null);
   const [counts, setCounts] = useState({
     workOrders: { total: 0, completed: 0 },
     inspections: { total: 0, completed: 0 },
@@ -36,8 +37,11 @@ export default function TechnicianHomeScreen({ navigation, userName = "John" }: 
     let mounted = true;
     const loadCounts = async () => {
       try {
-        const meData = await getAuthMe();
-        const technicianId = meData?.data?.roleDetails?.technicianId;
+  const meData = await getAuthMe();
+  // set the technician name from auth/me response if available
+  const possibleName = meData?.data?.name || meData?.data?.userProfile?.fullName || meData?.data?.userProfile?.name || null;
+  if (possibleName) setTechName(possibleName);
+  const technicianId = meData?.data?.roleDetails?.technicianId;
         if (!technicianId) return;
 
         // --- Work orders ---
@@ -300,7 +304,7 @@ export default function TechnicianHomeScreen({ navigation, userName = "John" }: 
         <View style={styles.topContainer}>
           <View style={styles.topBar}>
             <View>
-              <Text style={styles.welcomeText}>Hi, {userName}!</Text>
+              <Text style={styles.welcomeText}>Hi, {techName || userName}!</Text>
               <Text style={styles.dateText}>Today: {new Date().toLocaleDateString()}</Text>
             </View>
             <FeatherIcon name="user" size={35} color="#fff" />
