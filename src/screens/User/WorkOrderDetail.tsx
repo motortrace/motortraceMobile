@@ -1079,7 +1079,8 @@ const WorkOrderDetail = () => {
                       <Text style={styles.value}>{formatCurrency(service.unitPrice)}</Text>
                     </View>
                   </View>
-                  {/* Accept/Reject buttons for individual services */}
+                  {/* Accept/Reject buttons for individual services - REMOVED */}
+                  {/* 
                   <View style={styles.buttonContainer}>
                     <TouchableOpacity
                       style={styles.approveButton}
@@ -1096,6 +1097,7 @@ const WorkOrderDetail = () => {
                       <Icon name="close-circle-outline" size={16} color={Colors.neutral0} />
                     </TouchableOpacity>
                   </View>
+                  */}
                 </View>
               ))}
 
