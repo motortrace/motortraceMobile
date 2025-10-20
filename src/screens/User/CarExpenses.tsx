@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -52,20 +53,7 @@ const CarExpensesPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alertConfig, setAlertConfig] = useState<CustomAlertProps | null>(null);
 
-  useEffect(() => {
-    const getCarIdAndLoadExpenses = async () => {
-      const storedCarId = await AsyncStorage.getItem('selectedCarId');
-      setCarId(storedCarId);
-      if (storedCarId) {
-        loadExpenses(storedCarId);
-      } else {
-        setIsLoading(false);
-      }
-    };
-    getCarIdAndLoadExpenses();
-  }, []);
-
-  const loadExpenses = async (vehicleId: string) => {
+  const loadExpensesCallback = useCallback(async (vehicleId: string) => {
     try {
       setIsLoading(true);
       const token = await AsyncStorage.getItem('token');
@@ -108,7 +96,29 @@ const CarExpensesPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const getCarIdAndLoadExpenses = async () => {
+      const storedCarId = await AsyncStorage.getItem('selectedCarId');
+      setCarId(storedCarId);
+      if (storedCarId) {
+        loadExpensesCallback(storedCarId);
+      } else {
+        setIsLoading(false);
+      }
+    };
+    getCarIdAndLoadExpenses();
+  }, [loadExpensesCallback]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (carId) {
+        loadExpensesCallback(carId);
+      }
+    }, [carId, loadExpensesCallback])
+  );
+
 
   const saveExpenseLocally = async (expense: CarExpense) => {
     if (!carId) return;

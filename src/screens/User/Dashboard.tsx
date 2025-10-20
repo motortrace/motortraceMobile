@@ -1,10 +1,9 @@
-import type React from "react"
-import { useState, useEffect } from "react"
+import React, { useState, useCallback } from "react"
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, FlatList, ImageBackground } from "react-native"
 import Icon from 'react-native-vector-icons/Ionicons';
 import Colors from "../../constants/colors"
 import Header from '../../components/Header'
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
 import { useUser } from '../../store/UserContext';
@@ -62,194 +61,196 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [alertConfig, setAlertConfig] = useState<CustomAlertProps | null>(null);
 
   // Fetch dashboard data from backend
-  useEffect(() => {
-    const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const userStr = await AsyncStorage.getItem('user');
+      const token = await AsyncStorage.getItem('token');
+
+      if (!userStr || !token) {
+        console.log('No user or token found, using mock data');
+        setRealVehicles(vehicles); // Use existing mock data
+        setRealServices(serviceStatuses);
+        setDashboardStats({ vehicles: 2, active: 1, scheduled: 3 });
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+
+      // Fetch vehicles
       try {
-        setIsLoading(true);
-        const userStr = await AsyncStorage.getItem('user');
-        const token = await AsyncStorage.getItem('token');
+        console.log('📡 Fetching vehicles for customerId:', user.customerId || user.id);
+        const customerId = user.customerId || user.id;
+        const vehiclesRes = await fetch(`http://10.0.2.2:3000/vehicles?customerId=${customerId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'X-Client-Type': 'mobile',
+          },
+        });
 
-        if (!userStr || !token) {
-          console.log('No user or token found, using mock data');
-          setRealVehicles(vehicles); // Use existing mock data
-          setRealServices(serviceStatuses);
-          setDashboardStats({ vehicles: 2, active: 1, scheduled: 3 });
-          return;
-        }
+        console.log('📡 Vehicles response status:', vehiclesRes.status);
 
-        const user = JSON.parse(userStr);
+        if (vehiclesRes.ok) {
+          const vehiclesData = await vehiclesRes.json();
+          console.log('✅ Vehicles data received:', vehiclesData);
 
-        // Fetch vehicles
-        try {
-          console.log('📡 Fetching vehicles for customerId:', user.customerId || user.id);
-          const customerId = user.customerId || user.id;
-          const vehiclesRes = await fetch(`http://10.0.2.2:3000/vehicles?customerId=${customerId}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-              'X-Client-Type': 'mobile',
-            },
-          });
-
-          console.log('📡 Vehicles response status:', vehiclesRes.status);
-
-          if (vehiclesRes.ok) {
-            const vehiclesData = await vehiclesRes.json();
-            console.log('✅ Vehicles data received:', vehiclesData);
-
-            if (vehiclesData.data && Array.isArray(vehiclesData.data)) {
-              const formattedVehicles: Vehicle[] = vehiclesData.data.map((vehicle: any) => ({
-                id: vehicle.id,
-                name: `${vehicle.year || 'Unknown'} ${vehicle.make || 'Unknown'} ${vehicle.model || 'Unknown'}`,
-                model: vehicle.model || 'Unknown',
-                year: vehicle.year?.toString() || 'Unknown',
-                license: vehicle.licensePlate || 'N/A',
-                color: Colors.primary, // Default color
-                type: 'sedan' as const, // Default type
-                mileage: vehicle.currentMileage || 0, // Use actual mileage if available
-                nextService: vehicle.nextServiceDue || 'Oil Change', // Use actual next service if available
-                serviceStatus: vehicle.serviceStatus || 'good' as const,
-              }));
-              console.log('✅ Formatted vehicles:', formattedVehicles.length);
-              console.log('🔍 DEBUG: Setting realVehicles to:', formattedVehicles);
-              setRealVehicles(formattedVehicles);
-            } else {
-              console.log('⚠️ No vehicles data or invalid format');
-              setRealVehicles([]);
-            }
+          if (vehiclesData.data && Array.isArray(vehiclesData.data)) {
+            const formattedVehicles: Vehicle[] = vehiclesData.data.map((vehicle: any) => ({
+              id: vehicle.id,
+              name: `${vehicle.year || 'Unknown'} ${vehicle.make || 'Unknown'} ${vehicle.model || 'Unknown'}`,
+              model: vehicle.model || 'Unknown',
+              year: vehicle.year?.toString() || 'Unknown',
+              license: vehicle.licensePlate || 'N/A',
+              color: Colors.primary, // Default color
+              type: 'sedan' as const, // Default type
+              mileage: vehicle.currentMileage || 0, // Use actual mileage if available
+              nextService: vehicle.nextServiceDue || 'Oil Change', // Use actual next service if available
+              serviceStatus: vehicle.serviceStatus || 'good' as const,
+            }));
+            console.log('✅ Formatted vehicles:', formattedVehicles.length);
+            console.log('🔍 DEBUG: Setting realVehicles to:', formattedVehicles);
+            setRealVehicles(formattedVehicles);
           } else {
-            const errorText = await vehiclesRes.text();
-            console.error('❌ Vehicles API error:', errorText);
+            console.log('⚠️ No vehicles data or invalid format');
             setRealVehicles([]);
           }
-        } catch (error) {
-          console.error('❌ Error fetching vehicles:', error);
-          setAlertConfig({
-            visible: true,
-            title: 'Connection Error',
-            message: 'Unable to load vehicle data. Please check your connection.',
-            type: 'error',
-            onClose: () => setAlertConfig(null),
-          });
+        } else {
+          const errorText = await vehiclesRes.text();
+          console.error('❌ Vehicles API error:', errorText);
           setRealVehicles([]);
         }
+      } catch (error) {
+        console.error('❌ Error fetching vehicles:', error);
+        setAlertConfig({
+          visible: true,
+          title: 'Connection Error',
+          message: 'Unable to load vehicle data. Please check your connection.',
+          type: 'error',
+          onClose: () => setAlertConfig(null),
+        });
+        setRealVehicles([]);
+      }
 
-        // Fetch appointments/services
-        try {
-          console.log('📡 Fetching appointments for customerId:', user.customerId || user.id);
-          const customerId = user.customerId || user.id;
-          console.log('📡 Appointments API URL:', `http://10.0.2.2:3000/appointments?customerId=${customerId}`);
-          const appointmentsRes = await fetch(`http://10.0.2.2:3000/appointments?customerId=${customerId}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-              'X-Client-Type': 'mobile',
-            },
+      // Fetch appointments/services
+      try {
+        console.log('📡 Fetching appointments for customerId:', user.customerId || user.id);
+        const customerId = user.customerId || user.id;
+        console.log('📡 Appointments API URL:', `http://10.0.2.2:3000/appointments?customerId=${customerId}`);
+        const appointmentsRes = await fetch(`http://10.0.2.2:3000/appointments?customerId=${customerId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'X-Client-Type': 'mobile',
+          },
+        });
+
+        console.log('📡 Appointments response status:', appointmentsRes.status);
+        console.log('📡 Appointments response ok:', appointmentsRes.ok);
+
+        if (appointmentsRes.ok) {
+          const appointmentsData = await appointmentsRes.json();
+          console.log('✅ Appointments data received:', appointmentsData);
+          console.log('✅ Appointments data structure:', {
+            hasData: !!appointmentsData.data,
+            dataType: typeof appointmentsData.data,
+            dataLength: appointmentsData.data?.length || 0
           });
 
-          console.log('📡 Appointments response status:', appointmentsRes.status);
-          console.log('📡 Appointments response ok:', appointmentsRes.ok);
+          if (appointmentsData.data && Array.isArray(appointmentsData.data)) {
+            const appointments = appointmentsData.data;
+            console.log('📊 Total appointments found:', appointments.length);
 
-          if (appointmentsRes.ok) {
-            const appointmentsData = await appointmentsRes.json();
-            console.log('✅ Appointments data received:', appointmentsData);
-            console.log('✅ Appointments data structure:', {
-              hasData: !!appointmentsData.data,
-              dataType: typeof appointmentsData.data,
-              dataLength: appointmentsData.data?.length || 0
+            // Calculate stats from real data
+            const now = new Date();
+            const totalVehicles = realVehicles.length > 0 ? realVehicles.length : 0;
+            const activeServices = appointments.filter((apt: any) => {
+              const startTime = apt.startTime ? new Date(apt.startTime) : null;
+              return (apt.status === 'IN_PROGRESS' || apt.status === 'CHECKED_IN') &&
+                     (!startTime || startTime <= now);
+            }).length;
+            const scheduledServices = appointments.filter((apt: any) => {
+              const startTime = apt.startTime ? new Date(apt.startTime) : null;
+              return (apt.status === 'PENDING' || apt.status === 'CONFIRMED') &&
+                     startTime && startTime > now;
+            }).length;
+
+            console.log('📊 Dashboard stats calculated:', {
+              vehicles: totalVehicles,
+              active: activeServices,
+              scheduled: scheduledServices
             });
+            console.log('🔍 DEBUG: realVehicles state at stats calc:', realVehicles.length, 'vehicles');
+            // console.log('🔍 DEBUG: formattedVehicles from API:', formattedVehicles?.length || 0, 'vehicles');
 
-            if (appointmentsData.data && Array.isArray(appointmentsData.data)) {
-              const appointments = appointmentsData.data;
-              console.log('📊 Total appointments found:', appointments.length);
+            setDashboardStats({
+              vehicles: totalVehicles,
+              active: activeServices,
+              scheduled: scheduledServices
+            });
+            console.log('🔍 DEBUG: dashboardStats set to:', { vehicles: totalVehicles, active: activeServices, scheduled: scheduledServices });
 
-              // Calculate stats from real data
-              const now = new Date();
-              const totalVehicles = realVehicles.length > 0 ? realVehicles.length : 0;
-              const activeServices = appointments.filter((apt: any) => {
-                const startTime = apt.startTime ? new Date(apt.startTime) : null;
-                return (apt.status === 'IN_PROGRESS' || apt.status === 'CHECKED_IN') &&
-                       (!startTime || startTime <= now);
-              }).length;
-              const scheduledServices = appointments.filter((apt: any) => {
-                const startTime = apt.startTime ? new Date(apt.startTime) : null;
-                return (apt.status === 'PENDING' || apt.status === 'CONFIRMED') &&
-                       startTime && startTime > now;
-              }).length;
+            // Format recent services (show all appointments, not just first 3)
+            const formattedServices: ServiceStatus[] = appointments.map((apt: any) => ({
+              id: apt.id,
+              title: apt.cannedServices?.map((cs: any) => cs.cannedService?.name).join(', ') || 'Service',
+              status: apt.status === 'IN_PROGRESS' ? 'in-progress' :
+                     apt.status === 'COMPLETED' ? 'completed' :
+                     apt.status === 'PENDING' ? 'scheduled' :
+                     apt.status === 'CONFIRMED' ? 'scheduled' : 'scheduled',
+              date: apt.startTime ? new Date(apt.startTime).toLocaleDateString() : 'TBD',
+              time: apt.startTime ? new Date(apt.startTime).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+              }) : 'TBD',
+              serviceType: 'Service',
+              vehicle: apt.vehicle ? `${apt.vehicle.year || 'Unknown'} ${apt.vehicle.make || 'Unknown'} ${apt.vehicle.model || 'Unknown'}` : 'Unknown Vehicle',
+              icon: 'construct',
+              color: Colors.primary
+            }));
 
-              console.log('📊 Dashboard stats calculated:', {
-                vehicles: totalVehicles,
-                active: activeServices,
-                scheduled: scheduledServices
-              });
-              console.log('🔍 DEBUG: realVehicles state at stats calc:', realVehicles.length, 'vehicles');
-              // console.log('🔍 DEBUG: formattedVehicles from API:', formattedVehicles?.length || 0, 'vehicles');
-
-              setDashboardStats({
-                vehicles: totalVehicles,
-                active: activeServices,
-                scheduled: scheduledServices
-              });
-              console.log('🔍 DEBUG: dashboardStats set to:', { vehicles: totalVehicles, active: activeServices, scheduled: scheduledServices });
-
-              // Format recent services (show all appointments, not just first 3)
-              const formattedServices: ServiceStatus[] = appointments.map((apt: any) => ({
-                id: apt.id,
-                title: apt.cannedServices?.map((cs: any) => cs.cannedService?.name).join(', ') || 'Service',
-                status: apt.status === 'IN_PROGRESS' ? 'in-progress' :
-                       apt.status === 'COMPLETED' ? 'completed' :
-                       apt.status === 'PENDING' ? 'scheduled' :
-                       apt.status === 'CONFIRMED' ? 'scheduled' : 'scheduled',
-                date: apt.startTime ? new Date(apt.startTime).toLocaleDateString() : 'TBD',
-                time: apt.startTime ? new Date(apt.startTime).toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }) : 'TBD',
-                serviceType: 'Service',
-                vehicle: apt.vehicle ? `${apt.vehicle.year || 'Unknown'} ${apt.vehicle.make || 'Unknown'} ${apt.vehicle.model || 'Unknown'}` : 'Unknown Vehicle',
-                icon: 'construct',
-                color: Colors.primary
-              }));
-
-              console.log('✅ Formatted services:', formattedServices.length);
-              setRealServices(formattedServices.length > 0 ? formattedServices : []);
-            } else {
-              console.log('⚠️ No appointments data or invalid format');
-              setDashboardStats({ vehicles: realVehicles.length, active: 0, scheduled: 0 });
-              setRealServices([]);
-            }
+            console.log('✅ Formatted services:', formattedServices.length);
+            setRealServices(formattedServices.length > 0 ? formattedServices : []);
           } else {
-            const errorText = await appointmentsRes.text();
-            console.error('❌ Appointments API error:', errorText);
+            console.log('⚠️ No appointments data or invalid format');
             setDashboardStats({ vehicles: realVehicles.length, active: 0, scheduled: 0 });
             setRealServices([]);
           }
-        } catch (error) {
-          console.error('❌ Error fetching appointments:', error);
-          setAlertConfig({
-            visible: true,
-            title: 'Connection Error',
-            message: 'Unable to load appointment data. Please check your connection.',
-            type: 'error',
-            onClose: () => setAlertConfig(null),
-          });
+        } else {
+          const errorText = await appointmentsRes.text();
+          console.error('❌ Appointments API error:', errorText);
           setDashboardStats({ vehicles: realVehicles.length, active: 0, scheduled: 0 });
           setRealServices([]);
         }
-
       } catch (error) {
-        console.error('Error in dashboard data fetch:', error);
-        // Use mock data as fallback
-        setRealVehicles(vehicles);
-        setRealServices(serviceStatuses);
-        setDashboardStats({ vehicles: 2, active: 1, scheduled: 3 });
-      } finally {
-        setIsLoading(false);
+        console.error('❌ Error fetching appointments:', error);
+        setAlertConfig({
+          visible: true,
+          title: 'Connection Error',
+          message: 'Unable to load appointment data. Please check your connection.',
+          type: 'error',
+          onClose: () => setAlertConfig(null),
+        });
+        setDashboardStats({ vehicles: realVehicles.length, active: 0, scheduled: 0 });
+        setRealServices([]);
       }
-    };
 
-    fetchDashboardData();
+    } catch (error) {
+      console.error('Error in dashboard data fetch:', error);
+      // Use mock data as fallback
+      setRealVehicles(vehicles);
+      setRealServices(serviceStatuses);
+      setDashboardStats({ vehicles: 2, active: 1, scheduled: 3 });
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchDashboardData();
+    }, [fetchDashboardData])
+  );
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 

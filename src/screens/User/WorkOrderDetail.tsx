@@ -38,13 +38,17 @@ const WorkOrderDetail = () => {
   const [alertConfig, setAlertConfig] = useState<any>({});
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
-  useEffect(() => {
-    const fetchDetailedWorkOrder = async () => {
-      try {
+  const fetchDetailedWorkOrder = async (isPolling = false) => {
+    const startTime = Date.now();
+    try {
+      if (!isPolling) {
         setIsLoading(true);
-        const token = await AsyncStorage.getItem('token');
+      }
 
-        if (!token) {
+      const token = await AsyncStorage.getItem('token');
+
+      if (!token) {
+        if (!isPolling) {
           setAlertConfig({
             title: 'Authentication Error',
             message: 'Authentication required',
@@ -54,28 +58,35 @@ const WorkOrderDetail = () => {
           });
           setAlertVisible(true);
           navigation.goBack();
-          return;
         }
+        return;
+      }
 
-        const response = await fetch(`http://10.0.2.2:3000/work-orders/${workOrder.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+      console.log(`🔄 ${isPolling ? 'Polling' : 'Initial'} fetch started for work order ${workOrder.id}`);
 
-        const data = await response.json();
+      const response = await fetch(`http://10.0.2.2:3000/work-orders/${workOrder.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-        if (response.ok && data.success) {
-          setDetailedWorkOrder(data.data);
-          console.log('🔍 Work order data received');
-          console.log('🔍 Approvals in data:', data.data?.approvals);
-          console.log('🔍 Number of approvals:', data.data?.approvals?.length);
-          if (data.data?.approvals?.length > 0) {
-            console.log('🔍 First approval ID:', data.data.approvals[0].id);
-            console.log('🔍 Last approval ID:', data.data.approvals[data.data.approvals.length - 1].id);
-          }
-        } else {
+      const data = await response.json();
+      const fetchTime = Date.now() - startTime;
+
+      console.log(`⏱️  ${isPolling ? 'Polling' : 'Initial'} fetch completed in ${fetchTime}ms`);
+
+      if (response.ok && data.success) {
+        setDetailedWorkOrder(data.data);
+        console.log('🔍 Work order data received');
+        console.log('🔍 Approvals in data:', data.data?.approvals);
+        console.log('🔍 Number of approvals:', data.data?.approvals?.length);
+        if (data.data?.approvals?.length > 0) {
+          console.log('🔍 First approval ID:', data.data.approvals[0].id);
+          console.log('🔍 Last approval ID:', data.data.approvals[data.data.approvals.length - 1].id);
+        }
+      } else {
+        if (!isPolling) {
           setAlertConfig({
             title: 'Error',
             message: 'Failed to fetch work order details',
@@ -85,9 +96,14 @@ const WorkOrderDetail = () => {
           });
           setAlertVisible(true);
           navigation.goBack();
+        } else {
+          console.warn('⚠️  Polling fetch failed, but continuing silently');
         }
-      } catch (error) {
-        console.error('Error fetching work order details:', error);
+      }
+    } catch (error) {
+      const fetchTime = Date.now() - startTime;
+      console.error(`❌ ${isPolling ? 'Polling' : 'Initial'} fetch error after ${fetchTime}ms:`, error);
+      if (!isPolling) {
         setAlertConfig({
           title: 'Error',
           message: 'Failed to fetch work order details',
@@ -97,12 +113,28 @@ const WorkOrderDetail = () => {
         });
         setAlertVisible(true);
         navigation.goBack();
-      } finally {
+      }
+    } finally {
+      if (!isPolling) {
         setIsLoading(false);
       }
-    };
+    }
+  };
 
-    fetchDetailedWorkOrder();
+  useEffect(() => {
+    // Initial fetch
+    fetchDetailedWorkOrder(false);
+
+    // Set up polling every 2 seconds
+    const pollInterval = setInterval(() => {
+      fetchDetailedWorkOrder(true);
+    }, 2000);
+
+    // Cleanup interval on unmount
+    return () => {
+      console.log('🧹 Cleaning up polling interval');
+      clearInterval(pollInterval);
+    };
   }, [workOrder.id, navigation]);
 
   const formatDate = (dateString: string) => {
@@ -1402,7 +1434,7 @@ const WorkOrderDetail = () => {
                   >
                     <Icon name="card-outline" size={16} color={Colors.neutral0} />
                     <Text style={styles.payButtonText}>
-                      {isProcessingPayment ? 'Processing...' : 'Pay Now (Stripe)'}
+                      {isProcessingPayment ? 'Processing...' : 'Pay Now'}
                     </Text>
                   </TouchableOpacity>
                 </View>

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -39,20 +40,7 @@ const CarProfilePage = () => {
   const [newIssuePriority, setNewIssuePriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const getCarIdAndLoadIssues = async () => {
-      const storedCarId = await AsyncStorage.getItem('selectedCarId');
-      setCarId(storedCarId);
-      if (storedCarId) {
-        loadIssues(storedCarId);
-      } else {
-        setIsLoading(false);
-      }
-    };
-    getCarIdAndLoadIssues();
-  }, []);
-
-  const loadIssues = async (vehicleId: string) => {
+  const loadIssuesCallback = useCallback(async (vehicleId: string) => {
     try {
       setIsLoading(true);
       // For now, load from local storage. In future, this could be from backend
@@ -65,7 +53,29 @@ const CarProfilePage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const getCarIdAndLoadIssues = async () => {
+      const storedCarId = await AsyncStorage.getItem('selectedCarId');
+      setCarId(storedCarId);
+      if (storedCarId) {
+        loadIssuesCallback(storedCarId);
+      } else {
+        setIsLoading(false);
+      }
+    };
+    getCarIdAndLoadIssues();
+  }, [loadIssuesCallback]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (carId) {
+        loadIssuesCallback(carId);
+      }
+    }, [carId, loadIssuesCallback])
+  );
+
 
   const saveIssues = async (updatedIssues: CarIssue[]) => {
     if (!carId) return;
@@ -156,7 +166,6 @@ const CarProfilePage = () => {
           icon="back"
           name="Car Profile"
           image=""
-          onIconPress={() => navigation.goBack()}
         />
         <LoadingComponent
           loadingText="Loading car profile..."

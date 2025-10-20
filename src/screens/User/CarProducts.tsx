@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useCallback } from 'react'
+import { useFocusEffect } from '@react-navigation/native';
 import { 
   View, 
   Text, 
@@ -96,222 +97,223 @@ const CarProducts = () => {
     return diffDays
   }
 
-  // Fetch parts/products from backend
-  useEffect(() => {
-    const fetchParts = async () => {
-      // Mock data - fallback when backend is unavailable
-      const mockUsedProducts = [
-        {
-          id: '1',
-          icon: 'battery-charging-outline',
-          name: 'AGM Battery',
-          brand: 'Optima',
-          partNumber: 'OPT-D35',
-          purchaseDate: '2024-05-20',
-          installationDate: '2024-05-20',
-          warrantyPeriod: 36,
-          warrantyStatus: 'active',
-          cost: 180.00,
-          supplier: 'AutoZone',
-          category: 'electrical',
-          condition: 'excellent',
-          notes: 'High-performance battery for extreme weather'
-        },
-        {
-          id: '2',
-          icon: 'car-outline',
-          name: 'Ceramic Brake Pads',
-          brand: 'Brembo',
-          partNumber: 'BRM-P85020',
-          purchaseDate: '2024-06-05',
-          installationDate: '2024-06-10',
-          warrantyPeriod: 24,
-          warrantyStatus: 'active',
-          cost: 320.00,
-          supplier: 'Brake Specialists',
-          category: 'brake',
-          condition: 'excellent'
-        },
-        {
-          id: '3',
-          icon: 'settings-outline',
-          name: 'Transmission Filter',
-          brand: 'OEM Toyota',
-          partNumber: 'TOY-35330-0W040',
-          purchaseDate: '2024-04-10',
-          installationDate: '2024-04-10',
-          warrantyPeriod: 12,
-          warrantyStatus: 'active',
-          cost: 45.00,
-          supplier: 'Toyota Dealership',
-          category: 'transmission',
-          condition: 'good'
-        },
-        {
-          id: '4',
-          icon: 'car-sport-outline',
-          name: 'Air Filter',
-          brand: 'K&N',
-          partNumber: 'KN-33-2364',
-          purchaseDate: '2024-04-30',
-          installationDate: '2024-04-30',
-          warrantyPeriod: 60,
-          warrantyStatus: 'active',
-          cost: 55.00,
-          supplier: 'Performance Parts Co.',
-          category: 'engine',
-          condition: 'excellent',
-          notes: 'High-flow reusable air filter'
-        },
-        {
-          id: '5',
-          icon: 'flash-outline',
-          name: 'Spark Plugs (Set of 4)',
-          brand: 'NGK',
-          partNumber: 'NGK-LZKAR6AP-11',
-          purchaseDate: '2024-04-25',
-          installationDate: '2024-04-30',
-          warrantyPeriod: 24,
-          warrantyStatus: 'active',
-          cost: 80.00,
-          supplier: 'Auto Parts Plus',
-          category: 'engine',
-          condition: 'excellent'
-        },
-        {
-          id: '6',
-          icon: 'thermometer-outline',
-          name: 'Cabin Air Filter',
-          brand: 'Fram',
-          partNumber: 'FRM-CF10285',
-          purchaseDate: '2024-05-15',
-          installationDate: '2024-05-15',
-          warrantyPeriod: 12,
-          warrantyStatus: 'active',
-          cost: 25.00,
-          supplier: 'Walmart Auto Center',
-          category: 'other',
-          condition: 'good'
-        },
-        {
-          id: '7',
-          icon: 'car-outline',
-          name: 'Brake Rotors (Front)',
-          brand: 'Wagner',
-          partNumber: 'WAG-BD125394',
-          purchaseDate: '2023-08-15',
-          installationDate: '2023-08-20',
-          warrantyPeriod: 24,
-          warrantyStatus: 'expiring-soon',
-          cost: 150.00,
-          supplier: 'NAPA Auto Parts',
-          category: 'brake',
-          condition: 'good'
-        },
-        {
-          id: '8',
-          icon: 'cog-outline',
-          name: 'Alternator',
-          brand: 'Bosch',
-          partNumber: 'BSH-AL0834X',
-          purchaseDate: '2022-12-10',
-          installationDate: '2022-12-15',
-          warrantyPeriod: 24,
-          warrantyStatus: 'expired',
-          cost: 250.00,
-          supplier: 'Bosch Service Center',
-          category: 'electrical',
-          condition: 'fair',
-          notes: 'Refurbished unit with limited warranty'
-        }
-      ];
-
-      try {
-        setIsLoading(true);
-        const selectedCarId = await AsyncStorage.getItem('selectedCarId');
-        if (!selectedCarId) {
-          console.log('No car selected, using mock data');
-          setUsedProducts(mockUsedProducts);
-          return;
-        }
-
-        const token = await AsyncStorage.getItem('token');
-        if (!token) {
-          console.log('No token found, using mock data');
-          setUsedProducts(mockUsedProducts);
-          return;
-        }
-
-        console.log('Fetching parts for vehicle:', selectedCarId);
-
-        // Fetch work orders for this vehicle to get parts used
-        console.log('📡 Fetching work orders for vehicle:', selectedCarId);
-        const res = await fetch(`http://10.0.2.2:3000/work-orders?vehicleId=${selectedCarId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'X-Client-Type': 'mobile',
-          },
-        });
-
-        const data = await res.json();
-        console.log('📡 Work orders response:', data);
-
-        if (res.ok && data.data && Array.isArray(data.data)) {
-          console.log('✅ Found', data.data.length, 'work orders');
-          // Get all parts from work orders
-          const allParts: any[] = [];
-
-          for (const workOrder of data.data) {
-            console.log('📡 Fetching parts for work order:', workOrder.id);
-            // Fetch parts for each work order - Note: This endpoint doesn't exist in the backend
-            // The backend doesn't have a /work-orders/:id/parts endpoint
-            // We need to get parts from the work order include or find another way
-            console.log('⚠️ Parts endpoint /work-orders/${workOrder.id}/parts does not exist in backend');
-            console.log('📡 Work order data structure:', workOrder);
-
-            // Check if parts are included in the work order response
-            if (workOrder.partsUsed && Array.isArray(workOrder.partsUsed)) {
-              console.log('✅ Found parts in work order include:', workOrder.partsUsed.length);
-              // Transform parts data into product format
-              const transformedParts = workOrder.partsUsed.map((part: any) => ({
-                id: part.id,
-                icon: getPartIcon(part.part?.category || 'other'),
-                name: part.part?.name || 'Unknown Part',
-                brand: part.part?.manufacturer || 'Unknown Brand',
-                partNumber: part.part?.partNumber || part.part?.sku || 'N/A',
-                purchaseDate: part.createdAt ? new Date(part.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                installationDate: part.installedAt ? new Date(part.installedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                warrantyPeriod: 12, // Default warranty period
-                warrantyStatus: 'active',
-                cost: part.unitPrice || 0,
-                supplier: part.supplierName || 'Unknown Supplier',
-                category: getPartCategory(part.part?.category || 'other'),
-                condition: 'excellent',
-                notes: part.notes || '',
-              }));
-              allParts.push(...transformedParts);
-            } else {
-              console.log('⚠️ No parts found in work order', workOrder.id);
-            }
-          }
-
-          console.log('✅ Total parts collected:', allParts.length);
-          setUsedProducts(allParts.length > 0 ? allParts : mockUsedProducts);
-        } else {
-          console.error('❌ Failed to fetch work orders:', data);
-          setUsedProducts(mockUsedProducts);
-        }
-      } catch (err) {
-        console.error('Error fetching parts:', err);
-        setUsedProducts(mockUsedProducts);
-      } finally {
-        setIsLoading(false);
+  const fetchPartsCallback = useCallback(async () => {
+    // Mock data - fallback when backend is unavailable
+    const mockUsedProducts = [
+      {
+        id: '1',
+        icon: 'battery-charging-outline',
+        name: 'AGM Battery',
+        brand: 'Optima',
+        partNumber: 'OPT-D35',
+        purchaseDate: '2024-05-20',
+        installationDate: '2024-05-20',
+        warrantyPeriod: 36,
+        warrantyStatus: 'active',
+        cost: 180.00,
+        supplier: 'AutoZone',
+        category: 'electrical',
+        condition: 'excellent',
+        notes: 'High-performance battery for extreme weather'
+      },
+      {
+        id: '2',
+        icon: 'car-outline',
+        name: 'Ceramic Brake Pads',
+        brand: 'Brembo',
+        partNumber: 'BRM-P85020',
+        purchaseDate: '2024-06-05',
+        installationDate: '2024-06-10',
+        warrantyPeriod: 24,
+        warrantyStatus: 'active',
+        cost: 320.00,
+        supplier: 'Brake Specialists',
+        category: 'brake',
+        condition: 'excellent'
+      },
+      {
+        id: '3',
+        icon: 'settings-outline',
+        name: 'Transmission Filter',
+        brand: 'OEM Toyota',
+        partNumber: 'TOY-35330-0W040',
+        purchaseDate: '2024-04-10',
+        installationDate: '2024-04-10',
+        warrantyPeriod: 12,
+        warrantyStatus: 'active',
+        cost: 45.00,
+        supplier: 'Toyota Dealership',
+        category: 'transmission',
+        condition: 'good'
+      },
+      {
+        id: '4',
+        icon: 'car-sport-outline',
+        name: 'Air Filter',
+        brand: 'K&N',
+        partNumber: 'KN-33-2364',
+        purchaseDate: '2024-04-30',
+        installationDate: '2024-04-30',
+        warrantyPeriod: 60,
+        warrantyStatus: 'active',
+        cost: 55.00,
+        supplier: 'Performance Parts Co.',
+        category: 'engine',
+        condition: 'excellent',
+        notes: 'High-flow reusable air filter'
+      },
+      {
+        id: '5',
+        icon: 'flash-outline',
+        name: 'Spark Plugs (Set of 4)',
+        brand: 'NGK',
+        partNumber: 'NGK-LZKAR6AP-11',
+        purchaseDate: '2024-04-25',
+        installationDate: '2024-04-30',
+        warrantyPeriod: 24,
+        warrantyStatus: 'active',
+        cost: 80.00,
+        supplier: 'Auto Parts Plus',
+        category: 'engine',
+        condition: 'excellent'
+      },
+      {
+        id: '6',
+        icon: 'thermometer-outline',
+        name: 'Cabin Air Filter',
+        brand: 'Fram',
+        partNumber: 'FRM-CF10285',
+        purchaseDate: '2024-05-15',
+        installationDate: '2024-05-15',
+        warrantyPeriod: 12,
+        warrantyStatus: 'active',
+        cost: 25.00,
+        supplier: 'Walmart Auto Center',
+        category: 'other',
+        condition: 'good'
+      },
+      {
+        id: '7',
+        icon: 'car-outline',
+        name: 'Brake Rotors (Front)',
+        brand: 'Wagner',
+        partNumber: 'WAG-BD125394',
+        purchaseDate: '2023-08-15',
+        installationDate: '2023-08-20',
+        warrantyPeriod: 24,
+        warrantyStatus: 'expiring-soon',
+        cost: 150.00,
+        supplier: 'NAPA Auto Parts',
+        category: 'brake',
+        condition: 'good'
+      },
+      {
+        id: '8',
+        icon: 'cog-outline',
+        name: 'Alternator',
+        brand: 'Bosch',
+        partNumber: 'BSH-AL0834X',
+        purchaseDate: '2022-12-10',
+        installationDate: '2022-12-15',
+        warrantyPeriod: 24,
+        warrantyStatus: 'expired',
+        cost: 250.00,
+        supplier: 'Bosch Service Center',
+        category: 'electrical',
+        condition: 'fair',
+        notes: 'Refurbished unit with limited warranty'
       }
-    };
+    ];
 
-    fetchParts();
+    try {
+      setIsLoading(true);
+      const selectedCarId = await AsyncStorage.getItem('selectedCarId');
+      if (!selectedCarId) {
+        console.log('No car selected, using mock data');
+        setUsedProducts(mockUsedProducts);
+        return;
+      }
+
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        console.log('No token found, using mock data');
+        setUsedProducts(mockUsedProducts);
+        return;
+      }
+
+      console.log('Fetching parts for vehicle:', selectedCarId);
+
+      // Fetch work orders for this vehicle to get parts used
+      console.log('📡 Fetching work orders for vehicle:', selectedCarId);
+      const res = await fetch(`http://10.0.2.2:3000/work-orders?vehicleId=${selectedCarId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-Client-Type': 'mobile',
+        },
+      });
+
+      const data = await res.json();
+      console.log('📡 Work orders response:', data);
+
+      if (res.ok && data.data && Array.isArray(data.data)) {
+        console.log('✅ Found', data.data.length, 'work orders');
+        // Get all parts from work orders
+        const allParts: any[] = [];
+
+        for (const workOrder of data.data) {
+          console.log('📡 Fetching parts for work order:', workOrder.id);
+          // Fetch parts for each work order - Note: This endpoint doesn't exist in the backend
+          // The backend doesn't have a /work-orders/:id/parts endpoint
+          // We need to get parts from the work order include or find another way
+          console.log('⚠️ Parts endpoint /work-orders/${workOrder.id}/parts does not exist in backend');
+          console.log('📡 Work order data structure:', workOrder);
+
+          // Check if parts are included in the work order response
+          if (workOrder.partsUsed && Array.isArray(workOrder.partsUsed)) {
+            console.log('✅ Found parts in work order include:', workOrder.partsUsed.length);
+            // Transform parts data into product format
+            const transformedParts = workOrder.partsUsed.map((part: any) => ({
+              id: part.id,
+              icon: getPartIcon(part.part?.category || 'other'),
+              name: part.part?.name || 'Unknown Part',
+              brand: part.part?.manufacturer || 'Unknown Brand',
+              partNumber: part.part?.partNumber || part.part?.sku || 'N/A',
+              purchaseDate: part.createdAt ? new Date(part.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+              installationDate: part.installedAt ? new Date(part.installedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+              warrantyPeriod: 12, // Default warranty period
+              warrantyStatus: 'active',
+              cost: part.unitPrice || 0,
+              supplier: part.supplierName || 'Unknown Supplier',
+              category: getPartCategory(part.part?.category || 'other'),
+              condition: 'excellent',
+              notes: part.notes || '',
+            }));
+            allParts.push(...transformedParts);
+          } else {
+            console.log('⚠️ No parts found in work order', workOrder.id);
+          }
+        }
+
+        console.log('✅ Total parts collected:', allParts.length);
+        setUsedProducts(allParts.length > 0 ? allParts : mockUsedProducts);
+      } else {
+        console.error('❌ Failed to fetch work orders:', data);
+        setUsedProducts(mockUsedProducts);
+      }
+    } catch (err) {
+      console.error('Error fetching parts:', err);
+      setUsedProducts(mockUsedProducts);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPartsCallback();
+    }, [fetchPartsCallback])
+  );
 
   // Helper function to get part icon based on category
   const getPartIcon = (category: string) => {

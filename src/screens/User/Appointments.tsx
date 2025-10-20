@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import Header from '../../components/Header';
 import Colors from '../../constants/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CustomAlert, { CustomAlertProps } from '../../components/Alert';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface Appointment {
   id: string;
@@ -64,11 +65,7 @@ const Appointments: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [alertConfig, setAlertConfig] = useState<CustomAlertProps | null>(null);
 
-  useEffect(() => {
-    fetchAppointments();
-  }, []);
-
-  const fetchAppointments = async () => {
+  const fetchAppointmentsCallback = useCallback(async () => {
     try {
       setLoading(true);
       console.log('Fetching appointments...');
@@ -144,11 +141,18 @@ const Appointments: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchAppointmentsCallback();
+    }, [fetchAppointmentsCallback])
+  );
+
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchAppointments();
+    await fetchAppointmentsCallback();
     setRefreshing(false);
   };
 

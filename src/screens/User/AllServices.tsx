@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react"
+ import React, { useState, useCallback } from "react"
 import { View, Text, StyleSheet, SafeAreaView, ScrollView} from "react-native"
 import Icon from 'react-native-vector-icons/Ionicons'
 import Colors from "../../constants/colors"
@@ -6,7 +6,7 @@ import ServiceCard from "../../components/ServiceCard"
 import Button from '../../components/Button'
 import Header from '../../components/Header'
 import SearchBar from '../../components/SearchBar';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -176,9 +176,11 @@ const AllServicesScreen: React.FC<AllServicesScreenProps> = ({ onBack: _onBack, 
     });
   }, [showAlert]);
 
-  useEffect(() => {
-    fetchServices();
-  }, [fetchServices]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchServices();
+    }, [fetchServices])
+  );
 
   return (
     <SafeAreaView style={styles.container}>

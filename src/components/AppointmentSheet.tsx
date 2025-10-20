@@ -212,6 +212,8 @@ const AppointmentBottomSheet: React.FC<AppointmentBottomSheetProps> = ({
             onClose: () => {
               setAlertConfig(null);
               onConfirm(data.data);
+              // Navigate to appointment page after successful booking
+              navigation.navigate('Appointments');
             }
           });
           return true;

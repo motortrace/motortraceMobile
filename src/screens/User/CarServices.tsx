@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useCallback } from 'react'
+import { useFocusEffect } from '@react-navigation/native';
 import { 
   View, 
   Text, 
@@ -62,150 +63,151 @@ const CarServices = () => {
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  // Fetch services from backend
-  useEffect(() => {
-    const fetchServices = async () => {
-      // Mock data - fallback when backend is unavailable
-      const mockServices = [
-        {
-          id: '1',
-          icon: 'build-outline',
-          title: 'Oil Change & Filter',
-          description: 'Full synthetic oil change with new filter. Next due: 15,000 km',
-          date: '2024-06-15',
-          cost: 85.00,
-          status: 'completed',
-          category: 'maintenance'
-        },
-        {
-          id: '2',
-          icon: 'car-outline',
-          title: 'Brake Pad Replacement',
-          description: 'Front brake pads replaced. Rotors inspected and cleaned',
-          date: '2024-06-10',
-          cost: 320.00,
-          status: 'completed',
-          category: 'repair'
-        },
-        {
-          id: '3',
-          icon: 'speedometer-outline',
-          title: 'Annual Safety Inspection',
-          description: 'Comprehensive safety inspection. Valid until June 2025',
-          date: '2024-06-01',
-          cost: 45.00,
-          status: 'completed',
-          category: 'inspection'
-        },
-        {
-          id: '4',
-          icon: 'battery-charging-outline',
-          title: 'Battery Replacement',
-          description: 'New AGM battery installed. 3-year warranty included',
-          date: '2024-05-20',
-          cost: 180.00,
-          status: 'completed',
-          category: 'repair'
-        },
-        {
-          id: '5',
-          icon: 'thermometer-outline',
-          title: 'A/C System Service',
-          description: 'A/C system recharged and leak tested. Cabin filter replaced',
-          date: '2024-05-15',
-          cost: 125.00,
-          status: 'completed',
-          category: 'maintenance'
-        },
-        {
-          id: '6',
-          icon: 'car-sport-outline',
-          title: 'Performance Tune-Up',
-          description: 'Spark plugs, air filter, and fuel system cleaning',
-          date: '2024-04-30',
-          cost: 280.00,
-          status: 'completed',
-          category: 'maintenance'
-        },
-        {
-          id: '7',
-          icon: 'checkmark-circle-outline',
-          title: 'Scheduled Maintenance',
-          description: 'Upcoming 60,000 km service appointment',
-          date: '2024-07-15',
-          cost: 450.00,
-          status: 'pending',
-          category: 'maintenance'
-        },
-        {
-          id: '8',
-          icon: 'settings-outline',
-          title: 'Transmission Service',
-          description: 'Transmission fluid change and filter replacement',
-          date: '2024-04-10',
-          cost: 195.00,
-          status: 'completed',
-          category: 'maintenance'
-        }
-      ];
-
-      try {
-        setIsLoading(true);
-        const selectedCarId = await AsyncStorage.getItem('selectedCarId');
-        if (!selectedCarId) {
-          console.log('No car selected, using mock data');
-          setServices(mockServices);
-          return;
-        }
-
-        const token = await AsyncStorage.getItem('token');
-        if (!token) {
-          console.log('No token found, using mock data');
-          setServices(mockServices);
-          return;
-        }
-
-        console.log('Fetching services for vehicle:', selectedCarId);
-        
-        // Fetch work orders for this vehicle
-        const res = await fetch(`http://10.0.2.2:3000/work-orders?vehicleId=${selectedCarId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        const data = await res.json();
-        console.log('Work orders response:', data);
-
-        if (res.ok && data.data) {
-          // Transform work orders into service format
-          const workOrderServices = data.data.map((wo: any) => ({
-            id: wo.id,
-            icon: getServiceIcon(wo.jobType),
-            title: wo.jobType || 'Service',
-            description: wo.complaint || wo.internalNotes || 'Vehicle service performed',
-            date: wo.createdAt ? new Date(wo.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-            cost: wo.totalAmount || 0,
-            status: wo.status === 'COMPLETED' ? 'completed' : wo.status === 'IN_PROGRESS' ? 'in-progress' : 'pending',
-            category: getServiceCategory(wo.jobType),
-          }));
-
-          setServices(workOrderServices);
-        } else {
-          console.error('Failed to fetch services:', data);
-          setServices(mockServices);
-        }
-      } catch (err) {
-        console.error('Error fetching services:', err);
-        setServices(mockServices);
-      } finally {
-        setIsLoading(false);
+  const fetchServicesCallback = useCallback(async () => {
+    // Mock data - fallback when backend is unavailable
+    const mockServices = [
+      {
+        id: '1',
+        icon: 'build-outline',
+        title: 'Oil Change & Filter',
+        description: 'Full synthetic oil change with new filter. Next due: 15,000 km',
+        date: '2024-06-15',
+        cost: 85.00,
+        status: 'completed',
+        category: 'maintenance'
+      },
+      {
+        id: '2',
+        icon: 'car-outline',
+        title: 'Brake Pad Replacement',
+        description: 'Front brake pads replaced. Rotors inspected and cleaned',
+        date: '2024-06-10',
+        cost: 320.00,
+        status: 'completed',
+        category: 'repair'
+      },
+      {
+        id: '3',
+        icon: 'speedometer-outline',
+        title: 'Annual Safety Inspection',
+        description: 'Comprehensive safety inspection. Valid until June 2025',
+        date: '2024-06-01',
+        cost: 45.00,
+        status: 'completed',
+        category: 'inspection'
+      },
+      {
+        id: '4',
+        icon: 'battery-charging-outline',
+        title: 'Battery Replacement',
+        description: 'New AGM battery installed. 3-year warranty included',
+        date: '2024-05-20',
+        cost: 180.00,
+        status: 'completed',
+        category: 'repair'
+      },
+      {
+        id: '5',
+        icon: 'thermometer-outline',
+        title: 'A/C System Service',
+        description: 'A/C system recharged and leak tested. Cabin filter replaced',
+        date: '2024-05-15',
+        cost: 125.00,
+        status: 'completed',
+        category: 'maintenance'
+      },
+      {
+        id: '6',
+        icon: 'car-sport-outline',
+        title: 'Performance Tune-Up',
+        description: 'Spark plugs, air filter, and fuel system cleaning',
+        date: '2024-04-30',
+        cost: 280.00,
+        status: 'completed',
+        category: 'maintenance'
+      },
+      {
+        id: '7',
+        icon: 'checkmark-circle-outline',
+        title: 'Scheduled Maintenance',
+        description: 'Upcoming 60,000 km service appointment',
+        date: '2024-07-15',
+        cost: 450.00,
+        status: 'pending',
+        category: 'maintenance'
+      },
+      {
+        id: '8',
+        icon: 'settings-outline',
+        title: 'Transmission Service',
+        description: 'Transmission fluid change and filter replacement',
+        date: '2024-04-10',
+        cost: 195.00,
+        status: 'completed',
+        category: 'maintenance'
       }
-    };
+    ];
 
-    fetchServices();
+    try {
+      setIsLoading(true);
+      const selectedCarId = await AsyncStorage.getItem('selectedCarId');
+      if (!selectedCarId) {
+        console.log('No car selected, using mock data');
+        setServices(mockServices);
+        return;
+      }
+
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        console.log('No token found, using mock data');
+        setServices(mockServices);
+        return;
+      }
+
+      console.log('Fetching services for vehicle:', selectedCarId);
+
+      // Fetch work orders for this vehicle
+      const res = await fetch(`http://10.0.2.2:3000/work-orders?vehicleId=${selectedCarId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await res.json();
+      console.log('Work orders response:', data);
+
+      if (res.ok && data.data) {
+        // Transform work orders into service format
+        const workOrderServices = data.data.map((wo: any) => ({
+          id: wo.id,
+          icon: getServiceIcon(wo.jobType),
+          title: wo.jobType || 'Service',
+          description: wo.complaint || wo.internalNotes || 'Vehicle service performed',
+          date: wo.createdAt ? new Date(wo.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          cost: wo.totalAmount || 0,
+          status: wo.status === 'COMPLETED' ? 'completed' : wo.status === 'IN_PROGRESS' ? 'in-progress' : 'pending',
+          category: getServiceCategory(wo.jobType),
+        }));
+
+        setServices(workOrderServices);
+      } else {
+        console.error('Failed to fetch services:', data);
+        setServices(mockServices);
+      }
+    } catch (err) {
+      console.error('Error fetching services:', err);
+      setServices(mockServices);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchServicesCallback();
+    }, [fetchServicesCallback])
+  );
 
   // Helper function to get service icon based on job type
   const getServiceIcon = (jobType: string) => {

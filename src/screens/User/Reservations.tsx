@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -111,8 +112,96 @@ const ReservationsScreen = () => {
     },
   ];
 
-  // Fetch service advisor info
-  const fetchServiceAdvisor = async () => {
+
+  const fetchWorkOrdersCallback = useCallback(async () => {
+    try {
+      setIsLoading(true);
+
+      const userStr = await AsyncStorage.getItem('user');
+      console.log('📱 User string from AsyncStorage:', userStr);
+
+      if (!userStr) {
+        console.log('❌ No user string found in AsyncStorage');
+        setOngoingReservations([]);
+        setCompletedReservations([]);
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      console.log('👤 Parsed user object:', user);
+      console.log('📧 User email:', user.email);
+      console.log('🆔 User ID:', user.id);
+      console.log('👥 Customer ID:', user.customerId);
+
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔑 Token from AsyncStorage:', token ? 'Token exists' : 'No token');
+
+      if (!token) {
+        console.log('❌ No token found in AsyncStorage');
+        setOngoingReservations([]);
+        setCompletedReservations([]);
+        return;
+      }
+
+      // Get customer ID from stored user data
+      const customerId = user.customerId;
+      console.log("✅ Customer ID from stored user:", customerId);
+
+      if (!customerId) {
+        console.log('⚠️ No customer ID found in stored user data');
+        setOngoingReservations([]);
+        setCompletedReservations([]);
+        return;
+      }
+
+      console.log('Fetching work orders for customer:', customerId);
+
+      // Fetch work orders for this customer
+      const res = await fetch(`http://10.0.2.2:3000/customers/${customerId}/work-orders`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await res.json();
+      console.log('Work orders response:', data);
+
+      if (res.ok && data.success && data.data) {
+        const workOrders = data.data;
+        console.log('📅 Raw work orders from API:', workOrders);
+
+        // Map work orders to card format
+        const mappedWorkOrders = workOrders.map((wo: any) => ({
+          id: wo.id,
+          workOrderNumber: wo.workOrderNumber,
+          vehicleInfo: wo.vehicle ? `${wo.vehicle.year} ${wo.vehicle.make} ${wo.vehicle.model}` : 'Unknown Vehicle',
+          status: wo.status,
+          jobType: wo.jobType,
+          // Add more fields if needed
+        }));
+
+        // Categorize work orders by status
+        const ongoing = mappedWorkOrders.filter((wo: any) => wo.status !== 'COMPLETED');
+        const completed = mappedWorkOrders.filter((wo: any) => wo.status === 'COMPLETED');
+
+        setOngoingReservations(ongoing);
+        setCompletedReservations(completed);
+      } else {
+        console.error('Failed to fetch work orders:', data);
+        setOngoingReservations([]);
+        setCompletedReservations([]);
+      }
+    } catch (err) {
+      console.error('Error fetching work orders:', err);
+      setOngoingReservations([]);
+      setCompletedReservations([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const fetchServiceAdvisorCallback = useCallback(async () => {
     try {
       const response = await fetch('http://10.0.2.2:3000/appointments/service-advisor', {
         method: 'GET',
@@ -130,101 +219,19 @@ const ReservationsScreen = () => {
     } catch (error) {
       console.error('Error fetching service advisor:', error);
     }
-  };
+  }, []);
 
-  // Fetch work orders from backend
   useEffect(() => {
-    const fetchWorkOrders = async () => {
-      try {
-        setIsLoading(true);
+    fetchWorkOrdersCallback();
+    fetchServiceAdvisorCallback();
+  }, [fetchWorkOrdersCallback, fetchServiceAdvisorCallback, refreshTrigger]);
 
-        const userStr = await AsyncStorage.getItem('user');
-        console.log('📱 User string from AsyncStorage:', userStr);
-
-        if (!userStr) {
-          console.log('❌ No user string found in AsyncStorage');
-          setOngoingReservations([]);
-          setCompletedReservations([]);
-          return;
-        }
-
-        const user = JSON.parse(userStr);
-        console.log('👤 Parsed user object:', user);
-        console.log('📧 User email:', user.email);
-        console.log('🆔 User ID:', user.id);
-        console.log('👥 Customer ID:', user.customerId);
-
-        const token = await AsyncStorage.getItem('token');
-        console.log('🔑 Token from AsyncStorage:', token ? 'Token exists' : 'No token');
-
-        if (!token) {
-          console.log('❌ No token found in AsyncStorage');
-          setOngoingReservations([]);
-          setCompletedReservations([]);
-          return;
-        }
-
-        // Get customer ID from stored user data
-        const customerId = user.customerId;
-        console.log("✅ Customer ID from stored user:", customerId);
-
-        if (!customerId) {
-          console.log('⚠️ No customer ID found in stored user data');
-          setOngoingReservations([]);
-          setCompletedReservations([]);
-          return;
-        }
-
-        console.log('Fetching work orders for customer:', customerId);
-
-        // Fetch work orders for this customer
-        const res = await fetch(`http://10.0.2.2:3000/customers/${customerId}/work-orders`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        const data = await res.json();
-        console.log('Work orders response:', data);
-
-        if (res.ok && data.success && data.data) {
-          const workOrders = data.data;
-          console.log('📅 Raw work orders from API:', workOrders);
-
-          // Map work orders to card format
-          const mappedWorkOrders = workOrders.map((wo: any) => ({
-            id: wo.id,
-            workOrderNumber: wo.workOrderNumber,
-            vehicleInfo: wo.vehicle ? `${wo.vehicle.year} ${wo.vehicle.make} ${wo.vehicle.model}` : 'Unknown Vehicle',
-            status: wo.status,
-            jobType: wo.jobType,
-            // Add more fields if needed
-          }));
-
-          // Categorize work orders by status
-          const ongoing = mappedWorkOrders.filter((wo: any) => wo.status !== 'COMPLETED');
-          const completed = mappedWorkOrders.filter((wo: any) => wo.status === 'COMPLETED');
-
-          setOngoingReservations(ongoing);
-          setCompletedReservations(completed);
-        } else {
-          console.error('Failed to fetch work orders:', data);
-          setOngoingReservations([]);
-          setCompletedReservations([]);
-        }
-      } catch (err) {
-        console.error('Error fetching work orders:', err);
-        setOngoingReservations([]);
-        setCompletedReservations([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchWorkOrders();
-    fetchServiceAdvisor();
-  }, [refreshTrigger]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchWorkOrdersCallback();
+      fetchServiceAdvisorCallback();
+    }, [fetchWorkOrdersCallback, fetchServiceAdvisorCallback])
+  );
 
   useEffect(() => {
     // Check for notifications from ongoing reservations
@@ -523,11 +530,10 @@ const ReservationsScreen = () => {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <Header 
+        <Header
           icon="back"
           name="Garage Management"
           image=""
-          onIconPress={() => navigation.navigate('Home')}
         />
         
         <LoadingComponent 
@@ -542,11 +548,10 @@ const ReservationsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header 
+      <Header
         icon="back"
         name="Garage Management"
         image=""
-        onIconPress={() => navigation.navigate('Home')}
       />
 
       {/* Tab Navigation (Upcoming tab removed) */}
